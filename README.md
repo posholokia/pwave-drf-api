@@ -1,5 +1,15 @@
 # PulseWave
 
+## Переменные окружения
+
+# Postgres DB
+```
+DB_NAME = название БД
+DB_USER = имя пользователя
+DB_PASSWORD = пароль пользователя
+DB_HOST = хост
+DB_PORT = порт
+```
 
 ## Установка:
 1. Клонируйте репозиторий на свой компьютер
@@ -26,8 +36,9 @@ pip install -r requirements.txt
 
   
 5. Запуск сервера:
+   
+   `python3 manage.py runserver`
 
-    `python3 manage.py runserver`
 
 
 ## API Documentation.
