@@ -2,7 +2,7 @@
 
 ## Переменные окружения
 
-# Postgres DB
+### Postgres DB
 ```
 DB_NAME = название БД
 DB_USER = имя пользователя
