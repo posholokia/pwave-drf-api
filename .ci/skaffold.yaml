@@ -1,0 +1,65 @@
+.app-release: &app-release
+  chartPath: .ci/charts/web-app
+  wait: true
+  upgradeOnChange: true
+
+.postgres-release: &postgres-release
+  repo: https://charts.bitnami.com/bitnami
+  remoteChart: postgresql
+  version: "12.1.10"
+  wait: true
+  upgradeOnChange: false
+
+.helm-flags: &helm-flags
+  install:
+    - "--timeout=7m"
+  upgrade:
+    - "--timeout=7m"
+
+apiVersion: skaffold/v3
+kind: Config
+metadata:
+  name: pwave-backend-drfapi
+build:
+  artifacts:
+    - image: pwave-backend-drfapi
+      context: .
+      docker:
+        dockerfile: ./Dockerfile
+deploy:
+  kubeContext: pnpl-tech
+profiles:
+  - name: prod
+    activation:
+      - env: CI_COMMIT_BRANCH=master|main
+    build:
+      tagPolicy:
+        envTemplate:
+          template: "prod-{{.CI_COMMIT_SHORT_SHA}}"
+    deploy:
+      helm:
+        flags: *helm-flags
+        releases:
+          # - <<: *postgres-release
+          #   name: &postgres-release-name "random-dessert-postgresql"
+          #   namespace: default
+          #   setValueTemplates:
+          #     global.postgresql.auth.password: "{{.CI_POSTGRES_USER_PASSWORD}}"
+          #   valuesFiles:
+          #     - ".ci/env.values/postgresql.yaml"
+          #     - ".ci/env.values/prod/postgresql.yaml"
+          - <<: *app-release
+            name: &app-release-name "pwave-backend-drfapi"
+            namespace: default
+            setValueTemplates:
+              image.name: "{{.IMAGE_FULLY_QUALIFIED_pwave_backend_drfapi}}"
+              hooks.jobs.migrations.image: "{{.IMAGE_FULLY_QUALIFIED_pwave_backend_drfapi}}"
+              GIT_REPO: "{{.CI_PROJECT_NAME}}"
+              CI_FQDN: "{{.CI_FQDN}}"
+            valuesFiles:
+              - ".ci/env.values/app.yaml"
+              - ".ci/env.values/hooks.yaml"
+              - ".ci/env.values/cronjobs.yaml"
+              - ".ci/env.values/prod/app.yaml"
+              - ".ci/env.values/prod/hooks.yaml"
+              - ".ci/env.values/prod/cronjobs.yaml"
