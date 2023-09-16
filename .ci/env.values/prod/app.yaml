@@ -1,0 +1,36 @@
+env:
+  DB_NAME:
+    valueFrom:
+      secretKeyRef:
+        name: pulsewave-pgsql-creds
+        key: database
+  DB_USER:
+    valueFrom:
+      secretKeyRef:
+        name: pulsewave-pgsql-creds
+        key: user
+  DB_PASSWORD:
+    valueFrom:
+      secretKeyRef:
+        name: pulsewave-pgsql-creds
+        key: password
+  DB_HOST:
+    valueFrom:
+      secretKeyRef:
+        name: pulsewave-pgsql-creds
+        key: host
+  DB_PORT: 6432
+
+imagePullSecrets:
+  - name: gitlab-cr
+
+replicaCount: 1
+
+ingress:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/proxy-body-size: 16m
+  hosts:
+    - host: "{{ .Values.CI_FQDN }}"
+      paths:
+        - "/"

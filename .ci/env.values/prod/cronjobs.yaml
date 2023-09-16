@@ -1,0 +1,3 @@
+cronJobs:  
+  dumper:
+    enabled: true
