@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.base_user import AbstractBaseUser
 from .managers import UserManager
-from config import settings
+from pulsewave import settings
 
 
 class User(AbstractBaseUser, PermissionsMixin):
