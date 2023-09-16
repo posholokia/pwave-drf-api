@@ -2,3 +2,4 @@
 /venv/
 /PW console
 /.env
+docker-compose.yaml

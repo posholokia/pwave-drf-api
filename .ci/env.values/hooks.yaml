@@ -1,0 +1,17 @@
+hooks:
+  jobs:
+    migrations:
+      enabled: false
+      type: "pre-install, pre-upgrade"
+      weight: 0
+      backoffLimit: 0
+      imagePullSecrets:
+        - name: gitlab-cr
+      command: ['bash']
+      args:
+        - -c 
+        - |
+          set -ex;
+          python manage.py makemigrations --no-input -v 3 --force-color;
+          python manage.py makemigrations --merge --no-input -v 3 --force-color;
+          python manage.py migrate --force-color -v 3;
