@@ -58,6 +58,7 @@ deploy_prod: &deploy_definition
     - git submodule update --force --init
     - git submodule foreach '( if echo "$sm_path" | grep -E "^.ci/.+$"; then git fetch; git checkout --force master; git pull --force; fi  )'
     - export CI_FQDN=`echo $CI_ENVIRONMENT_URL | sed -E 's/^https:\/\/(.+)$/\1/'`
+    - export CI_TLS_SECRET_NAME=`echo -n $CI_FQDN | sed 's|https://||g' | sed 's/\./\-/g'`
     - export KUBECONFIG="config"
     - printf "$CI_KUBECONFIG_BASE64" | base64 -d > $KUBECONFIG; chmod 600 $KUBECONFIG
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin

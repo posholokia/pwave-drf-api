@@ -53,5 +53,5 @@ ingress:
   enabled: true
   tlsEnabled: true
   servicePort: 8080
-  tlsSecretName: pwave-backend-drfapi-tls
+  tlsSecretName: "{{ .Values.CI_TLS_SECRET_NAME}}"
   ingressClassName: nginx
