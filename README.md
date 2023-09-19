@@ -19,7 +19,7 @@ EMAIL_HOST_PASSWORD = пароль email приложения
 
 ### Django secret
 Для локальных натроек можно использовать любой SECRET_KEY, например:
-`SECRET_KEY = django-insecure-l7h7&-z_@90u@ijh#-8q%:?5g3l#593v$c_*1x%G#$2+0v@_p7`
+```SECRET_KEY = django-insecure-l7h7&-z_@90u@ijh#-8q%:?5g3l#593v$c_*1x%G#$2+0v@_p7```
 
 
 ## Установка
