@@ -98,3 +98,4 @@ class Fix4(OpenApiViewExtension):
             pass
 
         return Fixed
+
