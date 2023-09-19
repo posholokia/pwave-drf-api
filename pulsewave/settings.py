@@ -126,10 +126,6 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-#EMAIL
-# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # TODO для разработки
-# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-
 #DRF
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -194,5 +190,3 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
-
-

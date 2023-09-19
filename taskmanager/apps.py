@@ -7,4 +7,3 @@ class TaskmanagerConfig(AppConfig):
 
     def ready(self):
         import taskmanager.schema
-
