@@ -23,7 +23,6 @@ source venv/bin/activate
 ```
 3. Установите зависимости:
 ```
-cd pulsewave
 pip install -r requirements.txt
 ```
 
@@ -31,7 +30,10 @@ pip install -r requirements.txt
 
     Cперва выполнить команду:
 
-    `python3 manage.py makemigrations`
+    ```
+   cd pulsewave
+   python3 manage.py makemigrations
+   ```
 
     только после этого:
    
