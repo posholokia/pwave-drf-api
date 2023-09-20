@@ -20,6 +20,9 @@ env:
         name: pulsewave-pgsql-creds
         key: host
   DB_PORT: 6432
+  SECRET_KEY: "{{ .Values.APP_DJANGO_SECRET_KEY }}"
+  EMAIL_HOST_USER: "{{ .Values.APP_EMAIL_HOST_USER }}"
+  EMAIL_HOST_PASSWORD: "{{ .Values.APP_EMAIL_HOST_PASSWORD }}"
 
 imagePullSecrets:
   - name: gitlab-cr

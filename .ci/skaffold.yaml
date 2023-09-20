@@ -57,6 +57,9 @@ profiles:
               GIT_REPO: "{{.CI_PROJECT_NAME}}"
               CI_FQDN: "{{.CI_FQDN}}"
               CI_TLS_SECRET_NAME: "{{.CI_TLS_SECRET_NAME}}-tls"
+              APP_DJANGO_SECRET_KEY: "{{.CI_APP_DJANGO_SECRET_KEY}}"
+              APP_EMAIL_HOST_USER: "{{.CI_APP_EMAIL_HOST_USER}}"
+              APP_EMAIL_HOST_PASSWORD: "{{.CI_APP_EMAIL_HOST_PASSWORD}}"
             valuesFiles:
               - ".ci/env.values/app.yaml"
               - ".ci/env.values/hooks.yaml"
