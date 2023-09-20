@@ -21,7 +21,9 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
     path('auth/', include('djoser.urls')),
+    path('auth/', include('djoser.urls.jwt')),
 
     # api doc urls:
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

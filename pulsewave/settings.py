@@ -11,8 +11,15 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
+
+try:
+    from .local_settings import *
+except ImportError:
+    from .prod_settings import *
+
 
 load_dotenv()
 
@@ -22,15 +29,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-l7h7&-z_@90u@imjh#-8quh%8^td#593v$cq_*1xb82+0v@_p7'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
-# SERVER_HOST = os.getenv('SERVER_HOST'),
-ALLOWED_HOSTS = ['*']
-
 
 # Application definition
 
@@ -44,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
 
     'drf_spectacular',
-
+    'rest_framework_simplejwt',
     'rest_framework',
     'djoser',
 
@@ -87,18 +85,6 @@ WSGI_APPLICATION = 'pulsewave.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
-    },
-}
-
-
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
@@ -140,12 +126,11 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-#EMAIL
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # TODO для разработки
-# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-
 #DRF
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',  # drf-spectular
 }
 
@@ -166,9 +151,42 @@ DJOSER = {
     'ACTIVATION_URL': 'auth/activate/{uid}/{token}',
     'SEND_ACTIVATION_EMAIL': True,
     'SERIALIZERS': {},
+    'TOKEN_MODEL': None,
 }
 
 
 AUTHENTICATION_BACKENDS = (
     'taskmanager.backends.AuthBackend',  # кастомный бекэнд аутентификации
 )
+
+#JWT tokens
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': False,
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
+
+    'AUTH_HEADER_TYPES': ('JWT',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}

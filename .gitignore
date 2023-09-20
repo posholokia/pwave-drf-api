@@ -1,5 +1,7 @@
-/pulsewave/taskmanager/migrations/0001_initial.py
+/pulsewave/taskmanager/migrations/
 /venv/
 /PW console
 /.env
 docker-compose.yaml
+/pulsewave/local_settings.py
+/taskmanager/migrations/0001_initial.py
