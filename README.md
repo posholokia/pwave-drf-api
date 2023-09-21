@@ -1,8 +1,8 @@
 # PulseWave
 
-## Переменные окружения
+## Переменные окружения (на прод)
 
-### Postgres DB
+#### Postgres DB
 ```
 DB_NAME = название БД
 DB_USER = имя пользователя
@@ -11,16 +11,33 @@ DB_HOST = хост
 DB_PORT = порт
 ```
 
-### Email
+#### Email
 ```
 EMAIL_HOST_USER = email адрес с когорого отправляется email
 EMAIL_HOST_PASSWORD = пароль email приложения
 ```
+#### Keys
+```
+SECRET_KEY
+```
+## Локальная работа
+Для локальной работы необходимо в папке **pulsewave** создать файл с локальными настройками *local_settings.py*.\
+*local_settings* нельзя пушить в репозиторий, он должен быть в *.gitignore.*\
+Минимальное наполнение *local_settings*: SECRET_KEY, DEBUG, DATABASES и EMAIL_BACKEND.\
+Например:
 
-### Django secret
-Для локальных натроек можно использовать любой SECRET_KEY, например:
-
-```SECRET_KEY = django-insecure-l7h7&-z_@90u@ijh#-8q%:?5g3l#593v$c_*1x%G#$2+0v@_p7```
+```
+from settings import BASE_DIR
+DEBUG = True
+SECRET_KEY = 'django-insecure-l7h7&-z_@56g7^G&7g6%^g76^tdu#593v$cq_*1xb82+0v@_p7'
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+```
 
 
 ## Установка
@@ -39,19 +56,23 @@ pip install -r requirements.txt
 
     Cперва выполнить команду:
 
-    ```
+   ```
    cd pulsewave
    python3 manage.py makemigrations
    ```
 
     только после этого:
    
-    `python3 manage.py migrate`
+    ```
+    python3 manage.py migrate
+    ```
 
   
 5. Запуск сервера:
    
-   `python3 manage.py runserver`
+   ```
+   python3 manage.py runserver
+   ```
 
 
 
@@ -62,4 +83,3 @@ pip install -r requirements.txt
     Redoc: `/api/schema/redoc/` 
 
 
-## локальные настройка
