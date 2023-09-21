@@ -56,23 +56,23 @@ pip install -r requirements.txt
 
     Cперва выполнить команду:
 
-   ```
-   cd pulsewave
-   python3 manage.py makemigrations
-   ```
+```
+cd pulsewave
+python3 manage.py makemigrations
+```
 
     только после этого:
    
-    ```
-    python3 manage.py migrate
-    ```
+```
+python3 manage.py migrate
+```
 
   
 5. Запуск сервера:
    
-   ```
-   python3 manage.py runserver
-   ```
+```
+python3 manage.py runserver
+```
 
 
 
