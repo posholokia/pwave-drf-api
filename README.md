@@ -57,7 +57,6 @@ pip install -r requirements.txt
     Cперва выполнить команду:
 
 ```
-cd pulsewave
 python3 manage.py makemigrations
 ```
 
