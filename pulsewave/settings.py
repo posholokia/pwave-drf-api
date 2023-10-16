@@ -153,7 +153,9 @@ DJOSER = {
     'PASSWORD_RESET_CONFIRM_URL': 'auth/password/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'auth/activate/{uid}/{token}',
     'SEND_ACTIVATION_EMAIL': True,
-    'SERIALIZERS': {},
+    'SERIALIZERS': {
+        'current_user': 'taskmanager.serializers.UserModelSerializer',
+    },
     'TOKEN_MODEL': None,
     'USER_CREATE_PASSWORD_RETYPE': True,
 }
