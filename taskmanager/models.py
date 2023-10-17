@@ -11,12 +11,23 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField('Активирован', default=True)  # обязательно
     is_staff = models.BooleanField('Персонал', default=False)  # для админ панели
 
+    subscriber = models.BooleanField('Подписан на рассылки', default=False)
+    name = models.CharField('Имя пользователя', max_length=30, blank=True)
+
     objects = UserManager()  # используется кастомный менеджер юзера
 
     USERNAME_FIELD = 'email'  # поле, используемое в качестве логина
-    REQUIRED_FIELDS = []  # дополнительные поля при регистрации
+    REQUIRED_FIELDS = ['subscriber']  # дополнительные поля при регистрации
 
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
+    def presentation_name(self):
+        """
+        Способ представления имени пользователя в списке пользователей
+        """
+        if self.name:
+            return f'{self.name}({self.email.split("@")[0]})'
+        else:
+            return self.email

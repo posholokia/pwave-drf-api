@@ -4,7 +4,11 @@ from rest_framework.decorators import action
 
 
 class Fix1(OpenApiViewExtension):
-    target_class = 'djoser.views.UserViewSet'
+    """
+    Добавление описания к API документации библиотеки Djoser.
+    Описаие добавлено к эндпоинтам модели User.
+    """
+    target_class = 'taskmanager.views.CustomUserViewSet'
 
     def view_replacement(self):
         @extend_schema_view(list=extend_schema(description='Список всех пользователей'),
@@ -65,6 +69,10 @@ class Fix1(OpenApiViewExtension):
 
 
 class Fix2(OpenApiViewExtension):
+    """
+    Добавление описания к API документации библиотеки Djoser.
+    Описаие эндпоинту создания JWT токенов.
+    """
     target_class = 'rest_framework_simplejwt.views.TokenObtainPairView'
 
     def view_replacement(self):
@@ -79,6 +87,10 @@ class Fix2(OpenApiViewExtension):
 
 
 class Fix3(OpenApiViewExtension):
+    """
+    Добавление описания к API документации библиотеки Djoser.
+    Описаие к эндпоинту обновления JWT access токена.
+    """
     target_class = 'rest_framework_simplejwt.views.TokenRefreshView'
 
     def view_replacement(self):
@@ -90,6 +102,10 @@ class Fix3(OpenApiViewExtension):
 
 
 class Fix4(OpenApiViewExtension):
+    """
+    Добавление описания к API документации библиотеки Djoser.
+    Описаие к эндпоинту проверки JWT access и resfresh токенов.
+    """
     target_class = 'rest_framework_simplejwt.views.TokenVerifyView'
 
     def view_replacement(self):
@@ -98,4 +114,3 @@ class Fix4(OpenApiViewExtension):
             pass
 
         return Fixed
-

@@ -17,13 +17,20 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from taskmanager.views import CustomUserViewSet
+from rest_framework import routers
 
+
+router = routers.DefaultRouter()
+router.register('auth/users', CustomUserViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    path('auth/', include('djoser.urls')),
+    # path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
+
+    path('api/v1/', include('taskmanager.urls')),
 
     # api doc urls:
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
@@ -31,3 +38,4 @@ urlpatterns = [
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 
 ]
+urlpatterns += router.urls
