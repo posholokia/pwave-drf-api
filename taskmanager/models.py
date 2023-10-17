@@ -5,6 +5,7 @@ from .managers import UserManager
 from pulsewave import settings
 
 
+
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField('Эл. почта', unique=True)
     date_joined = models.DateTimeField('Дата создания', auto_now_add=True)
@@ -17,7 +18,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()  # используется кастомный менеджер юзера
 
     USERNAME_FIELD = 'email'  # поле, используемое в качестве логина
-    REQUIRED_FIELDS = []  # дополнительные поля при регистрации
+    REQUIRED_FIELDS = ['subscriber']  # дополнительные поля при регистрации
 
     class Meta:
         verbose_name = 'Пользователь'
