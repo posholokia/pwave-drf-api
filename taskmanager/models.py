@@ -5,7 +5,6 @@ from .managers import UserManager
 from pulsewave import settings
 
 
-
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField('Эл. почта', unique=True)
     date_joined = models.DateTimeField('Дата создания', auto_now_add=True)
@@ -25,6 +24,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name_plural = 'Пользователи'
 
     def presentation_name(self):
+        """
+        Способ представления имени пользователя в списке пользователей
+        """
         if self.name:
             return f'{self.name}({self.email.split("@")[0]})'
         else:
