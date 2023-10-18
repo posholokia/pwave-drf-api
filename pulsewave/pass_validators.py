@@ -46,7 +46,7 @@ class SpecialCharacterValidator:
     """
 
     def validate(self, password, user=None):
-        special_characters = r"!@#$%^&*-_+[]{}|;:\,.<>?"
+        special_characters = r"!@#$%^&*-_+=[](){}|;:\,.<>?"
         if not any(char in special_characters for char in password):
             raise ValidationError("Пароль должен содержать хотя бы один специальный символ.")
 
