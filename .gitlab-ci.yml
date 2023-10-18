@@ -48,7 +48,7 @@ deploy_prod: &deploy_definition
   dependencies:
     - build
   before_script:
-    - apk add git openssh-client
+    # - apk add git openssh-client
     - mkdir -p /root/.ssh
     - chmod 700 /root/.ssh
     - touch /root/.ssh/known_hosts
@@ -83,7 +83,7 @@ notify_success: &notify_definition
   stage: notify_telegram
   image: jafnhaar/build-image:v1
   before_script:
-    - apk add git openssh-client
+    # - apk add git openssh-client
     - mkdir -p /root/.ssh
     - chmod 700 /root/.ssh
     - touch /root/.ssh/known_hosts
