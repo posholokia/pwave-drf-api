@@ -90,8 +90,8 @@ notify_success: &notify_definition
     - ssh-keyscan -H gitlab.com >> /root/.ssh/known_hosts
     - eval $(ssh-agent -s)
     - ssh-add - <<< $(echo -n ${CI_RSA_KEY_BASE64}|base64 -d)
-    - git submodule update --force --init
-    - git submodule foreach '( if echo "$sm_path" | grep -E "^.ci/.+$"; then git fetch; git checkout --force master; git pull --force; fi  )'
+    - git submodule update --init --recursive --remote .ci/sh
+    # - git submodule foreach '( if echo "$sm_path" | grep -E "^.ci/.+$"; then git fetch; git checkout --force master; git pull --force; fi  )'
     - chmod +x .ci/sh/*
   script:
     - bash .ci/sh/notify.sh success
