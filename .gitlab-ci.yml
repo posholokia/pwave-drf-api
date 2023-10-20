@@ -84,10 +84,10 @@ notify_success: &notify_definition
   image: jafnhaar/build-image:v1
   before_script:
     # - apk add git openssh-client
-    - mkdir -p /root/.ssh
-    - chmod 700 /root/.ssh
-    - touch /root/.ssh/known_hosts
-    - ssh-keyscan -H gitlab.com >> /root/.ssh/known_hosts
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - touch ~/.ssh/known_hosts
+    - ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
     - eval $(ssh-agent -s)
     - ssh-add - <<< $(echo -n ${CI_RSA_KEY_BASE64}|base64 -d)
     - git submodule update --init --recursive --remote .ci/sh
