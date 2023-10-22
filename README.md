@@ -27,13 +27,12 @@ SECRET_KEY
 Например:
 
 ```
-from settings import BASE_DIR
 DEBUG = True
 SECRET_KEY = 'django-insecure-l7h7&-z_@56g7^G&7g6%^g76^tdu#593v$cq_*1xb82+0v@_p7'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': './db.sqlite3',
     }
 }
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
