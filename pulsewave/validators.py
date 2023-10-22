@@ -55,6 +55,7 @@ class SpecialCharacterPasswordValidator:
         return r"Пароль должен содержать минимум один специальный символ: !@#$%^&*-_+[]{}|;:\,.<>?"
 
 
+
 def validate_name(name):
     union_string = f'.-_' \
                     f'{string.ascii_letters}' \
