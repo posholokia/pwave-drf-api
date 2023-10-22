@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 
 
-class UppercaseLetterValidator:
+class UppercaseLetterPasswordValidator:
     """
     Проверка, что в пароле есть минимум одна заглавная буква.
     """
@@ -14,7 +14,7 @@ class UppercaseLetterValidator:
         return "В пароле должна содержаться хотя бы одна строчная буква."
 
 
-class LowercaseLetterValidator:
+class LowercaseLetterPasswordValidator:
     """
     Проверка, что в пароле есть минимум одна строчная буква.
     """
@@ -27,7 +27,7 @@ class LowercaseLetterValidator:
         return "В пароле должна содержаться хотя бы одна строчная буква."
 
 
-class IncludeNumberValidator:
+class IncludeNumberPasswordValidator:
     """
     Проверка, что в пароле есть минимум одна цифра.
     """
@@ -40,7 +40,7 @@ class IncludeNumberValidator:
         return "Пароль не может быть без цифр."
 
 
-class SpecialCharacterValidator:
+class SpecialCharacterPasswordValidator:
     """
     Проверка, что в пароле есть минимум один специальный символ.
     """

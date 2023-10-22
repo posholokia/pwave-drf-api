@@ -1,6 +1,6 @@
 from drf_spectacular.extensions import OpenApiViewExtension
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework.decorators import action
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 class Fix1(OpenApiViewExtension):
@@ -21,7 +21,9 @@ class Fix1(OpenApiViewExtension):
         class Fixed(self.target_class):
             @extend_schema(description='Эндпоинт для активация аккаунта пользователя. '
                                        'Необходимо получить uid и token из ссылки по которой перешел пользователь: '
-                                       '/auth/activate/{uid}/{token}')
+                                       '/auth/activate/{uid}/{token}',
+                           responses=TokenObtainPairSerializer,
+                           )
             def activation(self, request, *args, **kwargs):
                 return super().activation(request, *args, **kwargs)
 

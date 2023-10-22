@@ -92,19 +92,19 @@ WSGI_APPLICATION = 'pulsewave.wsgi.application'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'pulsewave.pass_validators.UppercaseLetterValidator',
+        'NAME': 'pulsewave.validators.UppercaseLetterPasswordValidator',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
     {
-        'NAME': 'pulsewave.pass_validators.LowercaseLetterValidator',
+        'NAME': 'pulsewave.validators.LowercaseLetterPasswordValidator',
     },
     {
-        'NAME': 'pulsewave.pass_validators.IncludeNumberValidator',
+        'NAME': 'pulsewave.validators.IncludeNumberPasswordValidator',
     },
     {
-        'NAME': 'pulsewave.pass_validators.SpecialCharacterValidator',
+        'NAME': 'pulsewave.validators.SpecialCharacterPasswordValidator',
     },
 ]
 
@@ -202,6 +202,7 @@ SIMPLE_JWT = {
 #CORS
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
+    'https://pulse-wave.netlify.app',
 ]
 
 
