@@ -11,6 +11,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = User
+        read_only_fields = ['email']
         fields = (
             'id',
             'email',
