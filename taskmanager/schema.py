@@ -1,3 +1,8 @@
+"""
+Этот файл содержит дополнения и исправления схемы генерации API
+документации библиотеки drf-spectacular.
+"""
+
 from drf_spectacular.extensions import OpenApiViewExtension
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer

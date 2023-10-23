@@ -13,9 +13,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField('Персонал', default=False)  # для админ панели
 
     subscriber = models.BooleanField('Подписан на рассылки', default=False)
-    name = models.CharField('Имя пользователя', max_length=30, blank=True, validators=[validate_name])
+    name = models.CharField('Имя пользователя', max_length=50, blank=True, validators=[validate_name])
 
     objects = UserManager()  # используется кастомный менеджер юзера
+
     USERNAME_FIELD = 'email'  # поле, используемое в качестве логина
     REQUIRED_FIELDS = ['subscriber']  # дополнительные поля при регистрации
 

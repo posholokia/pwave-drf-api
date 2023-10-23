@@ -7,9 +7,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 
 from djoser.views import UserViewSet
-from djoser import signals
-from djoser.conf import settings
-from djoser.compat import get_user_email
 
 User = get_user_model()
 
@@ -29,19 +26,9 @@ class CustomUserViewSet(UserViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.user
-        user.is_active = True
-        user.save()
 
-        signals.user_activated.send(
-            sender=self.__class__, user=user, request=self.request
-        )
+        super().activation(request, *args, **kwargs)
 
-        if settings.SEND_CONFIRMATION_EMAIL:
-            context = {"user": user}
-            to = [get_user_email(user)]
-            settings.EMAIL.confirmation(self.request, context).send(to)
-
-        # строки ниже переопределяют стандартный метод
         refresh = RefreshToken.for_user(user)
 
         return Response({
