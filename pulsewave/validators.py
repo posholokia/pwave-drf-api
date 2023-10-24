@@ -55,12 +55,11 @@ class SpecialCharacterPasswordValidator:
         return r"Пароль должен содержать минимум один специальный символ: !@#$%^&*-_+[]{}|;:\,.<>?"
 
 
-
 def validate_name(name):
     union_string = f'.-_' \
-                    f'{string.ascii_letters}' \
-                    f'{string.digits}' \
-                    f'абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'
+                   f'{string.ascii_letters}' \
+                   f'{string.digits}' \
+                   f'абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'
     if not all(map(lambda char: char in union_string, name)):
         raise ValidationError(f'Имя может содержать буквы строчные и заглавные, цифры,'
                               f' символы (.-_), русский или латинский алфавит.')

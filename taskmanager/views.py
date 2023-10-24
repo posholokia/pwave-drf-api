@@ -1,11 +1,8 @@
 from rest_framework import generics, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from django.contrib.auth import get_user_model
-
 from djoser.views import UserViewSet
 
 User = get_user_model()
@@ -16,7 +13,6 @@ class CustomUserViewSet(UserViewSet):
     Вьюсет на базе вьюсета библиотеки Djoser.
     Часть методов переопределена под требования проекта.
     """
-
     @action(["post"], detail=False)
     def activation(self, request, *args, **kwargs):
         """

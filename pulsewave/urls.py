@@ -19,6 +19,7 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from taskmanager.views import CustomUserViewSet
 from rest_framework import routers
+from rest_framework_simplejwt.views import TokenBlacklistView
 
 
 router = routers.DefaultRouter()
@@ -27,7 +28,7 @@ router.register('auth/users', CustomUserViewSet)
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # path('auth/', include('djoser.urls')),
+    path('auth/jwt/blacklist/', TokenBlacklistView.as_view(), name='token_blacklist'),
     path('auth/', include('djoser.urls.jwt')),
 
     path('api/v1/', include('taskmanager.urls')),

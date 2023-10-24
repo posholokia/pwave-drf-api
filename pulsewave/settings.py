@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'djoser',
     'corsheaders',
+    'rest_framework_simplejwt.token_blacklist',
 
     #apps
     'taskmanager.apps.TaskmanagerConfig',
@@ -145,6 +146,10 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API документация проекта PulseWawe',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'POSTPROCESSING_HOOKS': [
+        'drf_spectacular.hooks.postprocess_schema_enums',
+        'taskmanager.schema.user_me_postprocessing_hook',
+    ],
 }
 # custom User
 AUTH_USER_MODEL = 'taskmanager.User'
@@ -171,8 +176,8 @@ AUTHENTICATION_BACKENDS = (
 
 #JWT tokens
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(weeks=2),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
     'UPDATE_LAST_LOGIN': False,
