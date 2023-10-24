@@ -47,18 +47,6 @@ class Fix1(OpenApiViewExtension):
             def reset_password_confirm(self, request, *args, **kwargs):
                 return super().reset_password_confirm(request, *args, **kwargs)
 
-            @extend_schema(description='Не используется. \n\nСмена логина.')
-            def set_username(self, request, *args, **kwargs):
-                return super().set_username(request, *args, **kwargs)
-
-            @extend_schema(description='Не используется.\n\nСброс логина.')
-            def reset_username(self, request, *args, **kwargs):
-                return super().reset_username(request, *args, **kwargs)
-
-            @extend_schema(description='Не используется.\n\nПодтверждение сброса логина.')
-            def reset_username_confirm(self, request, *args, **kwargs):
-                return super().reset_username_confirm(request, *args, **kwargs)
-
         return Fixed
 
 
