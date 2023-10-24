@@ -160,6 +160,7 @@ DJOSER = {
     'PASSWORD_RESET_CONFIRM_URL': 'auth/password/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'auth/activate/{uid}/{token}',
     'SEND_ACTIVATION_EMAIL': True,
+    'TOKEN_EXPIRATION': 3600,  # == PASSWORD_RESET_TIMEOUT: срок действия ссылок активации аккаунта и сброса пароля
     'SERIALIZERS': {
         'current_user': 'taskmanager.serializers.CurrentUserSerializer',
     },
@@ -169,6 +170,7 @@ DJOSER = {
     'PASSWORD_RESET_CONFIRM_RETYPE': True,
 }
 
+PASSWORD_RESET_TIMEOUT = DJOSER.get('TOKEN_EXPIRATION', 3600)
 
 AUTHENTICATION_BACKENDS = (
     'taskmanager.backends.AuthBackend',  # кастомный бекэнд аутентификации
