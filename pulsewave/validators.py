@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+import string
 
 
 class UppercaseLetterPasswordValidator:
@@ -52,3 +53,13 @@ class SpecialCharacterPasswordValidator:
 
     def get_help_text(self):
         return r"Пароль должен содержать минимум один специальный символ: !@#$%^&*-_+[]{}|;:\,.<>?"
+
+
+def validate_name(name):
+    union_string = f'.-_' \
+                   f'{string.ascii_letters}' \
+                   f'{string.digits}' \
+                   f'абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'
+    if not all(map(lambda char: char in union_string, name)):
+        raise ValidationError(f'Имя может содержать буквы строчные и заглавные, цифры,'
+                              f' символы (.-_), русский или латинский алфавит.')

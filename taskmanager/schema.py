@@ -1,3 +1,8 @@
+"""
+Этот файл содержит дополнения и исправления схемы генерации OpenAPI
+документации библиотеки drf-spectacular.
+"""
+
 from drf_spectacular.extensions import OpenApiViewExtension
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -5,18 +10,14 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class Fix1(OpenApiViewExtension):
     """
-    Добавление описания к API документации библиотеки Djoser.
-    Описаие добавлено к эндпоинтам модели User.
+    Дополнение описания эндпоинтов авторизации.
     """
     target_class = 'taskmanager.views.CustomUserViewSet'
 
     def view_replacement(self):
-        @extend_schema_view(list=extend_schema(description='Список всех пользователей'),
+        @extend_schema_view(list=extend_schema(description='Запрос от юзера: данные юзера.\n\n'
+                                                           'Запрос от админа: список всех пользователей.'),
                             create=extend_schema(description='Создать пользователя'),
-                            retrieve=extend_schema(description='Получить данные пользователя по id'),
-                            update=extend_schema(description='Обновить все данные пользователя по id'),
-                            partial_update=extend_schema(description='Частично обновить данные пользователя по id'),
-                            destroy=extend_schema(description='Удалить пользователя по id'),
                             )
         class Fixed(self.target_class):
             @extend_schema(description='Эндпоинт для активация аккаунта пользователя. '
@@ -26,15 +27,6 @@ class Fix1(OpenApiViewExtension):
                            )
             def activation(self, request, *args, **kwargs):
                 return super().activation(request, *args, **kwargs)
-
-            @extend_schema(description=
-                           'get: Получить данные пользователя\n\n'
-                           'put: Обновить все данные пользователя\n\n'
-                           'patch: Частично обновить данные пользователя\n\n'
-                           'delete: Удалить пользователя\n\n'
-                           'Пользователь определяется по токену.')
-            def me(self, request, *args, **kwargs):
-                return super().me(request, *args, **kwargs)
 
             @extend_schema(description='Повторная отправка письма с ссылкой для активации аккаунта.')
             def resend_activation(self, request, *args, **kwargs):
@@ -55,25 +47,12 @@ class Fix1(OpenApiViewExtension):
             def reset_password_confirm(self, request, *args, **kwargs):
                 return super().reset_password_confirm(request, *args, **kwargs)
 
-            @extend_schema(description='Не используется. \n\nСмена логина.')
-            def set_username(self, request, *args, **kwargs):
-                return super().set_username(request, *args, **kwargs)
-
-            @extend_schema(description='Не используется.\n\nСброс логина.')
-            def reset_username(self, request, *args, **kwargs):
-                return super().reset_username(request, *args, **kwargs)
-
-            @extend_schema(description='Не используется.\n\nПодтверждение сброса логина.')
-            def reset_username_confirm(self, request, *args, **kwargs):
-                return super().reset_username_confirm(request, *args, **kwargs)
-
         return Fixed
 
 
 class Fix2(OpenApiViewExtension):
     """
-    Добавление описания к API документации библиотеки Djoser.
-    Описаие эндпоинту создания JWT токенов.
+    Описаие эндпоинта создания JWT токенов.
     """
     target_class = 'rest_framework_simplejwt.views.TokenObtainPairView'
 
@@ -90,7 +69,6 @@ class Fix2(OpenApiViewExtension):
 
 class Fix3(OpenApiViewExtension):
     """
-    Добавление описания к API документации библиотеки Djoser.
     Описаие к эндпоинту обновления JWT access токена.
     """
     target_class = 'rest_framework_simplejwt.views.TokenRefreshView'
@@ -105,7 +83,6 @@ class Fix3(OpenApiViewExtension):
 
 class Fix4(OpenApiViewExtension):
     """
-    Добавление описания к API документации библиотеки Djoser.
     Описаие к эндпоинту проверки JWT access и resfresh токенов.
     """
     target_class = 'rest_framework_simplejwt.views.TokenVerifyView'
@@ -116,3 +93,85 @@ class Fix4(OpenApiViewExtension):
             pass
 
         return Fixed
+
+
+class Fix5(OpenApiViewExtension):
+    """
+    Описаие эндпоинта создания блокировки JWT токенов.
+    """
+    target_class = 'rest_framework_simplejwt.views.TokenBlacklistView'
+
+    def view_replacement(self):
+        class Fixed(self.target_class):
+            """
+            Добавление refresh токена в черный список до истечения его действия.
+            """
+            pass
+
+        return Fixed
+
+
+def user_me_postprocessing_hook(result, generator, request, public):
+    """
+    В OpenAPI нет схемы для request запроса метода DELETE, в этом хуке добавлена схема для метода DELETE
+    и разделены описания для каждого метода эндпоинтов "/users/me/" и "/users/{id}/"
+    """
+    request_delete_schema = {
+        'requestBody': {
+            'content': {
+                'application/json': {
+                    'schema': {
+                        'type': 'object',
+                        'required': ['current_password'],
+                        'properties': {
+                            'current_password': {
+                                'type': 'string',
+                            },
+                        },
+                    },
+                },
+                'application/x-www-form-urlencoded': {
+                    'schema': {
+                        'type': 'object',
+                        'required': ['current_password'],
+                        'properties': {
+                            'current_password': {
+                                'type': 'string',
+                            },
+                        },
+                    },
+                },
+                'multipart/form-data': {
+                    'schema': {
+                        'type': 'object',
+                        'required': ['current_password'],
+                        'properties': {
+                            'current_password': {
+                                'type': 'string',
+                            },
+                        },
+                    },
+                }
+            }
+        },
+    }
+
+    description = {
+        'get': {'description': 'Получить данные авторизованного пользователя'},
+        'put': {'description': 'Обновить все данные авторизованного пользователя'},
+        'patch': {'description': 'Частично обновить данные авторизованного пользователя'},
+        'delete': {'description': 'Удалить авторизованного пользователя'},
+    }
+
+    methods = ['get', 'put', 'patch', 'delete']
+    endpoints = ['/auth/users/me/', '/auth/users/{id}/']
+
+    for endpoint in endpoints:
+        for method in methods:
+            schema = result['paths'][endpoint][method]
+            schema.update(description[method])
+
+            if method == 'delete':
+                schema.update(request_delete_schema)
+
+    return result
