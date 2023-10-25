@@ -122,30 +122,33 @@ def user_me_postprocessing_hook(result, generator, request, public):
                 'application/json': {
                     'schema': {
                         'type': 'object',
+                        'required': ['current_password'],
                         'properties': {
                             'current_password': {
                                 'type': 'string',
-                            }
+                            },
                         },
                     },
                 },
                 'application/x-www-form-urlencoded': {
                     'schema': {
                         'type': 'object',
+                        'required': ['current_password'],
                         'properties': {
                             'current_password': {
                                 'type': 'string',
-                            }
+                            },
                         },
                     },
                 },
                 'multipart/form-data': {
                     'schema': {
                         'type': 'object',
+                        'required': ['current_password'],
                         'properties': {
                             'current_password': {
                                 'type': 'string',
-                            }
+                            },
                         },
                     },
                 }
