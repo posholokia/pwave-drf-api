@@ -152,7 +152,8 @@ def user_me_postprocessing_hook(result, generator, request, public):
                         },
                     },
                 }
-            }
+            },
+            'required': True,
         },
     }
 
