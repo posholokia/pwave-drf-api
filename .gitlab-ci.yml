@@ -55,8 +55,8 @@ deploy_prod: &deploy_definition
     - ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
     - eval $(ssh-agent -s)
     - ssh-add - <<< $(echo -n ${CI_RSA_KEY_BASE64}|base64 -d)
-    - git submodule update --force --init
-    - git submodule foreach '( if echo "$sm_path" | grep -E "^.ci/.+$"; then git fetch; git checkout --force master; git pull --force; fi  )'
+    - git submodule update --init
+    - git submodule foreach '( if echo "$sm_path" | grep -E "^.ci/.+$"; then git fetch; git checkout master; git pull; sleep 5; fi  )'
     - export CI_FQDN=`echo $CI_ENVIRONMENT_URL | sed -E 's/^https:\/\/(.+)$/\1/'`
     - export CI_TLS_SECRET_NAME=`echo -n $CI_FQDN | sed 's|https://||g' | sed 's/\./\-/g'`
     - export KUBECONFIG="config"
