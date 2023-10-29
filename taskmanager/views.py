@@ -2,6 +2,7 @@ from rest_framework import generics, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
 from djoser.views import UserViewSet
 from djoser.serializers import UidAndTokenSerializer
@@ -50,6 +51,20 @@ class CustomUserViewSet(UserViewSet):
         serializer.is_valid(raise_exception=True)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    def create(self, request, *args, **kwargs):
+        """
+        Если пользователь уже был создан, но не активирован, возвращаем сообщение, что пользователь
+        существует, но не активирован.
+        """
+        email = request.data.get("email", None)
+        user = User.objects.filter(email=email).first()
+
+        if user and not user.is_active:
+            return Response(status=status.HTTP_400_BAD_REQUEST,
+                            data={'email': ['Пользователь с этим email не активирован']})
+
+        return super().create(request, *args, **kwargs)
+
     def set_username(self, request, *args, **kwargs):
         """
         Метод не используется.
@@ -67,3 +82,24 @@ class CustomUserViewSet(UserViewSet):
         Метод не используется.
         """
         pass
+
+
+class CreateTokenPairView(TokenObtainPairView):
+    @extend_schema(description=
+            ('Создает пару JWT токенов: access_token и refresh_token.\n\n'
+            'Для авторизации access_token всегда передается с префиксом "JWT" через пробел, например: \n\n'
+            '"JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjk1MTM5MTYzLCJpYXQiO"')
+            )
+    def post(self, request, *args, **kwargs) -> Response:
+        """
+        При попытке залогинитсья не активированным пользователем возвращаем сообщение, что пользователь
+        существует, но не активирован.
+        """
+        email = request.data.get('email')
+        user = User.objects.filter(email=email).first()
+
+        if user and not user.is_active:
+            return Response(status=status.HTTP_400_BAD_REQUEST,
+                            data={'email': ['Пользователь с этим email не активирован']})
+
+        return super().post(request, *args, **kwargs)
