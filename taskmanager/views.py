@@ -2,8 +2,8 @@ from rest_framework import generics, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
+from django.utils.timezone import now
 from djoser.views import UserViewSet
 from djoser.serializers import UidAndTokenSerializer
 from drf_spectacular.utils import extend_schema
@@ -51,19 +51,19 @@ class CustomUserViewSet(UserViewSet):
         serializer.is_valid(raise_exception=True)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def create(self, request, *args, **kwargs):
-        """
-        Если пользователь уже был создан, но не активирован, возвращаем сообщение, что пользователь
-        существует, но не активирован.
-        """
-        email = request.data.get("email", None)
-        user = User.objects.filter(email=email).first()
+    @action(["post"], detail=False)
+    def reset_password_confirm(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if user and not user.is_active:
-            return Response(status=status.HTTP_400_BAD_REQUEST,
-                            data={'email': ['Пользователь с этим email не активирован']})
+        serializer.user.set_password(serializer.data["new_password"])
+        serializer.user.is_active = True
 
-        return super().create(request, *args, **kwargs)
+        if hasattr(serializer.user, "last_login"):
+            serializer.user.last_login = now()
+        serializer.user.save()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def set_username(self, request, *args, **kwargs):
         """
@@ -82,24 +82,3 @@ class CustomUserViewSet(UserViewSet):
         Метод не используется.
         """
         pass
-
-
-class CreateTokenPairView(TokenObtainPairView):
-    @extend_schema(description=
-            ('Создает пару JWT токенов: access_token и refresh_token.\n\n'
-            'Для авторизации access_token всегда передается с префиксом "JWT" через пробел, например: \n\n'
-            '"JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjk1MTM5MTYzLCJpYXQiO"')
-            )
-    def post(self, request, *args, **kwargs) -> Response:
-        """
-        При попытке залогинитсья не активированным пользователем возвращаем сообщение, что пользователь
-        существует, но не активирован.
-        """
-        email = request.data.get('email')
-        user = User.objects.filter(email=email).first()
-
-        if user and not user.is_active:
-            return Response(status=status.HTTP_400_BAD_REQUEST,
-                            data={'email': ['Пользователь с этим email не активирован']})
-
-        return super().post(request, *args, **kwargs)
