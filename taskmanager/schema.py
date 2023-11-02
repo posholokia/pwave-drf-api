@@ -50,6 +50,24 @@ class Fix1(OpenApiViewExtension):
         return Fixed
 
 
+class Fix2(OpenApiViewExtension):
+    """
+    Описаие к эндпоинту получения JWT токенов.
+    """
+    target_class = 'rest_framework_simplejwt.views.TokenObtainPairView'
+
+    def view_replacement(self):
+        class Fixed(self.target_class):
+            """
+            Создает пару JWT токенов: access_token и refresh_token.\n\n
+            Для авторизации access_token всегда передается с префиксом "JWT" через пробел, например:\n\n
+            "JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjk1MTM5MTYzLCJpYXQiO"
+            """
+            pass
+
+        return Fixed
+
+
 class Fix3(OpenApiViewExtension):
     """
     Описаие к эндпоинту обновления JWT access токена.

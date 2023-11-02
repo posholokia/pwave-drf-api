@@ -160,9 +160,9 @@ DJOSER = {
     'PASSWORD_RESET_CONFIRM_URL': 'auth/password/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'auth/activate/{uid}/{token}',
     'SEND_ACTIVATION_EMAIL': True,
-    'TOKEN_EXPIRATION': 3600,  # == PASSWORD_RESET_TIMEOUT: срок действия ссылок активации аккаунта и сброса пароля
     'SERIALIZERS': {
         'current_user': 'taskmanager.serializers.CurrentUserSerializer',
+        'password_reset': 'taskmanager.serializers.PasswordResetSerializer',
     },
     'TOKEN_MODEL': None,
     'USER_CREATE_PASSWORD_RETYPE': True,
@@ -171,7 +171,8 @@ DJOSER = {
     'PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND': True,
 }
 
-PASSWORD_RESET_TIMEOUT = DJOSER.get('TOKEN_EXPIRATION', 3600)
+# срок действия ссылок активации аккаунта и сброса пароля, в секундах
+PASSWORD_RESET_TIMEOUT = 3600
 
 AUTHENTICATION_BACKENDS = (
     'taskmanager.backends.AuthBackend',  # кастомный бекэнд аутентификации
@@ -203,6 +204,8 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 
     'JTI_CLAIM': 'jti',
+
+    'TOKEN_OBTAIN_SERIALIZER': 'taskmanager.serializers.MyTokenObtainPairSerializer',
 
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),

@@ -24,7 +24,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
-    def presentation_name(self):
+    def representation_name(self):
         """
         Способ представления имени пользователя в списке пользователей
         """
