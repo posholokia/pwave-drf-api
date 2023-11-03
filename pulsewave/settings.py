@@ -162,7 +162,7 @@ DJOSER = {
     'SEND_ACTIVATION_EMAIL': True,
     'SERIALIZERS': {
         'current_user': 'taskmanager.serializers.CurrentUserSerializer',
-        'password_reset': 'taskmanager.serializers.PasswordResetSerializer',
+        # 'password_reset': 'taskmanager.serializers.PasswordResetSerializer',
     },
     'TOKEN_MODEL': None,
     'USER_CREATE_PASSWORD_RETYPE': True,
