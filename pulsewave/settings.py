@@ -159,10 +159,11 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'PASSWORD_RESET_CONFIRM_URL': 'auth/password/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'auth/activate/{uid}/{token}',
+    'CHANGE_EMAIL_URL': 'auth/change_email/{token}',  # своя настройка, не из модуля
+    'CHANGE_EMAIL_URL_EXPIRED': {'hours': 1},  # своя настройка, не из модуля
     'SEND_ACTIVATION_EMAIL': True,
     'SERIALIZERS': {
         'current_user': 'taskmanager.serializers.CurrentUserSerializer',
-        # 'password_reset': 'taskmanager.serializers.PasswordResetSerializer',
     },
     'TOKEN_MODEL': None,
     'USER_CREATE_PASSWORD_RETYPE': True,

@@ -3,5 +3,8 @@ from rest_framework import routers
 from .views import *
 
 
-urlpatterns = []
+urlpatterns = [
+    path('change_email/', ChangeEmailView.as_view()),
+    path('change_email_confirm/', ChangeEmailConfirmView.as_view()),
+]
 
