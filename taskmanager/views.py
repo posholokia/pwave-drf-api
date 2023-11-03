@@ -8,6 +8,8 @@ from djoser.views import UserViewSet
 from djoser.serializers import UidAndTokenSerializer
 from drf_spectacular.utils import extend_schema
 
+from taskmanager.serializers import PasswordResetSerializer
+
 User = get_user_model()
 
 
@@ -19,6 +21,9 @@ class CustomUserViewSet(UserViewSet):
     def get_serializer_class(self):
         if self.action == 'check_link':
             return UidAndTokenSerializer
+        elif self.action == "reset_password":
+            return PasswordResetSerializer
+
         return super().get_serializer_class()
 
     @action(['post'], detail=False)
