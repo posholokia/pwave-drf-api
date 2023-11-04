@@ -30,6 +30,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             'email',
             'name',
             'represent_name',
+            'avatar',
         )
 
     def get_represent_name(self, obj):
