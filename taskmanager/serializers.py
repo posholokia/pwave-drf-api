@@ -12,6 +12,8 @@ from djoser.conf import settings as djoser_settings
 
 from taskmanager.token import token_generator
 
+from PIL import Image
+
 User = get_user_model()
 
 
@@ -35,6 +37,25 @@ class CurrentUserSerializer(serializers.ModelSerializer):
 
     def get_represent_name(self, obj):
         return obj.representation_name()
+
+    def validate(self, attrs):
+        avatar = attrs.get('avatar')
+
+        if avatar:
+            if avatar.size > 1024 * 1024:  # размер файла в байтах
+                raise serializers.ValidationError(
+                    {'avatar': 'Изображение превышает максимальный размер.', }
+                )
+
+            with Image.open(avatar) as img:
+                width, height = img.size
+
+                if width > 300 or height > 300:  # разрешение в пикселях
+                    raise serializers.ValidationError(
+                        {'avatar': 'Изображение превышает максимальное разрешение.', }
+                    )
+
+        return attrs
 
 
 class PasswordResetSerializer(SendEmailResetSerializer):
