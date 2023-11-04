@@ -239,3 +239,6 @@ LOGGING = {
 
 # ссылка на фронт, которая будет формироваться в письмах
 DOMAIN = 'https://pulse-wave.netlify.app'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
+MEDIA_URL = '/media/images/'
