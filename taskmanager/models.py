@@ -29,6 +29,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         Способ представления имени пользователя в списке пользователей
         """
         if self.name:
-            return f'{self.name}({self.email.split("@")[0]})'
+            return self.name
         else:
-            return self.email
+            return self.email.split("@")[0]

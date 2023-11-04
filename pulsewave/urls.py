@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
-from taskmanager.views import CustomUserViewSet#, CreateTokenPairView
+from taskmanager.views import CustomUserViewSet, ChangeEmailView, ChangeEmailConfirmView
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenBlacklistView
 
@@ -30,6 +30,8 @@ urlpatterns = [
 
     path('auth/jwt/blacklist/', TokenBlacklistView.as_view(), name='token_blacklist'),
     path('auth/', include('djoser.urls.jwt')),
+    path('auth/change_email/', ChangeEmailView.as_view()),
+    path('auth/change_email_confirm/', ChangeEmailConfirmView.as_view()),
 
     path('api/v1/', include('taskmanager.urls')),
 

@@ -1,11 +1,16 @@
 from rest_framework import serializers
 from rest_framework import exceptions
+
 from rest_framework_simplejwt.serializers import TokenObtainSerializer, TokenObtainPairSerializer
 from rest_framework_simplejwt.settings import api_settings
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
+
 from djoser.serializers import SendEmailResetSerializer
 from djoser.conf import settings as djoser_settings
+
+from taskmanager.token import token_generator
 
 User = get_user_model()
 
@@ -112,3 +117,64 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer, MyTokenObtainSerial
     Возвращает токены, если пользователь успешно аутентифицирован
     """
     pass
+
+
+class ChangeEmailSerializer(serializers.Serializer):
+    password = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    new_email = serializers.EmailField(style={"input_type": "email"}, write_only=True)
+
+    default_error_messages = {
+        'email': 'Новая почта совпадает с текущей',
+        'invalid_password': 'Неверный пароль',
+    }
+
+    def validate(self, attrs):
+        password = attrs.get('password')
+        new_email = attrs.get('new_email')
+        user = self.context['request'].user
+
+        if not user.check_password(password):
+            raise exceptions.AuthenticationFailed(
+                self.error_messages["invalid_password"],
+                "invalid_password",
+            )
+
+        if new_email == user.email:
+            raise exceptions.ValidationError(
+                {'new_email': self.default_error_messages["email"]},
+                "email",
+            )
+
+        return {'new_email': new_email}
+
+
+class ChangeEmailConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField(style={"input_type": "token"}, write_only=True)
+
+    default_error_messages = {
+        'expired': 'Срок действия токена истек',
+        'invalid': 'Недействительный токен',
+    }
+
+    def validate(self, attrs):
+        token = attrs.get('token')
+        user = self.context['request'].user
+
+        decoded_token = token_generator.token_decode(token)
+
+        if not decoded_token:
+            raise exceptions.ValidationError(
+                {'token': self.default_error_messages["expired"]},
+                "expired",
+            )
+
+        new_email = decoded_token['new_email']
+        user_id = decoded_token['user_id']
+
+        if (user.email == new_email) or (user.id != user_id):
+            raise exceptions.ValidationError(
+                {'token': self.default_error_messages["invalid"]},
+                "invalid",
+            )
+
+        return new_email
