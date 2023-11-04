@@ -1,3 +1,5 @@
+import os
+
 from rest_framework import serializers
 from rest_framework import exceptions
 
@@ -6,13 +8,17 @@ from rest_framework_simplejwt.settings import api_settings
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
+from django.core.files.uploadedfile import InMemoryUploadedFile
 
 from djoser.serializers import SendEmailResetSerializer
 from djoser.conf import settings as djoser_settings
 
 from taskmanager.token import token_generator
+from taskmanager.utils import proportional_reduction
 
 from PIL import Image
+
+import tempfile
 
 User = get_user_model()
 
@@ -39,23 +45,57 @@ class CurrentUserSerializer(serializers.ModelSerializer):
         return obj.representation_name()
 
     def validate(self, attrs):
+        """
+        Валидация аватара.
+        Если разрешение изображения слишком большое, оно будет пропорционально уменьшено
+        и заменено в словаре attrs
+        """
         avatar = attrs.get('avatar')
 
         if avatar:
-            if avatar.size > 1024 * 1024:  # размер файла в байтах
-                raise serializers.ValidationError(
-                    {'avatar': 'Изображение превышает максимальный размер.', }
-                )
-
+            name = avatar.name  # название изображения, которое загрузил пользователь
             with Image.open(avatar) as img:
                 width, height = img.size
+                # пропорционально подгоняем разрешение, чтобы сторона не превышала стандарт max_size
+                new_width, new_height = proportional_reduction(width, height, max_size=200)
 
-                if width > 300 or height > 300:  # разрешение в пикселях
+                if any(side < 55 for side in [width, new_width, height, new_height]):
                     raise serializers.ValidationError(
-                        {'avatar': 'Изображение превышает максимальное разрешение.', }
+                        {'avatar': 'Слишком низкое качество изображения. '
+                                   'Допустимое разрешение не меньше 55х55', }
                     )
 
+                resized_img = img.resize((new_width, new_height))  # смена разрешения загруженной картинки
+                temp_file = tempfile.NamedTemporaryFile(suffix='.jpg')  # создаем временный файл под аватар
+                resized_img.save(temp_file.name)  # сохраняем сокращенное изображение во временный файл
+                # преобразование изображения из временного файла в объект модели Джанго
+                file = InMemoryUploadedFile(
+                    file=temp_file,
+                    field_name=None,
+                    name=f'{name}',
+                    content_type='image/jpeg',
+                    size=temp_file.tell,
+                    charset=None
+                )
+
+                attrs['avatar'] = file  # заменяем аватар загруженный пользователем на уменьшенный
+
         return attrs
+
+    def update(self, instance, validated_data):
+        """
+        При смене/удалении аватарки прежняя аватарка удаляется из хранилища на сервере
+        """
+        try:
+            validated_data['avatar']  # проверяем, что в запросе передан ключ avatar
+        except KeyError:
+            pass
+        else:
+            if instance.avatar:
+                if os.path.isfile(instance.avatar.path):
+                    os.remove(instance.avatar.path)
+
+        return super().update(instance, validated_data)
 
 
 class PasswordResetSerializer(SendEmailResetSerializer):
