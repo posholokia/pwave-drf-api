@@ -92,9 +92,13 @@ class CustomUserViewSet(UserViewSet):
 
 
 class ChangeEmailView(generics.GenericAPIView):
+    """
+    Запрос на смену почты. Пользователю будет отправлена ссылка для подтверждения на указанную почту.
+    """
     serializer_class = ChangeEmailSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(responses={204: ChangeEmailSerializer, })
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -107,9 +111,14 @@ class ChangeEmailView(generics.GenericAPIView):
 
 
 class ChangeEmailConfirmView(generics.GenericAPIView):
+    """
+    Подтверждение смены почты пользователя.
+    Токен получить из ссылки auth/change_email/{token}.
+    """
     serializer_class = ChangeEmailConfirmSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(responses={204: ChangeEmailConfirmSerializer, })
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

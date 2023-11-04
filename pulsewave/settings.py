@@ -236,3 +236,6 @@ LOGGING = {
         },
     },
 }
+
+# ссылка на фронт, которая будет формироваться в письмах
+DOMAIN = 'https://pulse-wave.netlify.app'
