@@ -159,6 +159,8 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'PASSWORD_RESET_CONFIRM_URL': 'auth/password/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'auth/activate/{uid}/{token}',
+    'CHANGE_EMAIL_URL': 'auth/change_email/{token}',  # своя настройка, не из модуля
+    'CHANGE_EMAIL_URL_EXPIRED': {'hours': 1},  # своя настройка, не из модуля
     'SEND_ACTIVATION_EMAIL': True,
     'TOKEN_EXPIRATION': 3600,  # == PASSWORD_RESET_TIMEOUT: срок действия ссылок активации аккаунта и сброса пароля
     'SERIALIZERS': {
@@ -171,7 +173,8 @@ DJOSER = {
     'PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND': True,
 }
 
-PASSWORD_RESET_TIMEOUT = DJOSER.get('TOKEN_EXPIRATION', 3600)
+# срок действия ссылок активации аккаунта и сброса пароля, в секундах
+PASSWORD_RESET_TIMEOUT = 3600
 
 AUTHENTICATION_BACKENDS = (
     'taskmanager.backends.AuthBackend',  # кастомный бекэнд аутентификации
@@ -204,6 +207,8 @@ SIMPLE_JWT = {
 
     'JTI_CLAIM': 'jti',
 
+    'TOKEN_OBTAIN_SERIALIZER': 'taskmanager.serializers.MyTokenObtainPairSerializer',
+
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
@@ -233,4 +238,8 @@ LOGGING = {
     },
 }
 
+# ссылка на фронт, которая будет формироваться в письмах
+DOMAIN = 'https://pulse-wave.netlify.app'
 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
+MEDIA_URL = '/media/images/'

@@ -1,12 +1,19 @@
-from rest_framework import generics, status, permissions
+from rest_framework import generics, viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
+
 from django.contrib.auth import get_user_model
+from django.utils.timezone import now
+
 from djoser.views import UserViewSet
 from djoser.serializers import UidAndTokenSerializer
+
 from drf_spectacular.utils import extend_schema
+
+from taskmanager.email import ChangeEmail
+from taskmanager.serializers import ChangeEmailSerializer, ChangeEmailConfirmSerializer, PasswordResetSerializer
 
 User = get_user_model()
 
@@ -19,6 +26,9 @@ class CustomUserViewSet(UserViewSet):
     def get_serializer_class(self):
         if self.action == 'check_link':
             return UidAndTokenSerializer
+        elif self.action == "reset_password":
+            return PasswordResetSerializer
+
         return super().get_serializer_class()
 
     @action(['post'], detail=False)
@@ -51,19 +61,19 @@ class CustomUserViewSet(UserViewSet):
         serializer.is_valid(raise_exception=True)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def create(self, request, *args, **kwargs):
-        """
-        Если пользователь уже был создан, но не активирован, возвращаем сообщение, что пользователь
-        существует, но не активирован.
-        """
-        email = request.data.get("email", None)
-        user = User.objects.filter(email=email).first()
+    @action(["post"], detail=False)
+    def reset_password_confirm(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if user and not user.is_active:
-            return Response(status=status.HTTP_400_BAD_REQUEST,
-                            data={'email': ['Пользователь с этим email не активирован']})
+        serializer.user.set_password(serializer.data["new_password"])
+        serializer.user.is_active = True
 
-        return super().create(request, *args, **kwargs)
+        if hasattr(serializer.user, "last_login"):
+            serializer.user.last_login = now()
+        serializer.user.save()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def set_username(self, request, *args, **kwargs):
         """
@@ -84,22 +94,40 @@ class CustomUserViewSet(UserViewSet):
         pass
 
 
-class CreateTokenPairView(TokenObtainPairView):
-    @extend_schema(description=
-            ('Создает пару JWT токенов: access_token и refresh_token.\n\n'
-            'Для авторизации access_token всегда передается с префиксом "JWT" через пробел, например: \n\n'
-            '"JWT eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjk1MTM5MTYzLCJpYXQiO"')
-            )
-    def post(self, request, *args, **kwargs) -> Response:
-        """
-        При попытке залогинитсья не активированным пользователем возвращаем сообщение, что пользователь
-        существует, но не активирован.
-        """
-        email = request.data.get('email')
-        user = User.objects.filter(email=email).first()
+class ChangeEmailView(generics.GenericAPIView):
+    """
+    Запрос на смену почты. Пользователю будет отправлена ссылка для подтверждения на указанную почту.
+    """
+    serializer_class = ChangeEmailSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-        if user and not user.is_active:
-            return Response(status=status.HTTP_400_BAD_REQUEST,
-                            data={'email': ['Пользователь с этим email не активирован']})
+    @extend_schema(responses={204: ChangeEmailSerializer, })
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        return super().post(request, *args, **kwargs)
+        context = serializer.validated_data
+        to = [context['new_email']]
+        ChangeEmail(self.request, context).send(to)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChangeEmailConfirmView(generics.GenericAPIView):
+    """
+    Подтверждение смены почты пользователя.
+    Токен получить из ссылки auth/change_email/{token}.
+    """
+    serializer_class = ChangeEmailConfirmSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(responses={204: ChangeEmailConfirmSerializer, })
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        new_email = serializer.validated_data
+        user.email = new_email
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

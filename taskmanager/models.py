@@ -14,6 +14,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     subscriber = models.BooleanField('Подписан на рассылки', default=False)
     name = models.CharField('Имя пользователя', max_length=50, blank=True, validators=[validate_name])
+    # avatar = models.ImageField(verbose_name='Аватар', upload_to='avatars/', default=None, null=True)
 
     objects = UserManager()  # используется кастомный менеджер юзера
 
@@ -24,11 +25,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
-    def presentation_name(self):
+    def representation_name(self):
         """
         Способ представления имени пользователя в списке пользователей
         """
         if self.name:
-            return f'{self.name}({self.email.split("@")[0]})'
+            return self.name
         else:
-            return self.email
+            return self.email.split("@")[0]
