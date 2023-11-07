@@ -8,18 +8,14 @@ from rest_framework_simplejwt.settings import api_settings
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
-from django.core.files.uploadedfile import InMemoryUploadedFile
 
 from djoser.serializers import SendEmailResetSerializer, UserCreatePasswordRetypeSerializer
 from djoser.conf import settings as djoser_settings
 
 from .token import token_generator
-from .utils import proportional_reduction
-from .tasks import delete_inactive_user
+from .utils import proportional_reduction, img_to_django_obj
 
 from PIL import Image
-
-import tempfile
 
 User = get_user_model()
 
@@ -66,35 +62,11 @@ class CurrentUserSerializer(serializers.ModelSerializer):
                                    'Допустимое разрешение не меньше 55х55', }
                     )
 
-                file = self.img_to_django_obj(img, new_width, new_height)
+                file = img_to_django_obj(img, new_width, new_height)
                 file.name = name
                 attrs['avatar'] = file
 
         return attrs
-
-    @staticmethod
-    def img_to_django_obj(img, width, height):
-        """
-        Метод преобразует изображение, загруженно пользователем до нужного размера и
-        возвращает его в виде объекта Django
-        :param img: изображение
-        :param width: ширина, рх
-        :param height: высота, рх
-        :return: InMemoryUploadedFile
-        """
-        resized_img = img.resize((width, height))  # смена разрешения загруженной картинки
-        temp_file = tempfile.NamedTemporaryFile(suffix='.jpg')  # создаем временный файл под аватар
-        resized_img.save(temp_file.name)  # сохраняем сокращенное изображение во временный файл
-        # преобразование изображения из временного файла в объект модели Джанго
-        file = InMemoryUploadedFile(
-            file=temp_file,
-            field_name=None,
-            name=f'NoName',
-            content_type='image/jpeg',
-            size=temp_file.tell,
-            charset=None
-        )
-        return file
 
     def update(self, instance, validated_data):
         """
@@ -105,13 +77,6 @@ class CurrentUserSerializer(serializers.ModelSerializer):
                 os.remove(instance.avatar.path)
 
         return super().update(instance, validated_data)
-
-
-class CreateUserSerializer(UserCreatePasswordRetypeSerializer):
-    def perform_create(self, validated_data):
-        user = super().perform_create(validated_data)
-        # delete_inactive_user.apply_async((user.id,), countdown=24*60*60)  # TODO раскоментировать как сделают celery
-        return user
 
 
 class PasswordResetSerializer(SendEmailResetSerializer):

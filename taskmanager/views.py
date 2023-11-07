@@ -101,7 +101,7 @@ class ChangeEmailView(generics.GenericAPIView):
     serializer_class = ChangeEmailSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses={204: ChangeEmailSerializer, })
+    @extend_schema(responses={204: None, })
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -121,7 +121,7 @@ class ChangeEmailConfirmView(generics.GenericAPIView):
     serializer_class = ChangeEmailConfirmSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses={204: ChangeEmailConfirmSerializer, })
+    @extend_schema(responses={204: None, })
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -28,7 +28,8 @@ class Fix1(OpenApiViewExtension):
             def activation(self, request, *args, **kwargs):
                 return super().activation(request, *args, **kwargs)
 
-            @extend_schema(description='Повторная отправка письма с ссылкой для активации аккаунта.')
+            @extend_schema(description='Повторная отправка письма с ссылкой для активации аккаунта.',
+                           responses={204: None, },)
             def resend_activation(self, request, *args, **kwargs):
                 return super().resend_activation(request, *args, **kwargs)
 
@@ -38,12 +39,14 @@ class Fix1(OpenApiViewExtension):
 
             @extend_schema(description='Сброс пароля. '
                                        'Используется на экране входа, если пользователь забыл свой пароль. '
-                                       'Пользователю отправится письмо с ссылкой подтверждения.')
+                                       'Пользователю отправится письмо с ссылкой подтверждения.',
+                           responses={204: None, },)
             def reset_password(self, request, *args, **kwargs):
                 return super().reset_password(request, *args, **kwargs)
 
             @extend_schema(description='Подтверждение сброса пароля. Когда пользователь переходит по ссылке '
-                                       'auth/password/reset/confirm/{uid}/{token}')
+                                       'auth/password/reset/confirm/{uid}/{token}',
+                           responses={204: None, },)
             def reset_password_confirm(self, request, *args, **kwargs):
                 return super().reset_password_confirm(request, *args, **kwargs)
 
