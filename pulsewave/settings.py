@@ -162,8 +162,11 @@ DJOSER = {
     'CHANGE_EMAIL_URL': 'auth/change_email/{token}',  # своя настройка, не из модуля
     'CHANGE_EMAIL_URL_EXPIRED': {'hours': 1},  # своя настройка, не из модуля
     'SEND_ACTIVATION_EMAIL': True,
+    'TOKEN_EXPIRATION': 3600,  # == PASSWORD_RESET_TIMEOUT: срок действия ссылок активации аккаунта и сброса пароля
     'SERIALIZERS': {
         'current_user': 'taskmanager.serializers.CurrentUserSerializer',
+        'user': 'taskmanager.serializers.CurrentUserSerializer',
+        'user_create_password_retype': 'taskmanager.serializers.CreateUserSerializer',
     },
     'TOKEN_MODEL': None,
     'USER_CREATE_PASSWORD_RETYPE': True,
