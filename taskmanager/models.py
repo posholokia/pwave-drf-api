@@ -1,8 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.base_user import AbstractBaseUser
+
 from .managers import UserManager
-from pulsewave import settings
+
 from pulsewave.validators import validate_name
 
 
@@ -14,6 +15,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     subscriber = models.BooleanField('Подписан на рассылки', default=False)
     name = models.CharField('Имя пользователя', max_length=50, blank=True, validators=[validate_name])
+    # avatar = models.ImageField(verbose_name='Аватар', upload_to='avatars/', default=None, null=True)
 
     objects = UserManager()  # используется кастомный менеджер юзера
 

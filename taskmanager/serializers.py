@@ -1,3 +1,5 @@
+import os
+
 from rest_framework import serializers
 from rest_framework import exceptions
 
@@ -7,10 +9,13 @@ from rest_framework_simplejwt.settings import api_settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 
-from djoser.serializers import SendEmailResetSerializer
+from djoser.serializers import SendEmailResetSerializer, UserCreatePasswordRetypeSerializer
 from djoser.conf import settings as djoser_settings
 
-from taskmanager.token import token_generator
+from .token import token_generator
+from .utils import proportional_reduction, img_to_django_obj
+
+from PIL import Image
 
 User = get_user_model()
 
@@ -30,10 +35,48 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             'email',
             'name',
             'represent_name',
+            # 'avatar',  # до подключения медиа
         )
 
     def get_represent_name(self, obj):
         return obj.representation_name()
+
+    def validate(self, attrs):
+        """
+        Валидация аватара.
+        Если разрешение изображения слишком большое, оно будет пропорционально уменьшено
+        и заменено в словаре attrs
+        """
+        avatar = attrs.get('avatar')
+
+        if avatar:
+            name = avatar.name  # название изображения, которое загрузил пользователь
+            with Image.open(avatar) as img:
+                width, height = img.size
+                # пропорционально подгоняем разрешение, чтобы сторона не превышала стандарт max_size
+                new_width, new_height = proportional_reduction(width, height, max_size=200)
+
+                if any(side < 55 for side in [width, new_width, height, new_height]):
+                    raise serializers.ValidationError(
+                        {'avatar': 'Слишком низкое качество изображения. '
+                                   'Допустимое разрешение не меньше 55х55', }
+                    )
+
+                file = img_to_django_obj(img, new_width, new_height)
+                file.name = name
+                attrs['avatar'] = file
+
+        return attrs
+
+    def update(self, instance, validated_data):
+        """
+        При смене/удалении аватарки прежняя аватарка удаляется из хранилища на сервере
+        """
+        if 'avatar' in validated_data.keys() and instance.avatar:
+            if os.path.isfile(instance.avatar.path):
+                os.remove(instance.avatar.path)
+
+        return super().update(instance, validated_data)
 
 
 class PasswordResetSerializer(SendEmailResetSerializer):

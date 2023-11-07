@@ -137,6 +137,12 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+    'TEST_REQUEST_RENDERER_CLASSES': [
+        'rest_framework.renderers.MultiPartRenderer',
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.TemplateHTMLRenderer',
+    ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',  # drf-spectacular
 }
 
@@ -162,8 +168,10 @@ DJOSER = {
     'CHANGE_EMAIL_URL': 'auth/change_email/{token}',  # своя настройка, не из модуля
     'CHANGE_EMAIL_URL_EXPIRED': {'hours': 1},  # своя настройка, не из модуля
     'SEND_ACTIVATION_EMAIL': True,
+    'TOKEN_EXPIRATION': 3600,  # == PASSWORD_RESET_TIMEOUT: срок действия ссылок активации аккаунта и сброса пароля
     'SERIALIZERS': {
         'current_user': 'taskmanager.serializers.CurrentUserSerializer',
+        'user': 'taskmanager.serializers.CurrentUserSerializer',
     },
     'TOKEN_MODEL': None,
     'USER_CREATE_PASSWORD_RETYPE': True,
@@ -239,3 +247,6 @@ LOGGING = {
 
 # ссылка на фронт, которая будет формироваться в письмах
 DOMAIN = 'https://pulse-wave.netlify.app'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
+MEDIA_URL = '/media/images/'

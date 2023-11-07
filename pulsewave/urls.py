@@ -17,7 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from django.conf.urls.static import static
 from taskmanager.views import CustomUserViewSet, ChangeEmailView, ChangeEmailConfirmView
+from pulsewave import settings
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenBlacklistView
 
@@ -42,3 +44,6 @@ urlpatterns = [
 
 ]
 urlpatterns += router.urls
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

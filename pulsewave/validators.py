@@ -56,10 +56,11 @@ class SpecialCharacterPasswordValidator:
 
 
 def validate_name(name):
-    union_string = f'.-_' \
-                   f'{string.ascii_letters}' \
-                   f'{string.digits}' \
-                   f'абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'
-    if not all(map(lambda char: char in union_string, name)):
+    union_string = ('.-_'
+                   f'{string.ascii_letters}'
+                   f'{string.digits}'
+                   'абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ')
+
+    if not all(char in union_string for char in name):
         raise ValidationError(f'Имя может содержать буквы строчные и заглавные, цифры,'
                               f' символы (.-_), русский или латинский алфавит.')

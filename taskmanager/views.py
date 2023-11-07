@@ -13,7 +13,7 @@ from djoser.serializers import UidAndTokenSerializer
 from drf_spectacular.utils import extend_schema
 
 from taskmanager.email import ChangeEmail
-from taskmanager.serializers import ChangeEmailSerializer, ChangeEmailConfirmSerializer
+from taskmanager.serializers import ChangeEmailSerializer, ChangeEmailConfirmSerializer, PasswordResetSerializer
 
 User = get_user_model()
 
@@ -26,6 +26,9 @@ class CustomUserViewSet(UserViewSet):
     def get_serializer_class(self):
         if self.action == 'check_link':
             return UidAndTokenSerializer
+        elif self.action == "reset_password":
+            return PasswordResetSerializer
+
         return super().get_serializer_class()
 
     @action(['post'], detail=False)
@@ -98,7 +101,7 @@ class ChangeEmailView(generics.GenericAPIView):
     serializer_class = ChangeEmailSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses={204: ChangeEmailSerializer, })
+    @extend_schema(responses={204: None, })
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -118,7 +121,7 @@ class ChangeEmailConfirmView(generics.GenericAPIView):
     serializer_class = ChangeEmailConfirmSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses={204: ChangeEmailConfirmSerializer, })
+    @extend_schema(responses={204: None, })
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -126,5 +129,6 @@ class ChangeEmailConfirmView(generics.GenericAPIView):
         user = request.user
         new_email = serializer.validated_data
         user.email = new_email
+        user.save()
 
         return Response(status=status.HTTP_204_NO_CONTENT)

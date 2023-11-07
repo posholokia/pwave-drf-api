@@ -36,6 +36,7 @@ DATABASES = {
     }
 }
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
 ```
 
 
@@ -72,6 +73,8 @@ python3 manage.py migrate
 python3 manage.py runserver
 ```
 
+## Запуск задач по расписанию
+`celery -A pulsewave worker -l INFO -B`
 
 
 ## API Documentation.
