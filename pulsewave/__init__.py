@@ -1,3 +1,3 @@
 from .celery import app as celery_app
 
-__all__ = ('celery_app',)  # Настройки для работы Selery
+__all__ = ('celery_app',)

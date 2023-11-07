@@ -10,11 +10,12 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
-from djoser.serializers import SendEmailResetSerializer
+from djoser.serializers import SendEmailResetSerializer, UserCreatePasswordRetypeSerializer
 from djoser.conf import settings as djoser_settings
 
-from taskmanager.token import token_generator
-from taskmanager.utils import proportional_reduction
+from .token import token_generator
+from .utils import proportional_reduction
+from .tasks import delete_inactive_user
 
 from PIL import Image
 
@@ -38,7 +39,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             'email',
             'name',
             'represent_name',
-            # 'avatar',  до подключения медиа
+            # 'avatar',  # до подключения медиа
         )
 
     def get_represent_name(self, obj):
@@ -65,37 +66,52 @@ class CurrentUserSerializer(serializers.ModelSerializer):
                                    'Допустимое разрешение не меньше 55х55', }
                     )
 
-                resized_img = img.resize((new_width, new_height))  # смена разрешения загруженной картинки
-                temp_file = tempfile.NamedTemporaryFile(suffix='.jpg')  # создаем временный файл под аватар
-                resized_img.save(temp_file.name)  # сохраняем сокращенное изображение во временный файл
-                # преобразование изображения из временного файла в объект модели Джанго
-                file = InMemoryUploadedFile(
-                    file=temp_file,
-                    field_name=None,
-                    name=f'{name}',
-                    content_type='image/jpeg',
-                    size=temp_file.tell,
-                    charset=None
-                )
-
-                attrs['avatar'] = file  # заменяем аватар загруженный пользователем на уменьшенный
+                file = self.img_to_django_obj(img, new_width, new_height)
+                file.name = name
+                attrs['avatar'] = file
 
         return attrs
+
+    @staticmethod
+    def img_to_django_obj(img, width, height):
+        """
+        Метод преобразует изображение, загруженно пользователем до нужного размера и
+        возвращает его в виде объекта Django
+        :param img: изображение
+        :param width: ширина, рх
+        :param height: высота, рх
+        :return: InMemoryUploadedFile
+        """
+        resized_img = img.resize((width, height))  # смена разрешения загруженной картинки
+        temp_file = tempfile.NamedTemporaryFile(suffix='.jpg')  # создаем временный файл под аватар
+        resized_img.save(temp_file.name)  # сохраняем сокращенное изображение во временный файл
+        # преобразование изображения из временного файла в объект модели Джанго
+        file = InMemoryUploadedFile(
+            file=temp_file,
+            field_name=None,
+            name=f'NoName',
+            content_type='image/jpeg',
+            size=temp_file.tell,
+            charset=None
+        )
+        return file
 
     def update(self, instance, validated_data):
         """
         При смене/удалении аватарки прежняя аватарка удаляется из хранилища на сервере
         """
-        try:
-            validated_data['avatar']  # проверяем, что в запросе передан ключ avatar
-        except KeyError:
-            pass
-        else:
-            if instance.avatar:
-                if os.path.isfile(instance.avatar.path):
-                    os.remove(instance.avatar.path)
+        if 'avatar' in validated_data.keys() and instance.avatar:
+            if os.path.isfile(instance.avatar.path):
+                os.remove(instance.avatar.path)
 
         return super().update(instance, validated_data)
+
+
+class CreateUserSerializer(UserCreatePasswordRetypeSerializer):
+    def perform_create(self, validated_data):
+        user = super().perform_create(validated_data)
+        delete_inactive_user.apply_async((user.id,), countdown=24*60*60)
+        return user
 
 
 class PasswordResetSerializer(SendEmailResetSerializer):

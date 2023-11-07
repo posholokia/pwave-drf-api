@@ -165,6 +165,8 @@ DJOSER = {
     'TOKEN_EXPIRATION': 3600,  # == PASSWORD_RESET_TIMEOUT: срок действия ссылок активации аккаунта и сброса пароля
     'SERIALIZERS': {
         'current_user': 'taskmanager.serializers.CurrentUserSerializer',
+        'user': 'taskmanager.serializers.CurrentUserSerializer',
+        'user_create_password_retype': 'taskmanager.serializers.CreateUserSerializer',
     },
     'TOKEN_MODEL': None,
     'USER_CREATE_PASSWORD_RETYPE': True,

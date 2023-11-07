@@ -129,5 +129,6 @@ class ChangeEmailConfirmView(generics.GenericAPIView):
         user = request.user
         new_email = serializer.validated_data
         user.email = new_email
+        user.save()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
