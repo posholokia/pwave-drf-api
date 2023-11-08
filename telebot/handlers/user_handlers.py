@@ -1,9 +1,13 @@
 from aiogram import Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
-from telebot.lexicon.lexicon import LEXICON_RU
-#from taskmanager.models import User
+from django.contrib.auth import get_user_model
 
+from telebot.lexicon.lexicon import LEXICON_RU
+
+#from taskmanager.managers import UserManager
+
+User = get_user_model()
 # Инициализируем роутер уровня модуля
 router = Router()
 
