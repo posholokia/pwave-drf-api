@@ -1,12 +1,17 @@
+import json
+
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from djoser import utils
+from djoser.serializers import UserCreatePasswordRetypeSerializer
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
-from djoser.serializers import SendEmailResetSerializer, UserCreatePasswordRetypeSerializer
+
+from taskmanager.serializers import CurrentUserSerializer
+
 
 User = get_user_model()
 
@@ -86,11 +91,12 @@ class RegistrationTestCase(APITestCase):
             'uid':  self.uid_na,
             'token': self.token_na,
         }
-        response = self.client.post('/auth/users/activation/', data)
 
+        response = self.client.post('/auth/users/activation/', data)
         self.assertEquals(status.HTTP_200_OK, response.status_code)
         self.user_not_active.refresh_from_db()
         self.assertEquals(True, self.user_not_active.is_active)
+        self.assertEquals(['refresh', 'access'], list(response.data.keys()))  # выданы токены
 
     def test_reset_password(self):
         data = {'email': 'test-inctive-user@example.com'}
@@ -129,6 +135,7 @@ class RegistrationTestCase(APITestCase):
         }
         response = self.client.post(reverse('jwt-create'), data)
         self.assertEquals(status.HTTP_200_OK, response.status_code)  # юзер активен
+        self.assertEquals(['refresh', 'access'], list(response.data.keys()))  # выданы токены
 
         data = {
             'email': 'test-inctive-user@example.com',
@@ -165,3 +172,17 @@ class RegistrationTestCase(APITestCase):
         blocked_tokens = BlacklistedToken.objects.values_list('token_id', )
         self.assertIn((refresh.id, ), blocked_tokens)
 
+    def test_check_link(self):
+        data = {
+            'uid': self.uid_na,
+            'token': self.token_na,
+        }
+        response = self.client.post('/auth/users/check_link/', data)
+        self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)  # положительный тест
+
+        data = {
+            'uid': self.uid_a,
+            'token': self.token_na,
+        }
+        response = self.client.post('/auth/users/check_link/', data)
+        self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)  # негативный тест

@@ -13,7 +13,7 @@ from djoser.serializers import SendEmailResetSerializer, UserCreatePasswordRetyp
 from djoser.conf import settings as djoser_settings
 
 from .token import token_generator
-from .utils import proportional_reduction, img_to_django_obj
+from .utils import proportional_reduction, get_resized_django_obj
 
 from PIL import Image
 
@@ -56,13 +56,13 @@ class CurrentUserSerializer(serializers.ModelSerializer):
                 # пропорционально подгоняем разрешение, чтобы сторона не превышала стандарт max_size
                 new_width, new_height = proportional_reduction(width, height, max_size=200)
 
-                if any(side < 55 for side in [width, new_width, height, new_height]):
+                if new_width < 55 or new_height < 55:
                     raise serializers.ValidationError(
                         {'avatar': 'Слишком низкое качество изображения. '
                                    'Допустимое разрешение не меньше 55х55', }
                     )
 
-                file = img_to_django_obj(img, new_width, new_height)
+                file = get_resized_django_obj(img, new_width, new_height)
                 file.name = name
                 attrs['avatar'] = file
 
