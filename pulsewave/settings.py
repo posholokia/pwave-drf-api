@@ -49,6 +49,8 @@ INSTALLED_APPS = [
 
     #apps
     'taskmanager.apps.TaskmanagerConfig',
+    #telebot
+    'telebot',
 ]
 
 SITE_ID = 1
