@@ -26,7 +26,7 @@ class UserProfileTestCase(APITestCase):
         self.assertEquals(status.HTTP_200_OK, response.status_code)
 
         expected_data = {
-            'id': 6,
+            'id': self.user_id,
             'email': 'test-user@example.com',
             'name': '',
             'represent_name': 'test-user'
@@ -37,14 +37,15 @@ class UserProfileTestCase(APITestCase):
 
     def test_users_id_put(self):
         data = {
-            'id': self.user_id,
+            'id': 1234,
             'name': 'Илья',
             'email': 'new-email@example.com',
         }
         response = self.client.put(f'/auth/users/{self.user_id}/', data)
-        self.assertEquals('Илья', response.data['name'])  # имя изменилось
-        self.assertEquals(self.user_id, response.data['id'])  # id не изменился
-        self.assertEquals('test-user@example.com', response.data['email'])  # почта не изменилась
+        self.user.refresh_from_db()
+        self.assertEquals('Илья', self.user.name)  # имя изменилось
+        self.assertNotEquals(1234, self.user.id)  # id не изменился
+        self.assertEquals('test-user@example.com', self.user.email)  # почта не изменилась
         self.assertEquals(status.HTTP_200_OK, response.status_code)
 
     def test_users_id_patch(self):
@@ -52,7 +53,8 @@ class UserProfileTestCase(APITestCase):
             'name': 'Илья',
         }
         response = self.client.patch(f'/auth/users/{self.user_id}/', data)
-        self.assertEquals('Илья', response.data['name'])  # имя изменилось
+        self.user.refresh_from_db()
+        self.assertEquals('Илья', self.user.name)
         self.assertEquals(status.HTTP_200_OK, response.status_code)
 
     def test_users_id_delete(self):
@@ -65,6 +67,7 @@ class UserProfileTestCase(APITestCase):
         data['current_password'] = 'Pass!234'
         response = self.client.delete(f'/auth/users/{self.user_id}/', data)
         self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)
+        self.assertEquals(0, len(User.objects.all()))
 
     def test_change_email(self):
         data = {
@@ -72,8 +75,18 @@ class UserProfileTestCase(APITestCase):
             'new_email': 'new-email@example.com',
         }
         response = self.client.post(reverse('change_email'), data)
+        self.user.refresh_from_db()
         self.assertEquals('test-user@example.com', self.user.email)  # почта не изменилась
         self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)
+
+        data = {
+            'password': 'Pass!234',
+            'new_email': 'test-user@example.com',
+        }
+        response = self.client.post(reverse('change_email'), data)
+        self.user.refresh_from_db()
+        self.assertEquals('test-user@example.com', self.user.email)  # почта не изменилась
+        self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)  # нельзя сменить почту на такую же
 
     def test_change_email_confirm(self):
         payload = {
@@ -83,6 +96,7 @@ class UserProfileTestCase(APITestCase):
         }
         token = token_generator.token_encode(payload)
         response = self.client.post(reverse('change_email_confirm'), {'token': token})
+        self.user.refresh_from_db()
         self.assertEquals('new-email@example.com', self.user.email)  # почта изменилась
         self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)
 
@@ -96,3 +110,23 @@ class UserProfileTestCase(APITestCase):
         response = self.client.get('/auth/users/')
         self.assertEquals(1, len(response.data))  # возвращает только текущего юзера, а не всех
         self.assertEquals(status.HTTP_200_OK, response.status_code)
+
+    def test_set_password(self):
+        data = {
+            'new_password': 'Pass!234',
+            're_new_password': 'Pass!234',
+            'current_password': 'Pass!234',
+        }
+        response = self.client.post('/auth/users/set_password/', data)
+        self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        data = {
+            'new_password': 'Pass!234*',
+            're_new_password': 'Pass!234*',
+            'current_password': 'Pass!234',
+        }
+        response = self.client.post('/auth/users/set_password/', data)
+        self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)
+        self.user.refresh_from_db()
+        password_changed = self.user.check_password('Pass!234*')
+        self.assertEquals(True, password_changed)

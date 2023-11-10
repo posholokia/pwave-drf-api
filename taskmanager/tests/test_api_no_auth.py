@@ -45,6 +45,7 @@ class RegistrationTestCase(APITestCase):
         }
         response = self.client.post('/auth/users/', data)
         self.assertEquals(status.HTTP_201_CREATED, response.status_code)
+        self.assertEquals(3, len(User.objects.all()))
 
     def test_pass_validator(self):
         data = {'email': 'ilya.posholokk@gmail.com',}
@@ -178,7 +179,7 @@ class RegistrationTestCase(APITestCase):
             'token': self.token_na,
         }
         response = self.client.post('/auth/users/check_link/', data)
-        self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)  # положительный тест
+        self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)  # позитивный тест
 
         data = {
             'uid': self.uid_a,
