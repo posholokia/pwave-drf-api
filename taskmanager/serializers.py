@@ -1,5 +1,6 @@
 import os
 
+from jwt import DecodeError
 from rest_framework import serializers
 from rest_framework import exceptions
 
@@ -9,11 +10,12 @@ from rest_framework_simplejwt.settings import api_settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 
-from djoser.serializers import SendEmailResetSerializer, UserCreatePasswordRetypeSerializer
+from djoser.serializers import SendEmailResetSerializer, UserCreatePasswordRetypeSerializer, PasswordRetypeSerializer, \
+    CurrentPasswordSerializer
 from djoser.conf import settings as djoser_settings
 
 from .token import token_generator
-from .utils import proportional_reduction, img_to_django_obj
+from .utils import proportional_reduction, get_resized_django_obj
 
 from PIL import Image
 
@@ -56,13 +58,13 @@ class CurrentUserSerializer(serializers.ModelSerializer):
                 # пропорционально подгоняем разрешение, чтобы сторона не превышала стандарт max_size
                 new_width, new_height = proportional_reduction(width, height, max_size=200)
 
-                if any(side < 55 for side in [width, new_width, height, new_height]):
+                if new_width < 55 or new_height < 55:
                     raise serializers.ValidationError(
                         {'avatar': 'Слишком низкое качество изображения. '
                                    'Допустимое разрешение не меньше 55х55', }
                     )
 
-                file = img_to_django_obj(img, new_width, new_height)
+                file = get_resized_django_obj(img, new_width, new_height)
                 file.name = name
                 attrs['avatar'] = file
 
@@ -197,6 +199,7 @@ class ChangeEmailConfirmSerializer(serializers.Serializer):
     default_error_messages = {
         'expired': 'Срок действия токена истек',
         'invalid': 'Недействительный токен',
+        'decode_error': 'Токен невозможно декодировать'
     }
 
     def validate(self, attrs):
@@ -204,6 +207,12 @@ class ChangeEmailConfirmSerializer(serializers.Serializer):
         user = self.context['request'].user
 
         decoded_token = token_generator.token_decode(token)
+
+        if isinstance(decoded_token, DecodeError):
+            raise exceptions.ValidationError(
+                {'token': self.default_error_messages["decode_error"]},
+                'decode_error',
+            )
 
         if not decoded_token:
             raise exceptions.ValidationError(
@@ -221,3 +230,21 @@ class ChangeEmailConfirmSerializer(serializers.Serializer):
             )
 
         return new_email
+
+
+class SetPasswordSerializer(PasswordRetypeSerializer, CurrentPasswordSerializer):
+    def validate(self, attrs):
+        new_password = attrs.get('new_password')
+        new_password_is_old = self.context["request"].user.check_password(new_password)
+
+        if not new_password_is_old:
+            return super().validate(attrs)
+
+        raise exceptions.ValidationError({'new_password': 'Новый пароль совпадает с текущим'}, )
+
+
+class CreateUserSerializer(UserCreatePasswordRetypeSerializer):
+    def perform_create(self, validated_data):
+        user = super().perform_create(validated_data)
+        # delete_inactive_user.apply_async((user.id,), countdown=24*60*60) TODO раскоментировать как сделают celery
+        return user

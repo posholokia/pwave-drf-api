@@ -1,5 +1,6 @@
 from django.core.files.uploadedfile import InMemoryUploadedFile
 import tempfile
+from PIL import Image
 
 
 def proportional_reduction(width: int, height: int, max_size: int) -> tuple[int, int]:
@@ -13,7 +14,7 @@ def proportional_reduction(width: int, height: int, max_size: int) -> tuple[int,
     return width, height
 
 
-def img_to_django_obj(img, width, height):
+def get_resized_django_obj(img: Image, width: int, height: int) -> InMemoryUploadedFile:
     """
     Метод преобразует изображение, загруженно пользователем до нужного размера и
     возвращает его в виде объекта Django

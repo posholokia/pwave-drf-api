@@ -50,7 +50,8 @@ class CustomUserViewSet(UserViewSet):
             'access': str(refresh.access_token),
         }, status=status.HTTP_200_OK)
 
-    @extend_schema(description='Проверка действительности ссылки восстановления пароля')
+    @extend_schema(description='Проверка действительности ссылки восстановления пароля',
+                   responses={204: None, },)
     @action(methods=['post'], detail=False, permission_classes=[permissions.AllowAny])
     def check_link(self, request, *args, **kwargs):
         """

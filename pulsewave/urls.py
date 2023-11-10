@@ -18,24 +18,13 @@ from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from django.conf.urls.static import static
-from taskmanager.views import CustomUserViewSet, ChangeEmailView, ChangeEmailConfirmView
 from pulsewave import settings
-from rest_framework import routers
-from rest_framework_simplejwt.views import TokenBlacklistView
 
-
-router = routers.DefaultRouter()
-router.register('auth/users', CustomUserViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    path('auth/jwt/blacklist/', TokenBlacklistView.as_view(), name='token_blacklist'),
-    path('auth/', include('djoser.urls.jwt')),
-    path('auth/change_email/', ChangeEmailView.as_view()),
-    path('auth/change_email_confirm/', ChangeEmailConfirmView.as_view()),
-
-    path('api/v1/', include('taskmanager.urls')),
+    path('auth/', include('taskmanager.urls')),
 
     # api doc urls:
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
@@ -43,7 +32,6 @@ urlpatterns = [
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 
 ]
-urlpatterns += router.urls
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
