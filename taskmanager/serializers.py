@@ -246,5 +246,5 @@ class SetPasswordSerializer(PasswordRetypeSerializer, CurrentPasswordSerializer)
 class CreateUserSerializer(UserCreatePasswordRetypeSerializer):
     def perform_create(self, validated_data):
         user = super().perform_create(validated_data)
-        # delete_inactive_user.apply_async((user.id,), countdown=24*60*60)  # TODO раскоментировать как сделают celery
+        # delete_inactive_user.apply_async((user.id,), countdown=24*60*60) TODO раскоментировать как сделают celery
         return user
