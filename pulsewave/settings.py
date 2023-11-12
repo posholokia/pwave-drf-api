@@ -165,7 +165,7 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'PASSWORD_RESET_CONFIRM_URL': 'auth/password/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'auth/activate/{uid}/{token}',
-    'CHANGE_EMAIL_URL': 'auth/change_email/{token}',  # своя настройка, не из модуля
+    'CHANGE_EMAIL_URL': '/u/security/change_email?token={token}',  # своя настройка, не из модуля
     'CHANGE_EMAIL_URL_EXPIRED': {'hours': 1},  # своя настройка, не из модуля
     'SEND_ACTIVATION_EMAIL': True,
     'SERIALIZERS': {
@@ -227,24 +227,6 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'https://pulse-wave.netlify.app',
 ]
-
-
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "level": "INFO",
-            "class": "logging.StreamHandler",
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console"],
-            "level": "INFO",
-        },
-    },
-}
 
 # ссылка на фронт, которая будет формироваться в письмах
 DOMAIN = 'https://pulse-wave.netlify.app'
