@@ -165,7 +165,7 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'PASSWORD_RESET_CONFIRM_URL': 'auth/password/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'auth/activate/{uid}/{token}',
-    'CHANGE_EMAIL_URL': '/u/security/change_email?token={token}',  # своя настройка, не из модуля
+    'CHANGE_EMAIL_URL': 'u/security/change_email?token={token}',  # своя настройка, не из модуля
     'CHANGE_EMAIL_URL_EXPIRED': {'hours': 1},  # своя настройка, не из модуля
     'SEND_ACTIVATION_EMAIL': True,
     'SERIALIZERS': {
