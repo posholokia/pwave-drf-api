@@ -220,8 +220,14 @@ class ChangeEmailConfirmSerializer(serializers.Serializer):
                 "expired",
             )
 
-        new_email = decoded_token['new_email']
-        user_id = decoded_token['user_id']
+        new_email = decoded_token.get('new_email')
+        user_id = decoded_token.get('user_id')
+
+        if not new_email or not user_id:
+            raise exceptions.ValidationError(
+                {'token': self.default_error_messages["invalid"]},
+                "invalid",
+            )
 
         if (user.email == new_email) or (user.id != user_id):
             raise exceptions.ValidationError(

