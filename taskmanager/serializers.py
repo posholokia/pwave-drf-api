@@ -1,6 +1,6 @@
 import os
 
-from jwt import DecodeError
+from jwt import DecodeError, ExpiredSignatureError
 from rest_framework import serializers
 from rest_framework import exceptions
 
@@ -199,7 +199,7 @@ class ChangeEmailConfirmSerializer(serializers.Serializer):
     default_error_messages = {
         'expired': 'Срок действия токена истек',
         'invalid': 'Недействительный токен',
-        'decode_error': 'Токен невозможно декодировать'
+        'decode_error': 'Токен невозможно декодировать',
     }
 
     def validate(self, attrs):
@@ -208,7 +208,7 @@ class ChangeEmailConfirmSerializer(serializers.Serializer):
 
         decoded_token = token_generator.token_decode(token)
 
-        if isinstance(decoded_token, DecodeError):
+        if isinstance(decoded_token, (DecodeError, ExpiredSignatureError)):
             raise exceptions.ValidationError(
                 {'token': self.default_error_messages["decode_error"]},
                 'decode_error',
@@ -223,13 +223,7 @@ class ChangeEmailConfirmSerializer(serializers.Serializer):
         new_email = decoded_token.get('new_email')
         user_id = decoded_token.get('user_id')
 
-        if not new_email or not user_id:
-            raise exceptions.ValidationError(
-                {'token': self.default_error_messages["invalid"]},
-                "invalid",
-            )
-
-        if (user.email == new_email) or (user.id != user_id):
+        if any([(not new_email), (not user_id), (user.email == new_email), (user.id != user_id)]):
             raise exceptions.ValidationError(
                 {'token': self.default_error_messages["invalid"]},
                 "invalid",

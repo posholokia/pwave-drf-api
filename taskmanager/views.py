@@ -6,6 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from django.contrib.auth import get_user_model
 from django.utils.timezone import now
+from django.db.utils import IntegrityError
 
 from djoser.views import UserViewSet
 from djoser.serializers import UidAndTokenSerializer, UserCreateSerializer
@@ -131,17 +132,21 @@ class ChangeEmailConfirmView(generics.GenericAPIView):
         user = request.user
         new_email = serializer.validated_data
         user.email = new_email
-        user.save()
+        try:
+            user.save()
+        except IntegrityError:
+            return Response(status=status.HTTP_400_BAD_REQUEST,
+                            data={'new_email': 'Эта электронная почта уже используется'})
+        else:
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
-
-class CreateSuperuser(generics.CreateAPIView):
-    serializer_class = UserCreateSerializer
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, request, *args, **kwargs):
-        user = User.objects.get(email='ilya.posholokk@gmail.com')
-        user.is_superuser = user.is_staff = True
-        user.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+# class CreateSuperuser(generics.CreateAPIView):
+#     serializer_class = UserCreateSerializer
+#     permission_classes = [permissions.AllowAny]
+#
+#     def post(self, request, *args, **kwargs):
+#         user = User.objects.get(email='ilya.posholokk@gmail.com')
+#         user.is_superuser = user.is_staff = True
+#         user.save()
+#         return Response(status=status.HTTP_204_NO_CONTENT)

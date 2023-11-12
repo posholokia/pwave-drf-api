@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from jwt import DecodeError
+from jwt import DecodeError, ExpiredSignatureError
 
 from pulsewave.settings import SECRET_KEY as secret
 from pulsewave.settings import DJOSER
@@ -21,10 +21,12 @@ class TokenJWTGenerator:
         token = jwt.encode(payload, secret, algorithm=self.algorithm)
         return token
 
-    def token_decode(self, token) -> dict or DecodeError:
+    def token_decode(self, token) -> dict or Exception:
         try:
             decoded_token = jwt.decode(token, secret, algorithms=self.algorithm)
         except DecodeError as e:
+            return e
+        except ExpiredSignatureError as e:
             return e
         else:
             return self._token_expired(decoded_token)
