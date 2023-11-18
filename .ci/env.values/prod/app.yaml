@@ -24,7 +24,7 @@ env:
   EMAIL_HOST_USER: "{{ .Values.APP_EMAIL_HOST_USER }}"
   EMAIL_HOST_PASSWORD: "{{ .Values.APP_EMAIL_HOST_PASSWORD }}"
   PYTHONUNBUFFERED: 1
-  REDIS_HOST: "{{ .Values.APP_REDIS_BROKER }}"
+  REDIS_HOST: "{{ .Values.APP_REDIS_BROKER }}-master"
 
 imagePullSecrets:
   - name: gitlab-cr
