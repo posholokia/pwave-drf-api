@@ -93,7 +93,7 @@ profiles:
               APP_REDIS_BROKER: *redis-release-name
             valuesFiles:
               - ".ci/env.values/celery-beat.yaml"
-              - ".ci/env.values/prod/celery-beat.yaml"
+              - ".ci/env.values/prod/celery.yaml"
           - <<: *app-release
             name: &app-celery-worker "pwave-celery-worker"
             namespace: default
@@ -106,4 +106,4 @@ profiles:
               APP_REDIS_BROKER: *redis-release-name
             valuesFiles:
               - ".ci/env.values/celery-worker.yaml"
-              - ".ci/env.values/prod/celery-worker.yaml"
+              - ".ci/env.values/prod/celeryr.yaml"
