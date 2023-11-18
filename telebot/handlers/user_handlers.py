@@ -4,6 +4,8 @@ from aiogram.types import Message
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 from telebot.lexicon.lexicon import LEXICON_RU
+from telebot.models import TeleBotID
+
 
 # Импортируем юзера
 User = get_user_model()
@@ -23,7 +25,7 @@ async def process_start_command(message: Message):
 async def process_mail_command(message: Message):
     try:
         if await email_true(message.text.split()[1]):
-            print(message.text.split()[1])
+            await save_telegram_id(message)
             await message.answer(text=LEXICON_RU['mail_changed'])
         else:
             await message.answer(text=LEXICON_RU['mail_not'])
@@ -36,6 +38,16 @@ async def process_mail_command(message: Message):
 def email_true(email):
     if email in User.objects.all().values_list('email', flat=True):
         return True
+
+# Сохранение
+@sync_to_async
+def save_telegram_id(message):
+    telebotuser=TeleBotID(
+        user=User.objects.get(pk=User.objects.get(email=message.text.split()[1]).id),
+        telegram_id=message.from_user.id
+    )
+    telebotuser.save()
+
 
 # # Этот хэндлер для рассылки всем пользователям бота.
 # @router.message(Command(commands='sendall'))
