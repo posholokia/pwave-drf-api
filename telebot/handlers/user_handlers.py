@@ -76,7 +76,8 @@ def _save_telegram_id(message):
         user=User.objects.get(pk=User.objects.get(email=message.text.split()[1]).id),
         telegram_id=message.from_user.id
     )
-    telebotuser.save()
+    if not telebotuser.user_id in TeleBotID.objects.all().values_list('user_id', flat=True):
+        telebotuser.save()
 
 @sync_to_async
 def _delete_telegram_id(message):
