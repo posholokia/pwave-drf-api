@@ -24,7 +24,7 @@ async def process_start_command(message: Message):
 
 
 @router.message(Command(commands='email_add'))
-async def process_mail_command(message: Message):
+async def process_email_add_command(message: Message):
     """
     Этот хэндлер срабатывает на команду /email_add
     проверяет наличие юзера с такой почтой и при наличии
@@ -41,16 +41,16 @@ async def process_mail_command(message: Message):
 
 
 @router.message(Command(commands='email_delete'))
-async def process_mail_command(message: Message):
+async def process_email_delete_command(message: Message):
     """
     Этот хэндлер срабатывает на команду /email_delete
     проверяет наличие юзера с такой почтой и при наличии
-    удаляет user_id и telegram_id  в из таблички TeleBotID.
+    удаляет user_id и telegram_id из таблицы TeleBotID.
     """
     try:
         if await _email_true(message.text.split()[1]):
-            await _save_telegram_id(message)
-            await message.answer(text=LEXICON_RU['mail_changed'])
+            await _delete_telegram_id(message)
+            await message.answer(text=LEXICON_RU['mail_delete'])
         else:
             await message.answer(text=LEXICON_RU['mail_not'])
     except IndexError:
@@ -72,12 +72,19 @@ def _save_telegram_id(message):
     """
     Сохраненяет user_id и telegram_id  в табличку TeleBotID.
     """
-    telebotuser=TeleBotID(
+    telebotuser = TeleBotID(
         user=User.objects.get(pk=User.objects.get(email=message.text.split()[1]).id),
         telegram_id=message.from_user.id
     )
     telebotuser.save()
 
+@sync_to_async
+def _delete_telegram_id(message):
+    """
+    Сохраненяет user_id и telegram_id  в табличку TeleBotID.
+    """
+    telebotuser = TeleBotID.objects.filter(user=User.objects.get(pk=User.objects.get(email=message.text.split()[1]).id))
+    telebotuser.delete()
 
 
 @router.message(Command(commands='sendall'))
@@ -96,5 +103,3 @@ async def send_all(message: Message):
 def _give_telebot_id_all():
     """ Возвращает список всех telegram_id из таблицы TeleBotID."""
     return TeleBotID.objects.values('telegram_id')
-
-
