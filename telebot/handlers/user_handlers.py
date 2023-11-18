@@ -6,13 +6,11 @@ from django.contrib.auth import get_user_model
 from telebot.lexicon.lexicon import LEXICON_RU
 from telebot.models import TeleBotID
 
-
 # Импортируем юзера
 User = get_user_model()
 
 # Инициализируем роутер уровня модуля
 router = Router()
-
 
 
 @router.message(CommandStart())
@@ -23,10 +21,10 @@ async def process_start_command(message: Message):
     await message.answer(text=f"Отлично, {message.from_user.first_name}!!!\n{LEXICON_RU['/start']}")
 
 
-@router.message(Command(commands='email_add'))
+@router.message(Command(commands='on'))
 async def process_email_add_command(message: Message):
     """
-    Этот хэндлер срабатывает на команду /email_add
+    Этот хэндлер срабатывает на команду /on
     проверяет наличие юзера с такой почтой и при наличии
     добавляет user_id и telegram_id  в табличку TeleBotID.
     """
@@ -40,10 +38,10 @@ async def process_email_add_command(message: Message):
         await message.answer(text=LEXICON_RU['mail_empty'])
 
 
-@router.message(Command(commands='email_delete'))
+@router.message(Command(commands='off'))
 async def process_email_delete_command(message: Message):
     """
-    Этот хэндлер срабатывает на команду /email_delete
+    Этот хэндлер срабатывает на команду /off
     проверяет наличие юзера с такой почтой и при наличии
     удаляет user_id и telegram_id из таблицы TeleBotID.
     """
@@ -55,7 +53,6 @@ async def process_email_delete_command(message: Message):
             await message.answer(text=LEXICON_RU['mail_not'])
     except IndexError:
         await message.answer(text=LEXICON_RU['mail_empty'])
-
 
 
 @sync_to_async
@@ -79,6 +76,7 @@ def _save_telegram_id(message):
     if not telebotuser.user_id in TeleBotID.objects.all().values_list('user_id', flat=True):
         telebotuser.save()
 
+
 @sync_to_async
 def _delete_telegram_id(message):
     """
@@ -97,6 +95,17 @@ async def send_all(message: Message):
     await message.answer('Начало рассылки ...')
     async for telegram_id in await _give_telebot_id_all():
         await message.bot.send_message(telegram_id['telegram_id'], message.text[message.text.find(' '):])
+    await message.answer('Рассылка прошла успешно!')
+
+
+@router.message(Command(commands='sendid'))
+async def send_id(message: Message):
+    """
+    Этот хэндлер срабатывает на команду sendid пробел telegram_id и посылает сообщение
+    идущее после telegram_id.
+    """
+    await message.answer(f'Попытка отправки сообщения в чат {message.text.split()[1]}')
+    await message.bot.send_message(message.text.split()[1], message.text[message.text.find(message.text.split()[2]):])
     await message.answer('Рассылка прошла успешно!')
 
 
