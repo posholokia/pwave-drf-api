@@ -77,6 +77,7 @@ deploy_prod: &deploy_definition
     # render is useful for debug purposes
     - skaffold diagnose
     - skaffold deploy
+    - cat $HOME/skaffold_cache
   after_script:
     - echo "DEPLOY_ENVIRONMENT=${CI_ENVIRONMENT_NAME}" > build.env
     - echo "DEPLOY_URL=${CI_ENVIRONMENT_URL}" >> build.env
