@@ -12,7 +12,7 @@ workflow:
 .skaffold-cache:
   cache:
     paths:
-      - ~/.skaffold
+      - $HOME/.skaffold
     policy: pull-push
 
 variables:
