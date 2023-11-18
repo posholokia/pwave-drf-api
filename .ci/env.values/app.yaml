@@ -32,7 +32,7 @@ volumeMounts:
   - name: tmp-dir
     mountPath: /tmp
 
-sidecars:  {}
+sidecars: {}
 
 initContainers: {}
 
