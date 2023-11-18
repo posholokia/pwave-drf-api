@@ -15,7 +15,7 @@
   remoteChart: redis
   version: "10.8.2"
   wait: true
-  upgradeOnChange: false
+  upgradeOnChange: true
 
 .helm-flags: &helm-flags
   install:
