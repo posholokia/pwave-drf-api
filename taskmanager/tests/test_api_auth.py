@@ -70,6 +70,12 @@ class UserProfileTestCase(APITestCase):
         self.assertEquals(0, len(User.objects.all()))
 
     def test_change_email(self):
+        user_data = {
+            'password': 'Pass!234',
+            'email': 'mymail@example.com',
+        }
+        User.objects.create_user(**user_data)
+
         data = {
             'password': 'Pass!234',
             'new_email': 'new-email@example.com',
@@ -87,6 +93,15 @@ class UserProfileTestCase(APITestCase):
         self.user.refresh_from_db()
         self.assertEquals('test-user@example.com', self.user.email)  # почта не изменилась
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)  # нельзя сменить почту на такую же
+
+        data = {
+            'password': 'Pass!234',
+            'new_email': 'mymail@example.com',
+        }
+        response = self.client.post(reverse('change_email'), data)
+        self.user.refresh_from_db()
+        self.assertEquals('test-user@example.com', self.user.email)  # почта не изменилась
+        self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)  # почта уникальна
 
     def test_change_email_confirm(self):
         payload = {

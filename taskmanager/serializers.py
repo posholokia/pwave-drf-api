@@ -16,7 +16,7 @@ from djoser.conf import settings as djoser_settings
 
 from .token import token_generator
 from .utils import proportional_reduction, get_resized_django_obj
-
+from .tasks import delete_inactive_user
 from PIL import Image
 
 User = get_user_model()
@@ -171,6 +171,7 @@ class ChangeEmailSerializer(serializers.Serializer):
     default_error_messages = {
         'email': 'Новая почта совпадает с текущей',
         'invalid_password': 'Неверный пароль',
+        'unique_email': 'Эта почта уже используется',
     }
 
     def validate(self, attrs):
@@ -188,6 +189,12 @@ class ChangeEmailSerializer(serializers.Serializer):
             raise exceptions.ValidationError(
                 {'new_email': self.default_error_messages["email"]},
                 "email",
+            )
+
+        if User.objects.filter(email=new_email).exists():
+            raise exceptions.ValidationError(
+                {'new_email': self.default_error_messages["unique_email"]},
+                "unique_email",
             )
 
         return {'new_email': new_email}
@@ -246,5 +253,5 @@ class SetPasswordSerializer(PasswordRetypeSerializer, CurrentPasswordSerializer)
 class CreateUserSerializer(UserCreatePasswordRetypeSerializer):
     def perform_create(self, validated_data):
         user = super().perform_create(validated_data)
-        # delete_inactive_user.apply_async((user.id,), countdown=24*60*60) TODO раскоментировать как сделают celery
+        # delete_inactive_user.apply_async((user.id,), countdown=24*60*60) # TODO раскоментировать как сделают celery
         return user

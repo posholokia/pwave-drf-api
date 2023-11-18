@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'djoser',
     'corsheaders',
     'rest_framework_simplejwt.token_blacklist',
+    'django_eventstream',
+    'channels',
 
     #apps
     'taskmanager.apps.TaskmanagerConfig',
@@ -225,11 +227,12 @@ SIMPLE_JWT = {
 #CORS
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
-    'https://pulse-wave.netlify.app',
+    # 'https://pulse-wave.netlify.app',
+    'https://front.pwave.pnpl.tech',
 ]
 
 # ссылка на фронт, которая будет формироваться в письмах
-DOMAIN = 'https://pulse-wave.netlify.app'
+DOMAIN = 'https://front.pwave.pnpl.tech'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
 MEDIA_URL = '/media/images/'

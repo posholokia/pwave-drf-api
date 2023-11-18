@@ -13,6 +13,6 @@ app.autodiscover_tasks()
 # app.conf.beat_schedule = {  # TODO раскоментировать как сделают celery
 #     'clear_tokens': {
 #         'task': 'taskmanager.tasks.clear_expired_token',
-#         'schedule': crontab(hour='1', minute='0'),
+#         'schedule': 10# crontab(hour='1', minute='0'),
 #     },
 # }
