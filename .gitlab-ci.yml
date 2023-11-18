@@ -65,7 +65,7 @@ deploy_prod: &deploy_definition
   script:
     - cat tags.json
     # render is useful for debug purposes
-    # - skaffold render
+    - skaffold diagnose
     - skaffold deploy
   after_script:
     - echo "DEPLOY_ENVIRONMENT=${CI_ENVIRONMENT_NAME}" > build.env

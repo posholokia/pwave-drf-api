@@ -8,7 +8,7 @@
   remoteChart: postgresql
   version: "12.1.10"
   wait: true
-  upgradeOnChange: false
+  upgradeOnChange: true
 
 .redis-release: &redis-reference
   repo: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
