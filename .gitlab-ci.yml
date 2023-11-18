@@ -9,6 +9,12 @@ workflow:
     # - if: $CI_COMMIT_BRANCH == 'main'
     # - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == 'master'
 
+.skaffold-cache:
+  cache:
+    paths:
+      - ~/.skaffold
+    policy: pull-push
+
 variables:
   SKAFFOLD_DEFAULT_REPO: $CI_REGISTRY_IMAGE
   SKAFFOLD_FILE_OUTPUT: "tags.json"
@@ -19,6 +25,7 @@ variables:
 build: &build_definition
   stage: build
   image: jafnhaar/build-image:debian
+  extends: .skaffold-cache
   services:
     - docker:20.10.16-dind
   before_script:
@@ -39,6 +46,7 @@ build: &build_definition
 
 deploy_prod: &deploy_definition
   stage: deploy
+  extends: .skaffold-cache
   # variables:
   #   GIT_SUBMODULE_STRATEGY: normal
   environment:
