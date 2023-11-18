@@ -13,7 +13,7 @@ workflow:
   cache:
     key: pwave-backend-cache
     paths:
-      - ~/.skaffold
+      - $HOME/.skaffold
     policy: pull-push
 
 variables:
