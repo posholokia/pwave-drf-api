@@ -10,9 +10,9 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 app.autodiscover_tasks()
 
-# app.conf.beat_schedule = {  # TODO раскоментировать как сделают celery
-#     'clear_tokens': {
-#         'task': 'taskmanager.tasks.clear_expired_token',
-#         'schedule': crontab(hour='1', minute='0'),
-#     },
-# }
+app.conf.beat_schedule = {
+    'clear_tokens': {
+        'task': 'taskmanager.tasks.clear_expired_token',
+        'schedule': crontab(hour='1', minute='0'),
+    },
+}
