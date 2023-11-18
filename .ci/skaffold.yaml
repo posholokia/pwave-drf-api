@@ -106,4 +106,4 @@ profiles:
               APP_REDIS_BROKER: *redis-release-name
             valuesFiles:
               - ".ci/env.values/celery-worker.yaml"
-              - ".ci/env.values/prod/celeryr.yaml"
+              - ".ci/env.values/prod/celery.yaml"
