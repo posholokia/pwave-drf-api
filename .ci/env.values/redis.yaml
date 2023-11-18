@@ -1,0 +1,10 @@
+image:
+  tag: "6.0.8-debian-10-r37"
+
+cluster:
+  enabled: false
+
+serviceAccount:
+  create: false
+
+usePassword: false

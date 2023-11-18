@@ -1,0 +1,40 @@
+nameOverride: "{{ .Values.GIT_REPO }}"
+
+# livenessProbe:
+#   tcpSocket:
+#     port: http
+# readinessProbe:
+#   tcpSocket:
+#     port: http
+
+ports: []
+
+service: {}
+
+resources: {}
+
+  # limits:
+  #   cpu: 200m
+  #   memory: 500Mi
+
+volumeMounts: []
+
+sidecars: []
+
+initContainers: []
+
+volumes: []
+
+command: [ "celery" ]
+args: [ "-A", "pulsewave", "worker", "-l", "INFO" ]
+
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+
+ingress: {}

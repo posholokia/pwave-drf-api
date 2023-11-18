@@ -10,6 +10,13 @@
   wait: true
   upgradeOnChange: false
 
+.redis-release: &redis-reference
+  repo: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
+  remoteChart: redis
+  version: "10.8.2"
+  wait: true
+  upgradeOnChange: true
+
 .helm-flags: &helm-flags
   install:
     - "--timeout=7m"
@@ -48,6 +55,12 @@ profiles:
           #   valuesFiles:
           #     - ".ci/env.values/postgresql.yaml"
           #     - ".ci/env.values/prod/postgresql.yaml"
+          - <<: *redis-reference
+            name: &redis-release-name pwave-backend-redis
+            namespace: default
+            valuesFiles:
+              - ".ci/env.values/redis.yaml"
+              - ".ci/env.values/prod/redis.yaml"
           - <<: *app-release
             name: &app-release-name "pwave-backend-drfapi"
             namespace: default
@@ -60,6 +73,7 @@ profiles:
               APP_DJANGO_SECRET_KEY: "{{.APP_DJANGO_SECRET_KEY}}"
               APP_EMAIL_HOST_USER: "{{.APP_EMAIL_HOST_USER}}"
               APP_EMAIL_HOST_PASSWORD: "{{.APP_EMAIL_HOST_PASSWORD}}"
+              APP_REDIS_BROKER: *redis-release-name
             valuesFiles:
               - ".ci/env.values/app.yaml"
               - ".ci/env.values/hooks.yaml"
@@ -67,3 +81,29 @@ profiles:
               - ".ci/env.values/prod/app.yaml"
               - ".ci/env.values/prod/hooks.yaml"
               - ".ci/env.values/prod/cronjobs.yaml"
+          - <<: *app-release
+            name: &app-celery-beat "pwave-celery-beat"
+            namespace: default
+            setValueTemplates:
+              image.name: "{{.IMAGE_FULLY_QUALIFIED_pwave_backend_drfapi}}"
+              GIT_REPO: *app-celery-beat
+              APP_DJANGO_SECRET_KEY: "{{.APP_DJANGO_SECRET_KEY}}"
+              APP_EMAIL_HOST_USER: "{{.APP_EMAIL_HOST_USER}}"
+              APP_EMAIL_HOST_PASSWORD: "{{.APP_EMAIL_HOST_PASSWORD}}"
+              APP_REDIS_BROKER: *redis-release-name
+            valuesFiles:
+              - ".ci/env.values/celery-beat.yaml"
+              - ".ci/env.values/prod/celery-beat.yaml"
+          - <<: *app-release
+            name: &app-celery-worker "pwave-celery-worker"
+            namespace: default
+            setValueTemplates:
+              image.name: "{{.IMAGE_FULLY_QUALIFIED_pwave_backend_drfapi}}"
+              GIT_REPO: *app-celery-worker
+              APP_DJANGO_SECRET_KEY: "{{.APP_DJANGO_SECRET_KEY}}"
+              APP_EMAIL_HOST_USER: "{{.APP_EMAIL_HOST_USER}}"
+              APP_EMAIL_HOST_PASSWORD: "{{.APP_EMAIL_HOST_PASSWORD}}"
+              APP_REDIS_BROKER: *redis-release-name
+            valuesFiles:
+              - ".ci/env.values/celery-worker.yaml"
+              - ".ci/env.values/prod/celery-worker.yaml"
