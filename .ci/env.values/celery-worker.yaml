@@ -7,12 +7,13 @@ nameOverride: "{{ .Values.GIT_REPO }}"
 #   tcpSocket:
 #     port: http
 
-ports:
-  - name: mock
-    containerPort: 9999
-    protocol: TCP
+# ports:
+#   - name: mock
+#     containerPort: 9999
+#     protocol: TCP
 
-service: {}
+service:
+  enabled: false
 
 resources: {}
 
@@ -37,7 +38,7 @@ securityContext:
   capabilities:
     drop:
       - ALL
-  readOnlyRootFilesystem: true
+  # readOnlyRootFilesystem: true
   runAsNonRoot: true
 
 ingress: {}
