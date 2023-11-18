@@ -11,11 +11,13 @@ workflow:
 
 .skaffold-cache:
   cache:
+    key: pwave-backend-cache
     paths:
-      - $HOME/.skaffold
+      - $HOME/skaffold_cache
     policy: pull-push
 
 variables:
+  SKAFFOLD_CACHE_FILE: "$HOME/skaffold_cache"
   SKAFFOLD_DEFAULT_REPO: $CI_REGISTRY_IMAGE
   SKAFFOLD_FILE_OUTPUT: "tags.json"
   SKAFFOLD_BUILD_ARTIFACTS: "tags.json"
