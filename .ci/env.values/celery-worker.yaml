@@ -25,8 +25,8 @@ initContainers: []
 
 volumes: []
 
-command: [ "celery" ]
-args: [ "-A", "pulsewave", "worker", "-l", "INFO" ]
+command: [ "python3" ]
+args: [ "-m", "celery", "-A", "pulsewave", "worker", "-l", "INFO" ]
 
 securityContext:
   runAsUser: 1000
