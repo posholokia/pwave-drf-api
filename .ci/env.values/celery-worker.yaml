@@ -7,7 +7,10 @@ nameOverride: "{{ .Values.GIT_REPO }}"
 #   tcpSocket:
 #     port: http
 
-ports: []
+ports:
+  - name: mock
+    containerPort: 9999
+    protocol: TCP
 
 service: {}
 
