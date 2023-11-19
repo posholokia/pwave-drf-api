@@ -51,6 +51,7 @@ INSTALLED_APPS = [
 
     #apps
     'taskmanager.apps.TaskmanagerConfig',
+    'workspaces.apps.WorkspacesConfig',
 ]
 
 SITE_ID = 1
@@ -85,7 +86,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'pulsewave.wsgi.application'
-
+ASGI_APPLICATION = 'pulsewave.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -227,7 +228,7 @@ SIMPLE_JWT = {
 #CORS
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
-    # 'https://pulse-wave.netlify.app',
+    'https://pulse-wave.netlify.app',
     'https://front.pwave.pnpl.tech',
 ]
 
@@ -236,3 +237,9 @@ DOMAIN = 'https://front.pwave.pnpl.tech'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
 MEDIA_URL = '/media/images/'
+
+WORKSAPCES = {
+    'INVITE_NEW_USER_EMAIL_URL': 'auth/invite-new-user/{wuid}/{uid}/{token}',
+    'INVITE_EXISTS_USER_EMAIL_URL': 'u/security/invite-exists-user/{wuid}/{uid}/{token}',
+    'INVITE_TOKEN_TIMEOUT': 3600 * 24,
+}
