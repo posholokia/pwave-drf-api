@@ -17,6 +17,7 @@ workflow:
     policy: pull-push
 
 variables:
+  SKAFFOLD_LABEL: skaffold.dev/run-id=d3e4f3fe-65d4-492a-be80-63da88fd4192
   SKAFFOLD_DEFAULT_REPO: $CI_REGISTRY_IMAGE
   SKAFFOLD_FILE_OUTPUT: "tags.json"
   SKAFFOLD_BUILD_ARTIFACTS: "tags.json"
