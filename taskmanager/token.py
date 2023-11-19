@@ -2,8 +2,12 @@ from datetime import datetime, timedelta
 
 from jwt import DecodeError, ExpiredSignatureError
 
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import base36_to_int, int_to_base36
+from django.utils.crypto import constant_time_compare, salted_hmac
+
 from pulsewave.settings import SECRET_KEY as secret
-from pulsewave.settings import DJOSER
+from pulsewave.settings import DJOSER, WORKSAPCES
 import jwt
 
 
@@ -43,5 +47,40 @@ class TokenJWTGenerator:
         return data
 
 
-token_generator = TokenJWTGenerator()
+class TokenUserGenerator(PasswordResetTokenGenerator):
+    def check_token(self, user, token):
+        """
+        Check that a password reset token is correct for a given user.
+        """
+        if not (user and token):
+            return False
+        # Parse the token
+        try:
+            ts_b36, _ = token.split("-")
+        except ValueError:
+            return False
 
+        try:
+            ts = base36_to_int(ts_b36)
+        except ValueError:
+            return False
+
+        # Check that the timestamp/uid has not been tampered with
+        for secret in [self.secret, *self.secret_fallbacks]:
+            if constant_time_compare(
+                    self._make_token_with_timestamp(user, ts, secret),
+                    token,
+            ):
+                break
+        else:
+            return False
+
+        # Check the timestamp is within limit.
+        if (self._num_seconds(self._now()) - ts) > WORKSAPCES.get('INVITE_TOKEN_TIMEOUT', 3600*24):
+            return False
+
+        return True
+
+
+token_generator = TokenJWTGenerator()
+user_token_generator = TokenUserGenerator()

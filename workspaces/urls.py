@@ -1,5 +1,5 @@
 from django.urls import path, include
-from workspaces.views import WorkSpaceViewSet, WorkSpaceViewSet
+from workspaces.views import UserList, WorkSpaceViewSet
 
 from rest_framework import routers
 
@@ -8,7 +8,6 @@ router.register('workspace', WorkSpaceViewSet)
 
 
 urlpatterns = [
-    # path('workspace/', WorkSpaceViewSet.as_view()),
-    # path('workspace/list/', WorkSpaceView.as_view()),
+    path('user_list/', UserList.as_view()),
 ]
 urlpatterns += router.urls

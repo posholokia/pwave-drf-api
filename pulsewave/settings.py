@@ -237,3 +237,9 @@ DOMAIN = 'https://front.pwave.pnpl.tech'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
 MEDIA_URL = '/media/images/'
+
+WORKSAPCES = {
+    'INVITE_NEW_USER_EMAIL_URL': 'auth/invite-new-user/{wuid}/{uid}/{token}',
+    'INVITE_EXISTS_USER_EMAIL_URL': 'u/security/invite-exists-user/{wuid}/{uid}/{token}',
+    'INVITE_TOKEN_TIMEOUT': 3600 * 24,
+}
