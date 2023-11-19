@@ -5,6 +5,8 @@ from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 from telebot.lexicon.lexicon import LEXICON_RU
 from telebot.models import TeleBotID
+import time
+
 
 # Импортируем юзера
 User = get_user_model()
@@ -95,6 +97,7 @@ async def send_all(message: Message):
     await message.answer('Начало рассылки ...')
     async for telegram_id in await _give_telebot_id_all():
         await message.bot.send_message(telegram_id['telegram_id'], message.text[message.text.find(' '):])
+        time.sleep(0.1)
     await message.answer('Рассылка прошла успешно!')
 
 
