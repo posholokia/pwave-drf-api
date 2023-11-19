@@ -32,8 +32,14 @@ async def process_email_add_command(message: Message):
     """
     try:
         if await _email_true(message.text.split()[1]):
-            await _save_telegram_id(message)
-            await message.answer(text=LEXICON_RU['mail_changed'])
+            if not await _user_in_table(message):
+                if not await _telegram_in_table(message):
+                    await _save_telegram_id(message)
+                    await message.answer(text=LEXICON_RU['mail_changed'])
+                else:
+                    await message.answer(text=LEXICON_RU['user_in_table'])
+            else:
+                await message.answer(text=LEXICON_RU['user_in_table'])
         else:
             await message.answer(text=LEXICON_RU['mail_not'])
     except IndexError:
@@ -67,6 +73,25 @@ def _email_true(email):
 
 
 @sync_to_async
+def _user_in_table(message):
+    """
+    Проверка наличия пользователя в таблице.
+    """
+    if User.objects.get(pk=User.objects.get(email=message.text.split()[1]).id) \
+            in TeleBotID.objects.all().values_list('user_id', flat=True):
+        return True
+
+
+@sync_to_async
+def _telegram_in_table(message):
+    """
+    Проверка наличия telegram_id в таблице.
+    """
+    if message.from_user.id in TeleBotID.objects.all().values_list('telegram_id', flat=True):
+        return True
+
+
+@sync_to_async
 def _save_telegram_id(message):
     """
     Сохраненяет user_id и telegram_id  в табличку TeleBotID.
@@ -75,8 +100,7 @@ def _save_telegram_id(message):
         user=User.objects.get(pk=User.objects.get(email=message.text.split()[1]).id),
         telegram_id=message.from_user.id
     )
-    if not telebotuser.user_id in TeleBotID.objects.all().values_list('user_id', flat=True):
-        telebotuser.save()
+    telebotuser.save()
 
 
 @sync_to_async
