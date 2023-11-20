@@ -10,6 +10,8 @@ from pathlib import Path
 HEARTBEAT_FILE = Path("/tmp/worker_heartbeat")
 READINESS_FILE = Path("/tmp/worker_ready")
 
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pulsewave.settings')
+
 
 class LivenessProbe(bootsteps.StartStopStep):
     requires = {'celery.worker.components:Timer'}
@@ -40,8 +42,6 @@ def worker_ready(**_):
 def worker_shutdown(**_):
     READINESS_FILE.unlink(missing_ok=True)
 
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pulsewave.settings')
 
 app = Celery('pulsewave')
 app.steps["worker"].add(LivenessProbe)
