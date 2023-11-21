@@ -26,14 +26,18 @@ async def process_start_command(message: Message):
     """
     await message.answer(text=message.text)
     if message.text.split('_')[0] == '/start on':
-        await message.answer(text='Хочет подключить')
         if await _telegram_in_table(message):
             await message.answer(text=LEXICON_RU['user_in_table'])
         else:
             await _save_telegram_id(message)
             await message.answer(text=LEXICON_RU['mail_changed'])
-    elif message.text.split('_')[0] == '/start off':
-        await message.answer(text='Хочет отключить')
+
+    if message.text.split('_')[0] == '/start off':
+        if not await _telegram_in_table(message):
+            await message.answer(text=LEXICON_RU['user_not_in_table'])
+        else:
+            await _delete_telegram_id(message)
+            await message.answer(text=LEXICON_RU['mail_delete'])
 
 
 @router.message(Command(commands='on'))
@@ -122,7 +126,13 @@ def _delete_telegram_id(message):
     """
     Сохраненяет user_id и telegram_id  в табличку TeleBotID.
     """
-    telebotuser = TeleBotID.objects.filter(user=User.objects.get(pk=User.objects.get(email=message.text.split()[1]).id))
+    telebotuser = TeleBotID.objects.filter(
+        user=User.objects.get(
+            pk=OutstandingToken.objects.get(
+                token=message.text.split('_')[1]).user_id
+        )
+    )
+    print(telebotuser)
     telebotuser.delete()
 
 
