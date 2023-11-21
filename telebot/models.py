@@ -6,3 +6,4 @@ from pulsewave import settings
 class TeleBotID(models.Model):
     user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     telegram_id = models.PositiveIntegerField()
+    telegram_name = models.CharField(max_length=32)
