@@ -24,20 +24,30 @@ async def process_start_command(message: Message):
     on - включает уведомления
     off - выключает уведомления.
     """
-    await message.answer(text=message.text)
-    if message.text.split('_')[0] == '/start on':
-        if await _telegram_in_table(message):
-            await message.answer(text=LEXICON_RU['user_in_table'])
-        else:
-            await _save_telegram_id(message)
-            await message.answer(text=LEXICON_RU['mail_changed'])
+    if await _token_true(message):
+        if message.text.split('_')[0] == '/start on':
+            if await _telegram_in_table(message):
+                await message.answer(text=LEXICON_RU['user_in_table'])
+            else:
+                await _save_telegram_id(message)
+                await message.answer(text=LEXICON_RU['mail_changed'])
 
-    if message.text.split('_')[0] == '/start off':
-        if not await _telegram_in_table(message):
-            await message.answer(text=LEXICON_RU['user_not_in_table'])
-        else:
-            await _delete_telegram_id(message)
-            await message.answer(text=LEXICON_RU['mail_delete'])
+        if message.text.split('_')[0] == '/start off':
+            if not await _telegram_in_table(message):
+                await message.answer(text=LEXICON_RU['user_not_in_table'])
+            else:
+                await _delete_telegram_id(message)
+                await message.answer(text=LEXICON_RU['mail_delete'])
+    else:
+        await message.answer(text=LEXICON_RU['token_error'])
+
+
+@router.message(Command(commands='start'))
+async def process_start_command(message: Message):
+    """
+    Этот хэндлер срабатывает на команду /start.
+    """
+    await message.answer(text=f"Отлично, {message.from_user.first_name}!!!\n{LEXICON_RU['/start']}")
 
 
 @router.message(Command(commands='on'))
@@ -88,6 +98,14 @@ def _email_true(email):
     if email in User.objects.all().values_list('email', flat=True):
         return True
 
+@sync_to_async
+def _token_true(message):
+    """
+    Проверка наличия указанного токена в списке токенов.
+    """
+    if message.text.split('_')[1] in OutstandingToken.objects.all().values_list('token', flat=True):
+        return True
+
 
 @sync_to_async
 def _user_in_table(message):
@@ -132,7 +150,6 @@ def _delete_telegram_id(message):
                 token=message.text.split('_')[1]).user_id
         )
     )
-    print(telebotuser)
     telebotuser.delete()
 
 
