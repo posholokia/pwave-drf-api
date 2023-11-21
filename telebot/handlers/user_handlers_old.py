@@ -5,10 +5,8 @@ from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 from telebot.lexicon.lexicon import LEXICON_RU
 from telebot.models import TeleBotID
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 import time
 
-from aiogram import F
 
 # Импортируем юзера
 User = get_user_model()
@@ -17,23 +15,12 @@ User = get_user_model()
 router = Router()
 
 
-@router.message(CommandStart(deep_link=True))
+@router.message(CommandStart())
 async def process_start_command(message: Message):
     """
-    Этот хэндлер срабатывает на команду /start и если префикс
-    on - включает уведомления
-    off - выключает уведомления.
+    Этот хэндлер срабатывает на команду /start.
     """
-    await message.answer(text=message.text)
-    if message.text.split('_')[0] == '/start on':
-        await message.answer(text='Хочет подключить')
-        if await _telegram_in_table(message):
-            await message.answer(text=LEXICON_RU['user_in_table'])
-        else:
-            await _save_telegram_id(message)
-            await message.answer(text=LEXICON_RU['mail_changed'])
-    elif message.text.split('_')[0] == '/start off':
-        await message.answer(text='Хочет отключить')
+    await message.answer(text=f"Отлично, {message.from_user.first_name}!!!\n{LEXICON_RU['/start']}")
 
 
 @router.message(Command(commands='on'))
@@ -110,9 +97,8 @@ def _save_telegram_id(message):
     Сохраненяет user_id и telegram_id  в табличку TeleBotID.
     """
     telebotuser = TeleBotID(
-        user=User.objects.get(pk=OutstandingToken.objects.get(token=message.text.split('_')[1]).user_id),
-        telegram_id=message.from_user.id,
-        telegram_name=message.from_user.username
+        user=User.objects.get(pk=User.objects.get(email=message.text.split()[1]).id),
+        telegram_id=message.from_user.id
     )
     telebotuser.save()
 
