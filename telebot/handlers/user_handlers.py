@@ -27,15 +27,14 @@ async def process_start_command(message: Message):
     off - выключает уведомления.
     """
     if await _token_true(message):
-        if message.text.split('_')[0] == '/start on':
-            if await _telegram_in_table(message):
+        if await _telegram_in_table(message):
+            await message.answer(text=LEXICON_RU['user_in_table'])
+        else:
+            if await _user_in_table(message):
                 await message.answer(text=LEXICON_RU['user_in_table'])
             else:
-                if await _user_in_table(message):
-                    await message.answer(text=LEXICON_RU['user_in_table'])
-                else:
-                    await _save_telegram_id(message)
-                    await message.answer(text=LEXICON_RU['mail_changed'])
+                await _save_telegram_id(message)
+                await message.answer(text=LEXICON_RU['mail_changed'])
 
         # if message.text.split('_')[0] == '/start off':
         #     if not await _telegram_in_table(message):
@@ -104,7 +103,7 @@ async def process_cancel_press(callback: CallbackQuery):
     удаляет user_id и telegram_id из таблицы TeleBotID.
     """
     if not await _telegram_in_table(callback):
-        await callback.edit_text(text=LEXICON_RU['user_not_in_table'])
+        await callback.message.edit_text(text=LEXICON_RU['user_not_in_table'])
     else:
         await _delete_telegram_id_off(callback)
         await callback.message.edit_text(text=LEXICON_RU['mail_delete'])
@@ -134,7 +133,7 @@ def _token_true(message):
     """
     Проверка наличия указанного токена в списке токенов.
     """
-    if message.text.split('_')[1] in OutstandingToken.objects.all().values_list('token', flat=True):
+    if message.text.split(' ')[1] in OutstandingToken.objects.all().values_list('token', flat=True):
         return True
 
 
@@ -143,7 +142,7 @@ def _user_in_table(message):
     """
     Проверка наличия пользователя в таблице.
     """
-    if User.objects.get(pk=OutstandingToken.objects.get(token=message.text.split('_')[1]).user_id) \
+    if User.objects.get(pk=OutstandingToken.objects.get(token=message.text.split(' ')[1]).user_id) \
             in TeleBotID.objects.all().values_list('user_id', flat=True):
         return True
 
@@ -163,7 +162,7 @@ def _save_telegram_id(message):
     Сохраненяет user_id и telegram_id  в табличку TeleBotID.
     """
     telebotuser = TeleBotID(
-        user=User.objects.get(pk=OutstandingToken.objects.get(token=message.text.split('_')[1]).user_id),
+        user=User.objects.get(pk=OutstandingToken.objects.get(token=message.text.split(' ')[1]).user_id),
         telegram_id=message.from_user.id,
         telegram_name=message.from_user.username
     )
