@@ -16,12 +16,11 @@ import django_eventstream
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pulsewave.settings')
 
-# application = get_asgi_application()
 application = ProtocolTypeRouter({
     'http': URLRouter([
         path('events/', AuthMiddlewareStack(
             URLRouter(django_eventstream.routing.urlpatterns)
-        ), {'channels': ['message', 'user'], }),
+        ), {'channels': ['test', ], }),
         re_path(r'', get_asgi_application()),
     ]),
 })

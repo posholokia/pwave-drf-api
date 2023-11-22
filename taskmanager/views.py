@@ -16,6 +16,7 @@ from drf_spectacular.utils import extend_schema
 from taskmanager.email import ChangeEmail
 from taskmanager.serializers import ChangeEmailSerializer, ChangeEmailConfirmSerializer, PasswordResetSerializer, \
     CurrentUserSerializer
+from taskmanager.utils import create_default_ws
 
 User = get_user_model()
 
@@ -44,6 +45,8 @@ class CustomUserViewSet(UserViewSet):
         user = serializer.user
 
         super().activation(request, *args, **kwargs)
+
+        create_default_ws(user)
 
         refresh = RefreshToken.for_user(user)
 
@@ -76,6 +79,7 @@ class CustomUserViewSet(UserViewSet):
             serializer.user.last_login = now()
         serializer.user.save()
 
+        create_default_ws(serializer.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def set_username(self, request, *args, **kwargs):

@@ -57,6 +57,7 @@ INSTALLED_APPS = [
 SITE_ID = 1
 
 MIDDLEWARE = [
+    'django_grip.GripMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -243,3 +244,12 @@ WORKSAPCES = {
     'INVITE_EXISTS_USER_EMAIL_URL': 'u/security/invite-exists-user/{wuid}/{uid}/{token}',
     'INVITE_TOKEN_TIMEOUT': 3600 * 24,
 }
+
+APPEND_SLASH = False
+
+# SSE
+EVENTSTREAM_STORAGE_CLASS = 'django_eventstream.storage.DjangoModelStorage'
+
+EVENTSTREAM_ALLOW_ORIGIN = 'http://127.0.0.1:5000'
+EVENTSTREAM_ALLOW_CREDENTIALS = True
+EVENTSTREAM_ALLOW_HEADERS = 'Authorization'

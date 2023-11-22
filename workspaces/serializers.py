@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from djoser import utils
 from djoser.serializers import PasswordRetypeSerializer
 
+from taskmanager.serializers import CurrentUserSerializer
 from taskmanager.token import user_token_generator
 from .models import WorkSpace
 
@@ -41,10 +42,13 @@ class WorkSpaceSerializer(serializers.ModelSerializer):
     """
    Сериализотор РП
    """
+    users = CurrentUserSerializer(many=True, read_only=True)
+    invited = CurrentUserSerializer(many=True, read_only=True)
 
     class Meta:
         model = WorkSpace
         fields = (
+            'id',
             'users',
             'invited',
             'name',
@@ -146,6 +150,46 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+            'name',
             'email',
             'id',
+        )
+
+
+class UserIDSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+
+
+class ResendInviteSerializer(UserIDSerializer):
+    default_error_messages = {
+        'already_invited': 'Пользователь уже принял приглашение',
+        'incorrect_invite': 'Пользователя нет в списке приглашенных в это РП',
+        'invalud_user': 'Такого пользователя не существует',
+    }
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        user_id = attrs['user_id']
+        pk = self.context['view'].kwargs['pk']
+        self.workspace = WorkSpace.objects.get(pk=pk)
+
+        try:
+            self.user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            raise ValidationError(
+                {"user_id": self.default_error_messages["invalud_user"]},
+                'invalud_user'
+            )
+
+        if self.workspace.users.filter(id=user_id).exists():
+            raise ValidationError(
+                {"user_id": self.default_error_messages["already_invited"]},
+                'already_invited'
+            )
+
+        elif self.workspace.invited.filter(id=user_id).exists():
+            return attrs
+
+        raise ValidationError(
+            {"user_id": self.default_error_messages["incorrect_invite"]},
+            'incorrect_invite'
         )
