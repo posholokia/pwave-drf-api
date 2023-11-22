@@ -39,6 +39,22 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
+AWS_ACCESS_KEY_ID = os.getenv('AWS_KEY_IDENTIFICATOR')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_KEY')
+AWS_STORAGE_BUCKET_NAME = 'pulsewave'
+AWS_S3_REGION_NAME = 'ru-central1'
+AWS_S3_ENDPOINT_URL = 'https://storage.yandexcloud.net/'
+
+STORAGES = {
+    "default": {
+        'BACKEND': 'storages.backends.s3.S3Storage',
+    },
+    'staticfiles': {
+         'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+    }
+}
+AWS_S3_FILE_OVERWRITE = False
+
 ADMINS = (
     ('admin', 'ilya.posholokk@gmail.com'),
 )

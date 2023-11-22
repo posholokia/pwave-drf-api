@@ -26,6 +26,7 @@ class CustomUserViewSet(UserViewSet):
     Вьюсет на базе вьюсета библиотеки Djoser.
     Часть методов переопределена под требования проекта.
     """
+    permission_classes = [permissions.AllowAny]
     def get_serializer_class(self):
         if self.action == 'check_link':
             return UidAndTokenSerializer

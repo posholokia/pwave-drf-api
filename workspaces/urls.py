@@ -1,11 +1,11 @@
 from django.urls import path, include
-from workspaces.views import UserList, WorkSpaceViewSet, TestSSEMessage, TestSSEUser
+from workspaces.views import UserList, WorkSpaceViewSet, TestSSEMessage, TestSSEUser, BoardViewSet
 
 from rest_framework import routers
 
 router = routers.DefaultRouter()
 router.register('workspace', WorkSpaceViewSet)
-
+router.register('boards', BoardViewSet)
 
 urlpatterns = [
     path('user_list/', UserList.as_view()),

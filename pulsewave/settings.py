@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'django_eventstream',
     'channels',
+    'storages',
 
     #apps
     'taskmanager.apps.TaskmanagerConfig',
@@ -236,8 +237,9 @@ CORS_ALLOWED_ORIGINS = [
 # ссылка на фронт, которая будет формироваться в письмах
 DOMAIN = 'https://front.pwave.pnpl.tech'
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
-MEDIA_URL = '/media/images/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
+# MEDIA_URL = '/media/images/'
+
 
 WORKSAPCES = {
     'INVITE_NEW_USER_EMAIL_URL': 'auth/invite-new-user/{wuid}/{uid}/{token}',
@@ -250,6 +252,6 @@ APPEND_SLASH = False
 # SSE
 EVENTSTREAM_STORAGE_CLASS = 'django_eventstream.storage.DjangoModelStorage'
 
-EVENTSTREAM_ALLOW_ORIGIN = 'http://127.0.0.1:5000'
+EVENTSTREAM_ALLOW_ORIGIN = 'https://front.pwave.pnpl.tech'
 EVENTSTREAM_ALLOW_CREDENTIALS = True
 EVENTSTREAM_ALLOW_HEADERS = 'Authorization'

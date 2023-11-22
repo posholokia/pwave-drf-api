@@ -44,5 +44,5 @@ def create_default_ws(user):
         ws = WorkSpace.objects.create(owner=user, name='Рабочее пространство 1')
         ws.users.add(user)
 
-        board = Board.objects.create(name='Доска 1', work_space=ws)
-        board.members.add(user)
+        Board.objects.create(name='Доска 1', work_space=ws)
+

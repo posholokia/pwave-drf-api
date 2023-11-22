@@ -148,6 +148,7 @@ class WorkSpaceViewSet(viewsets.ModelViewSet):
         workspace_data = self.serializer_class(serializer.workspace).data,
         return Response(data=workspace_data, status=status.HTTP_200_OK)
 
+    @extend_schema(description='Удаление пользователей из РП\n\nУдаление как из участников так и из приглашенных')
     @action(['post'], detail=True)
     def kick_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -162,6 +163,7 @@ class WorkSpaceViewSet(viewsets.ModelViewSet):
         workspace_data = self.serializer_class(workspace).data,
         return Response(data=workspace_data, status=status.HTTP_200_OK)
 
+    @extend_schema(description='Повторная отправка ссылки с приглашением пользователя.')
     @action(['post'], detail=True)
     def resend_invite(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -196,7 +198,7 @@ class UserList(generics.ListAPIView):
     def get_queryset(self):
         queryset = super().get_queryset()
         filter_parameter = self.request.query_params.get('users')
-        if filter_parameter and len(filter_parameter) > 3:
+        if filter_parameter and len(filter_parameter) > 2:
             queryset = queryset.filter(
                 Q(email__istartswith=filter_parameter) |
                 Q(name__istartswith=filter_parameter)
@@ -235,3 +237,9 @@ class TestSSEUser(generics.CreateAPIView):
         user = self.serializer_class(user).data
         send_event('test', 'test_user', {'user': user})
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BoardViewSet(viewsets.ModelViewSet):
+    serializer_class = serializers.BoardSerializer
+    queryset = WorkSpace.objects.all()
+    permission_classes = [permissions.IsAuthenticated]

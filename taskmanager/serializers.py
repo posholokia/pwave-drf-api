@@ -9,6 +9,7 @@ from rest_framework_simplejwt.settings import api_settings
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
+from django.core.files.storage import default_storage
 
 from djoser.serializers import SendEmailResetSerializer, UserCreatePasswordRetypeSerializer, PasswordRetypeSerializer, \
     CurrentPasswordSerializer
@@ -53,7 +54,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
 
         if avatar:
             name = avatar.name  # название изображения, которое загрузил пользователь
-            with Image.open(avatar) as img:
+            with Image.open(avatar.file) as img:
                 width, height = img.size
                 # пропорционально подгоняем разрешение, чтобы сторона не превышала стандарт max_size
                 new_width, new_height = proportional_reduction(width, height, max_size=200)
@@ -74,9 +75,9 @@ class CurrentUserSerializer(serializers.ModelSerializer):
         """
         При смене/удалении аватарки прежняя аватарка удаляется из хранилища на сервере
         """
-        if 'avatar' in validated_data.keys() and instance.avatar:
-            if os.path.isfile(instance.avatar.path):
-                os.remove(instance.avatar.path)
+        if 'avatar' in validated_data and instance.avatar:
+            if default_storage.exists(instance.avatar.name):
+                default_storage.delete(instance.avatar.name)
 
         return super().update(instance, validated_data)
 

@@ -8,7 +8,7 @@ from djoser.serializers import PasswordRetypeSerializer
 
 from taskmanager.serializers import CurrentUserSerializer
 from taskmanager.token import user_token_generator
-from .models import WorkSpace
+from .models import WorkSpace, Board
 
 User = get_user_model()
 
@@ -192,4 +192,16 @@ class ResendInviteSerializer(UserIDSerializer):
         raise ValidationError(
             {"user_id": self.default_error_messages["incorrect_invite"]},
             'incorrect_invite'
+        )
+
+
+class BoardSerializer(serializers.ModelSerializer):
+    members = CurrentUserSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Board
+        fields = (
+            'name',
+            'members',
+            'id',
         )
