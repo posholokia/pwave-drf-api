@@ -2,7 +2,7 @@ from aiogram import Bot
 from aiogram.types import BotCommand
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from telebot.lexicon.lexicon import LEXICON_COMMANDS
+from telebot.lexicon.lexicon import LEXICON_COMMANDS, LEXICON_RU
 
 
 # Функция для настройки кнопки Menu бота
@@ -17,6 +17,6 @@ def create_menu_keyboard() -> InlineKeyboardMarkup:
     kb_builder = InlineKeyboardBuilder()
     # Наполняем клавиатуру кнопками-закладками в порядке возрастания
     kb_builder.row(
-        InlineKeyboardButton(text=LEXICON_COMMANDS['delete'], callback_data='/off'),
+        InlineKeyboardButton(text=LEXICON_RU['delete'], callback_data='/off'),
     )
     return kb_builder.as_markup()

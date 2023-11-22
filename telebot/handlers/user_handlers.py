@@ -3,6 +3,8 @@ from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
+from aiogram.types import CallbackQuery
+from telebot.keyboards.main_menu import create_menu_keyboard
 from telebot.lexicon.lexicon import LEXICON_RU
 from telebot.models import TeleBotID
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
@@ -92,6 +94,31 @@ async def process_email_delete_command(message: Message):
     else:
         await _delete_telegram_id_off(message)
         await message.answer(text=LEXICON_RU['mail_delete'])
+
+
+@router.callback_query(F.data == '/off')
+async def process_cancel_press(callback: CallbackQuery):
+    """
+    Этот хэндлер срабатывает на инлайнкнопку /off
+    проверяет наличие юзера с такой почтой и при наличии
+    удаляет user_id и telegram_id из таблицы TeleBotID.
+    """
+    if not await _telegram_in_table(callback):
+        await callback.edit_text(text=LEXICON_RU['user_not_in_table'])
+    else:
+        await _delete_telegram_id_off(callback)
+        await callback.message.edit_text(text=LEXICON_RU['mail_delete'])
+    await callback.answer()
+
+
+@router.message(Command(commands='menu'))
+async def process_email_delete_command(message: Message):
+    """
+    Этот хэндлер срабатывает на команду /menu
+    проверяет наличие юзера с такой почтой и при наличии
+    удаляет user_id и telegram_id из таблицы TeleBotID.
+    """
+    await message.answer(text=LEXICON_RU['menu'], reply_markup=create_menu_keyboard())
 
 
 # @sync_to_async
