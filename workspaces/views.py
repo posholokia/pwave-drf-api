@@ -1,15 +1,23 @@
+import string
+import random
+
 from rest_framework import viewsets, permissions, status, generics
-from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from django.contrib.auth import get_user_model
+from django.db.models import Q
+from django.utils.crypto import get_random_string
+
+from django_eventstream import send_event
 
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from taskmanager.email import InviteUserEmail
-from .models import WorkSpace
-from . import serializers
+from taskmanager.serializers import CurrentUserSerializer
+from .models import WorkSpace, InvitedUsers, Board
+from . import serializers, mixins
+from .serializers import InviteUserSerializer
 
 User = get_user_model()
 
@@ -19,10 +27,15 @@ User = get_user_model()
                     create=extend_schema(description='Создать Рабочее пространство'),
                     retrieve=extend_schema(description='Информация о конктретном рабочем пространстве'),
                     update=extend_schema(description='Обновить все данные РП (на данный момент только имя)'),
-                    partial_update=extend_schema(description='Частично обновить данные РП (на данный момент только имя)'),
+                    partial_update=extend_schema(
+                        description='Частично обновить данные РП (на данный момент только имя)'),
                     destroy=extend_schema(description='Удалить РП'),
                     )
-class WorkSpaceViewSet(viewsets.ModelViewSet):
+class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
+                       mixins.CheckWorkSpaceInvitedMixin,
+                       mixins.GetInvitedUsersMixin,
+                       mixins.GetCreateUserMixin,
+                       viewsets.ModelViewSet):
     serializer_class = serializers.WorkSpaceSerializer
     queryset = WorkSpace.objects.all()
     permission_classes = [permissions.IsAuthenticated]
@@ -35,13 +48,17 @@ class WorkSpaceViewSet(viewsets.ModelViewSet):
             return serializers.WorkSpaceInviteSerializer
         elif self.action == 'confirm_invite':
             return serializers.InviteUserSerializer
-        elif self.action == 'confirm_invite_new_user':
-            return serializers.InviteNewUserSerializer
+        elif self.action == 'kick_user':
+            return serializers.UserIDSerializer
+        elif self.action == 'resend_invite':
+            return serializers.ResendInviteSerializer
 
         return self.serializer_class
 
     def get_permissions(self):
         if self.action == "confirm_invite_new_user":
+            self.permission_classes = [permissions.AllowAny]
+        elif self.action == "confirm_invite":
             self.permission_classes = [permissions.AllowAny]
 
         return super().get_permissions()
@@ -67,29 +84,26 @@ class WorkSpaceViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         user_email = request.POST['email']
-        workspace = WorkSpace.objects.get(pk=kwargs['pk'])
-        invite_user = User.objects.filter(email=user_email).first()
 
-        if workspace.users.filter(email=user_email).exists():
+        self.workspace = serializer.get_workspace()
+        self.user = self.get_or_create_user(user_email)
+
+        if self.is_user_added():
             return Response(status=status.HTTP_400_BAD_REQUEST,
                             data={'email': 'Пользователь уже добавлен в это рабочее пространство'})
-        elif workspace.invited.filter(email=user_email).exists():
+
+        if self.is_user_invited():
             return Response(status=status.HTTP_400_BAD_REQUEST,
                             data={'email': 'Пользователь уже приглашен в это рабочее пространство'})
 
-        new_user = False
-        if not invite_user:
-            user_data = {'email': user_email, 'is_active': False, }
-            invite_user = User.objects.create_user(**user_data)
-            new_user = True
+        self.workspace.invited.add(self.user)
+        invite_user = self.get_or_create_invited_users(self.user, self.workspace)
 
-        workspace.invited.add(invite_user)
-
-        context = {'user': invite_user, 'workspace': workspace, 'new_user': new_user}
+        context = {'invite_user': invite_user, }
         to = [user_email]
         InviteUserEmail(self.request, context).send(to)
 
-        return Response(data=self.serializer_class(workspace).data, status=status.HTTP_200_OK)
+        return Response(data=self.serializer_class(self.workspace).data, status=status.HTTP_200_OK)
 
     @extend_schema(description='Добавить пользователя в РП.\n\n'
                                'Здесь добавляются уже зарегистрированные пользователи.\n\n'
@@ -104,46 +118,60 @@ class WorkSpaceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        workspace = serializer.workspace
-        user = request.user
-        if user == serializer.user:
-            workspace.invited.remove(user)
-            workspace.users.add(user)
-            return Response(data=self.serializer_class(workspace).data, status=status.HTTP_200_OK)
+        user = serializer.invited_user.user
+        workspace = serializer.invited_user.workspace
 
-        return Response(status=status.HTTP_400_BAD_REQUEST,
-                        data={'detail': 'Приглашение недействительно для текущего пользователя'})
+        workspace.invited.remove(user)
+        workspace.users.add(user)
 
-    @extend_schema(description='Добавить пользователя в РП.\n\n'
-                               'Здесь добавляются не зарегистрированные пользователи, которых создали при '
-                               'приглашении.\n\n'
-                               'Ссылка на приглашение: u/security/invite-exists-user/{wuid}/{uid}/{token}',
-                   )
-    @action(['post'], detail=False)
-    def confirm_invite_new_user(self, request, *args, **kwargs):
-        """
-       Добавление пользователя в РП и удаление из приглашенных.
-       В этом представлении добавляются пользователи, которых не было на момент пришлашения
-       и их создали автоматически.
-       """
+        data = InviteUserSerializer(serializer.invited_user).data
+        if user.has_usable_password():
+            serializer.invited_user.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        return Response(data=data, status=status.HTTP_200_OK)
+
+    @extend_schema(description='Удаление пользователей из РП\n\nУдаление как из участников так и из приглашенных')
+    @action(['post'], detail=True)
+    def kick_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.user.set_password(serializer.data["new_password"])
+
+        user_id = serializer.data['user_id']
+        workspace = WorkSpace.objects.get(pk=kwargs['pk'])
+
+        workspace.invited.remove(user_id)
+        workspace.users.remove(user_id)
+
+        workspace_data = self.serializer_class(workspace).data,
+        return Response(data=workspace_data, status=status.HTTP_200_OK)
+
+    @extend_schema(description='Повторная отправка ссылки с приглашением пользователя.')
+    @action(['post'], detail=True)
+    def resend_invite(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
         user = serializer.user
-        serializer.workspace.invited.remove(user)
-        serializer.workspace.users.add(user)
+        workspace = serializer.workspace
 
-        return Response(data=self.serializer_class(serializer.workspace).data, status=status.HTTP_200_OK)
+        invite_user = self.get_or_create_invited_users(user, workspace)
+
+        context = {'invite_user': invite_user, }
+        to = [user.email]
+        InviteUserEmail(self.request, context).send(to)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema_view(list=extend_schema(description='Список всех пользователей для поиска.\n\n'
-                                                   'Поиск ведется по почте, начало почты передается через query '
-                                                   'параметр users.\n\n\ Например: /api/user_list/?users=foobar'),
-                    )
+@extend_schema_view(list=extend_schema(
+    description='Список всех пользователей для поиска.\n\n'
+                'Поиск ведется по почте и имени, начало передается через query '
+                'параметр users.\n\n Например: /api/user_list/?users=foobar'
+    ), )
 class UserList(generics.ListAPIView):
     """
-    Вывод списка всех пользователей при поиске.
+    Вывод списка всех пользователей при поиске по имени и почте.
     """
     serializer_class = serializers.UserListSerializer
     queryset = User.objects.all()
@@ -152,7 +180,67 @@ class UserList(generics.ListAPIView):
     def get_queryset(self):
         queryset = super().get_queryset()
         filter_parameter = self.request.query_params.get('users')
-        if filter_parameter and len(filter_parameter) > 3:
-            queryset = queryset.filter(email__startswith=filter_parameter)
+        if filter_parameter and len(filter_parameter) > 2:
+            queryset = queryset.filter(email__istartswith=filter_parameter)
             return queryset
         return None
+
+
+class TestSSEMessage(generics.CreateAPIView):
+    """
+    Создать SSE - передает случайную строку.
+    Слушать /events/
+    channel: test
+    event_type: test_message
+    """
+    serializer_class = None
+    queryset = None
+
+    def post(self, request, *args, **kwargs):
+        message = ''.join(random.choice(string.ascii_letters) for _ in range(10))
+        send_event('test', 'test_message', {'message': message})
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class TestSSEUser(generics.CreateAPIView):
+    """
+    Создать SSE - передает текущего юзера.
+    Слушать /events/
+    channel: test
+    event_type: test_user
+    """
+    serializer_class = CurrentUserSerializer
+    queryset = User.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        user = self.serializer_class(user).data
+        send_event('test', 'test_user', {'user': user})
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema_view(list=extend_schema(description='Список всех досок этого пользователя. '
+                                                   'Для получения досок конкретного РП нужно передать query параметр'
+                                                   '"space_id": /api/board/?space_id=4'),
+                    create=extend_schema(description='Создать Доску'),
+                    retrieve=extend_schema(description='Информация о конкретной доске'),
+                    update=extend_schema(description='Обновить доску'),
+                    partial_update=extend_schema(description='Частично обновить доску'),
+                    destroy=extend_schema(description='Удалить доску'),
+                    )
+class BoardViewSet(viewsets.ModelViewSet):
+    serializer_class = serializers.BoardSerializer
+    queryset = Board.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        queryset = queryset.filter(members=user)
+        workspace = self.request.query_params.get('space_id')
+
+        if workspace:
+            queryset = queryset.filter(work_space_id=workspace)
+
+        return queryset

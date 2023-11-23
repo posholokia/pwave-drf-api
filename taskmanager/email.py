@@ -33,19 +33,9 @@ class InviteUserEmail(BaseEmailMessage):
     def get_context_data(self):
         context = super().get_context_data()
 
-        user = context['user']
-        workspace = context['workspace']
-
-        context['wuid'] = utils.encode_uid(workspace.id)
-        context['uid'] = utils.encode_uid(user.id)
-        context['token'] = user_token_generator.make_token(user)
-
-        if context['new_user']:
-            url = settings.WORKSAPCES['INVITE_NEW_USER_EMAIL_URL'].format(**context)
-        else:
-            url = settings.WORKSAPCES['INVITE_EXISTS_USER_EMAIL_URL'].format(**context)
-
-        context['url'] = url
+        invite_user = context['invite_user']
+        context['token'] = invite_user.token
+        context['url'] = settings.WORKSAPCES['INVITE_USER_EMAIL_URL'].format(**context)
         return context
 
 

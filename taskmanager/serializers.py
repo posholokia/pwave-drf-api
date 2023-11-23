@@ -1,5 +1,3 @@
-import os
-
 from jwt import DecodeError, ExpiredSignatureError
 from rest_framework import serializers
 from rest_framework import exceptions
@@ -9,11 +7,15 @@ from rest_framework_simplejwt.settings import api_settings
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
+from django.core.files.storage import default_storage
 
-from djoser.serializers import SendEmailResetSerializer, UserCreatePasswordRetypeSerializer, PasswordRetypeSerializer, \
-    CurrentPasswordSerializer
+from djoser.serializers import (SendEmailResetSerializer,
+                                UserCreatePasswordRetypeSerializer,
+                                PasswordRetypeSerializer,
+                                CurrentPasswordSerializer)
 from djoser.conf import settings as djoser_settings
 
+from workspaces.models import InvitedUsers
 from .token import token_generator
 from .utils import proportional_reduction, get_resized_django_obj
 from .tasks import delete_inactive_user
@@ -37,7 +39,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             'email',
             'name',
             'represent_name',
-            # 'avatar',  # до подключения медиа
+            'avatar',  # до подключения медиа
         )
 
     def get_represent_name(self, obj):
@@ -53,7 +55,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
 
         if avatar:
             name = avatar.name  # название изображения, которое загрузил пользователь
-            with Image.open(avatar) as img:
+            with Image.open(avatar.file) as img:
                 width, height = img.size
                 # пропорционально подгоняем разрешение, чтобы сторона не превышала стандарт max_size
                 new_width, new_height = proportional_reduction(width, height, max_size=200)
@@ -74,9 +76,9 @@ class CurrentUserSerializer(serializers.ModelSerializer):
         """
         При смене/удалении аватарки прежняя аватарка удаляется из хранилища на сервере
         """
-        if 'avatar' in validated_data.keys() and instance.avatar:
-            if os.path.isfile(instance.avatar.path):
-                os.remove(instance.avatar.path)
+        if 'avatar' in validated_data and instance.avatar:
+            if default_storage.exists(instance.avatar.name):
+                default_storage.delete(instance.avatar.name)
 
         return super().update(instance, validated_data)
 
@@ -255,3 +257,20 @@ class CreateUserSerializer(UserCreatePasswordRetypeSerializer):
         user = super().perform_create(validated_data)
         delete_inactive_user.apply_async((user.id,), countdown=24*60*60)
         return user
+
+
+class InvitedPasswordSerializer(PasswordRetypeSerializer):
+    token = serializers.CharField(max_length=32, min_length=32, write_only=True)
+
+    def validate(self, attrs):
+        token = attrs.pop('token')
+        attrs = super().validate(attrs)
+
+        try:
+            self.invited_user = InvitedUsers.objects.get(token=token)
+        except InvitedUsers.DoesNotExist:
+            raise exceptions.ValidationError(
+                {'token': 'Недействительный токен для этого пользователя'},
+            )
+
+        return attrs

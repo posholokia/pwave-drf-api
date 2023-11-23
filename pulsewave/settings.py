@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'django_eventstream',
     'channels',
+    'storages',
 
     #apps
     'taskmanager.apps.TaskmanagerConfig',
@@ -57,6 +58,7 @@ INSTALLED_APPS = [
 SITE_ID = 1
 
 MIDDLEWARE = [
+    'django_grip.GripMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -235,11 +237,21 @@ CORS_ALLOWED_ORIGINS = [
 # ссылка на фронт, которая будет формироваться в письмах
 DOMAIN = 'https://front.pwave.pnpl.tech'
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
-MEDIA_URL = '/media/images/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
+# MEDIA_URL = '/media/images/'
+
 
 WORKSAPCES = {
-    'INVITE_NEW_USER_EMAIL_URL': 'auth/invite-new-user/{wuid}/{uid}/{token}',
-    'INVITE_EXISTS_USER_EMAIL_URL': 'u/security/invite-exists-user/{wuid}/{uid}/{token}',
+    # 'INVITE_NEW_USER_EMAIL_URL': 'auth/invite-new-user/{wuid}/{uid}/{token}',
+    'INVITE_USER_EMAIL_URL': 'invite/workspace/{token}',
     'INVITE_TOKEN_TIMEOUT': 3600 * 24,
 }
+
+APPEND_SLASH = False
+
+# SSE
+EVENTSTREAM_STORAGE_CLASS = 'django_eventstream.storage.DjangoModelStorage'
+
+EVENTSTREAM_ALLOW_ORIGIN = 'https://front.pwave.pnpl.tech'
+EVENTSTREAM_ALLOW_CREDENTIALS = True
+EVENTSTREAM_ALLOW_HEADERS = 'Authorization'
