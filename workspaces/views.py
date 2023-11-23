@@ -15,7 +15,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from taskmanager.email import InviteUserEmail
 from taskmanager.serializers import CurrentUserSerializer
-from .models import WorkSpace, InvitedUsers
+from .models import WorkSpace, InvitedUsers, Board
 from . import serializers, mixins
 from .serializers import InviteUserSerializer
 
@@ -220,13 +220,27 @@ class TestSSEUser(generics.CreateAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema_view(list=extend_schema(description='Список всех досок этого пользователя. '
+                                                   'Для получения досок конкретного РП нужно передать query параметр'
+                                                   '"space_id": /api/board/?space_id=4'),
+                    create=extend_schema(description='Создать Доску'),
+                    retrieve=extend_schema(description='Информация о конкретной доске'),
+                    update=extend_schema(description='Обновить доску'),
+                    partial_update=extend_schema(description='Частично обновить доску'),
+                    destroy=extend_schema(description='Удалить доску'),
+                    )
 class BoardViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.BoardSerializer
-    queryset = WorkSpace.objects.all()
+    queryset = Board.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
         queryset = queryset.filter(members=user)
+        workspace = self.request.query_params.get('space_id')
+
+        if workspace:
+            queryset = queryset.filter(work_space_id=workspace)
+
         return queryset

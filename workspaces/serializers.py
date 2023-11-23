@@ -38,20 +38,34 @@ class CreateWorkSpaceSerializer(serializers.ModelSerializer):
         return instance
 
 
+class BoardSerializer(serializers.ModelSerializer):
+    members = CurrentUserSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Board
+        fields = (
+            'name',
+            'members',
+            'id',
+        )
+
+
 class WorkSpaceSerializer(serializers.ModelSerializer):
     """
    Сериализотор РП
    """
     users = CurrentUserSerializer(many=True, read_only=True)
     invited = CurrentUserSerializer(many=True, read_only=True)
+    boards = BoardSerializer(many=True, source='board')
 
     class Meta:
         model = WorkSpace
         fields = (
             'id',
+            'name',
             'users',
             'invited',
-            'name',
+            'boards',
         )
 
 
@@ -164,13 +178,3 @@ class ResendInviteSerializer(mixins.GetUserMixin,
         )
 
 
-class BoardSerializer(serializers.ModelSerializer):
-    members = CurrentUserSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Board
-        fields = (
-            'name',
-            'members',
-            'id',
-        )
