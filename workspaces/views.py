@@ -124,11 +124,12 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         workspace.invited.remove(user)
         workspace.users.add(user)
 
-        if not user.has_usable_password():
-            data = InviteUserSerializer(serializer.invited_user).data
-            return Response(data=data, status=status.HTTP_200_OK)
+        data = InviteUserSerializer(serializer.invited_user).data
+        if user.has_usable_password():
+            serializer.invited_user.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(data=data, status=status.HTTP_200_OK)
 
     @extend_schema(description='Удаление пользователей из РП\n\nУдаление как из участников так и из приглашенных')
     @action(['post'], detail=True)
@@ -187,7 +188,8 @@ class UserList(generics.ListAPIView):
 
 class TestSSEMessage(generics.CreateAPIView):
     """
-    Создать SSE - передает случайную строку
+    Создать SSE - передает случайную строку.
+    Слушать /events/
     channel: test
     event_type: test_message
     """
@@ -203,6 +205,7 @@ class TestSSEMessage(generics.CreateAPIView):
 class TestSSEUser(generics.CreateAPIView):
     """
     Создать SSE - передает текущего юзера.
+    Слушать /events/
     channel: test
     event_type: test_user
     """

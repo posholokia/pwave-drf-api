@@ -2,6 +2,7 @@ from .models import WorkSpace, Board, InvitedUsers
 from rest_framework.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
+from .tasks import delete_invited
 
 User = get_user_model()
 
@@ -66,6 +67,7 @@ class GetInvitedUsersMixin:
                 token=get_random_string(length=32),
                 workspace=workspace,
             )
+            delete_invited.apply_async((invite_user.id,), countdown=24*60*60)
         return invite_user
 
 
