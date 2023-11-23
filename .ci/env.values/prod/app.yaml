@@ -25,6 +25,16 @@ env:
   EMAIL_HOST_PASSWORD: "{{ .Values.APP_EMAIL_HOST_PASSWORD }}"
   PYTHONUNBUFFERED: 1
   REDIS_HOST: "{{ .Values.APP_REDIS_BROKER }}-master"
+  AWS_KEY_IDENTIFICATOR:
+    valueFrom:
+      secretKeyRef:
+        name: pwave-backend-s3-creds
+        key: AWS_KEY_IDENTIFICATOR
+  AWS_SECRET_KEY:
+    valueFrom:
+      secretKeyRef:
+        name: pwave-backend-s3-creds
+        key: AWS_SECRET_KEY
 
 imagePullSecrets:
   - name: gitlab-cr
