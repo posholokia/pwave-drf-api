@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.db import models
 from pulsewave import settings
 from django.utils.crypto import get_random_string
@@ -19,7 +21,7 @@ class Board(models.Model):
 
 class InvitedUsers(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='invited', on_delete=models.CASCADE)
-    token = models.CharField(max_length=24)
+    token = models.CharField(max_length=32)
     workspace = models.ForeignKey(WorkSpace, related_name='invited_users', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 

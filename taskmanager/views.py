@@ -1,4 +1,4 @@
-from rest_framework import generics, viewsets, status, permissions
+from rest_framework import generics, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -9,13 +9,15 @@ from django.utils.timezone import now
 from django.db.utils import IntegrityError
 
 from djoser.views import UserViewSet
-from djoser.serializers import UidAndTokenSerializer, UserCreateSerializer
+from djoser.serializers import UidAndTokenSerializer
 
 from drf_spectacular.utils import extend_schema
 
 from taskmanager.email import ChangeEmail
-from taskmanager.serializers import ChangeEmailSerializer, ChangeEmailConfirmSerializer, PasswordResetSerializer, \
-    CurrentUserSerializer
+from taskmanager.serializers import (ChangeEmailSerializer,
+                                     ChangeEmailConfirmSerializer,
+                                     PasswordResetSerializer,
+                                     InvitedPasswordSerializer)
 from taskmanager.utils import create_default_ws
 
 User = get_user_model()
@@ -26,14 +28,22 @@ class CustomUserViewSet(UserViewSet):
     Вьюсет на базе вьюсета библиотеки Djoser.
     Часть методов переопределена под требования проекта.
     """
-    permission_classes = [permissions.AllowAny]
+
     def get_serializer_class(self):
         if self.action == 'check_link':
             return UidAndTokenSerializer
-        elif self.action == "reset_password":
+        elif self.action == 'reset_password':
             return PasswordResetSerializer
+        elif self.action == 'reset_password_invited':
+            return InvitedPasswordSerializer
 
         return super().get_serializer_class()
+
+    def get_permissions(self):
+        if self.action == 'reset_password_invited':
+            self.permission_classes = [permissions.AllowAny]
+
+        return super().get_permissions()
 
     @action(['post'], detail=False)
     def activation(self, request, *args, **kwargs):
@@ -82,6 +92,24 @@ class CustomUserViewSet(UserViewSet):
 
         create_default_ws(serializer.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(["post"], detail=False)
+    def reset_password_invited(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.invited_user.user
+        user.set_password(serializer.data["new_password"])
+        user.save()
+
+        serializer.invited_user.delete()
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }, status=status.HTTP_200_OK)
 
     def set_username(self, request, *args, **kwargs):
         """
@@ -137,6 +165,7 @@ class ChangeEmailConfirmView(generics.GenericAPIView):
         user = request.user
         new_email = serializer.validated_data
         user.email = new_email
+
         try:
             user.save()
         except IntegrityError:

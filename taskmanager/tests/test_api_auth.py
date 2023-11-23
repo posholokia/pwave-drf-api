@@ -29,7 +29,8 @@ class UserProfileTestCase(APITestCase):
             'id': self.user_id,
             'email': 'test-user@example.com',
             'name': '',
-            'represent_name': 'test-user'
+            'represent_name': 'test-user',
+            'avatar': None,
         }
 
         serializer_data = CurrentUserSerializer(self.user).data

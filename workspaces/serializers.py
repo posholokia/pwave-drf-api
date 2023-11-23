@@ -1,14 +1,14 @@
+from datetime import timedelta
+from django.utils.timezone import now
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from django.contrib.auth import get_user_model
 
-from djoser import utils
-from djoser.serializers import PasswordRetypeSerializer
-
+from pulsewave.settings import WORKSAPCES
 from taskmanager.serializers import CurrentUserSerializer
-from taskmanager.token import user_token_generator
-from .models import WorkSpace, Board
+from . import mixins
+from .models import WorkSpace, Board, InvitedUsers
 
 User = get_user_model()
 
@@ -55,7 +55,8 @@ class WorkSpaceSerializer(serializers.ModelSerializer):
         )
 
 
-class WorkSpaceInviteSerializer(serializers.Serializer):
+class WorkSpaceInviteSerializer(mixins.GetWorkSpaceMixin,
+                                serializers.Serializer):
     """
     Сериализотор пришлашения пользователей.
     Сериализует почту добавленного пользователя.
@@ -63,84 +64,58 @@ class WorkSpaceInviteSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
 
-class WuidUidTokenSerializer(serializers.Serializer):
-    """
-    Сериализатор уникальных идентификаторов.
-    wuid: идентификатор РП
-    uid: идентификатор пользователя
-    token: токен пользователя
-    """
-    wuid = serializers.CharField()
-    uid = serializers.CharField()
-    token = serializers.CharField()
+class InviteUserSerializer(mixins.GetInvitedMixin,
+                           mixins.CheckWorkSpaceUsersMixin,
+                           mixins.CheckWorkSpaceInvitedMixin,
+                           serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
 
     default_error_messages = {
-        "invalid_token": 'Некорректный токен',
-        "invalid_uid": 'Нет пользователя с таким uid',
-        "invalid_wuid": 'Нет рабочего простанства с таким wuid',
-        "invite_invalid": "Приглашение в это рабочее пространство уже не актуально"
+        'invalid_token': 'Недействительный токен',
+        'token_expired': 'Срок действия токена истек',
+        'already_invited': 'Пользователь уже был добавлен в это РП',
     }
 
-    def validate(self, attrs):
-        """
-        Валидация полученных данных.
-        Сперва пытается получить РП из wuid.
-        Затем пользователя из uid.
-        Затем проверяет действительность токена для текущего пользователя.
-        """
-        validated_data = super().validate(attrs)
-
-        try:
-            wuid = utils.decode_uid(self.initial_data.get("wuid", ""))
-            self.workspace = WorkSpace.objects.get(pk=wuid)
-        except (WorkSpace.DoesNotExist, ValueError, TypeError, OverflowError):
-            raise ValidationError(
-                {"wuid": self.default_error_messages["invalid_wuid"]},
-                'invalid_wuid'
-            )
-
-        try:
-            uid = utils.decode_uid(self.initial_data.get("uid", ""))
-            self.user = User.objects.get(pk=uid)
-        except (User.DoesNotExist, ValueError, TypeError, OverflowError):
-            key_error = "invalid_uid"
-            raise ValidationError(
-                {"uid": [self.error_messages[key_error]]},
-                'invalid_uid'
-            )
-
-        is_token_valid = user_token_generator.check_token(
-            self.user, self.initial_data.get("token", "")
+    class Meta:
+        model = InvitedUsers
+        read_only_fields = ['user', 'workspace']
+        fields = (
+            'token',
+            'user',
+            'workspace',
         )
 
-        if is_token_valid:
-            if self.user in self.workspace.invited.filter(id=self.user.id):
-                return validated_data
+    def get_user(self, obj):
+        return obj.user.email
 
+    def validate(self, attrs):
+        self.get_invited_user(**attrs)
+
+        time_out = timedelta(seconds=WORKSAPCES['INVITE_TOKEN_TIMEOUT'])
+        expired_token = self.invited_user.created_at + time_out
+
+        if now() > expired_token:
             raise ValidationError(
-                {"detail": self.error_messages['invite_invalid']},
-                'invite_invalid'
+                {"token": self.default_error_messages['token_expired']},
+                'token_expired'
             )
 
-        else:
-            key_error = "invalid_token"
+        self.workspace = self.invited_user.workspace
+        self.user = self.invited_user.user
+
+        if self.is_user_added():
             raise ValidationError(
-                {"token": [self.error_messages[key_error]]}, code=key_error
+                {"token": self.default_error_messages['already_invited']},
+                'already_invited'
             )
 
+        if self.is_user_invited():
+            return attrs
 
-class InviteUserSerializer(WuidUidTokenSerializer):
-    """
-    Сериализатор приглашенного пользователя, который был зарегистрирвоан на момент приглашения.
-    """
-    pass
-
-
-class InviteNewUserSerializer(WuidUidTokenSerializer, PasswordRetypeSerializer):
-    """
-    Сериализатор приглашенного пользователя, который не был зарегистрирвоан на момент приглашения.
-    """
-    pass
+        raise ValidationError(
+            {"token": self.default_error_messages['invalid_token']},
+            'invalid_token'
+        )
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -160,33 +135,27 @@ class UserIDSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
 
 
-class ResendInviteSerializer(UserIDSerializer):
+class ResendInviteSerializer(mixins.GetUserMixin,
+                             mixins.GetWorkSpaceMixin,
+                             mixins.CheckWorkSpaceUsersMixin,
+                             mixins.CheckWorkSpaceInvitedMixin,
+                             UserIDSerializer):
     default_error_messages = {
         'already_invited': 'Пользователь уже принял приглашение',
         'incorrect_invite': 'Пользователя нет в списке приглашенных в это РП',
-        'invalud_user': 'Такого пользователя не существует',
+        'invalid_user': 'Такого пользователя не существует',
     }
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
         user_id = attrs['user_id']
-        pk = self.context['view'].kwargs['pk']
-        self.workspace = WorkSpace.objects.get(pk=pk)
 
-        try:
-            self.user = User.objects.get(pk=user_id)
-        except User.DoesNotExist:
-            raise ValidationError(
-                {"user_id": self.default_error_messages["invalud_user"]},
-                'invalud_user'
-            )
+        self.get_workspace()
+        self.get_user_object(pk=user_id)
 
-        if self.workspace.users.filter(id=user_id).exists():
-            raise ValidationError(
-                {"user_id": self.default_error_messages["already_invited"]},
-                'already_invited'
-            )
+        self.is_user_added()
 
-        elif self.workspace.invited.filter(id=user_id).exists():
+        if self.is_user_invited():
             return attrs
 
         raise ValidationError(

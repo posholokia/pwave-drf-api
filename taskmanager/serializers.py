@@ -1,5 +1,3 @@
-import os
-
 from jwt import DecodeError, ExpiredSignatureError
 from rest_framework import serializers
 from rest_framework import exceptions
@@ -11,10 +9,13 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 from django.core.files.storage import default_storage
 
-from djoser.serializers import SendEmailResetSerializer, UserCreatePasswordRetypeSerializer, PasswordRetypeSerializer, \
-    CurrentPasswordSerializer
+from djoser.serializers import (SendEmailResetSerializer,
+                                UserCreatePasswordRetypeSerializer,
+                                PasswordRetypeSerializer,
+                                CurrentPasswordSerializer)
 from djoser.conf import settings as djoser_settings
 
+from workspaces.models import InvitedUsers
 from .token import token_generator
 from .utils import proportional_reduction, get_resized_django_obj
 from .tasks import delete_inactive_user
@@ -38,7 +39,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             'email',
             'name',
             'represent_name',
-            # 'avatar',  # до подключения медиа
+            'avatar',  # до подключения медиа
         )
 
     def get_represent_name(self, obj):
@@ -256,3 +257,20 @@ class CreateUserSerializer(UserCreatePasswordRetypeSerializer):
         user = super().perform_create(validated_data)
         delete_inactive_user.apply_async((user.id,), countdown=24*60*60)
         return user
+
+
+class InvitedPasswordSerializer(PasswordRetypeSerializer):
+    token = serializers.CharField(max_length=32, min_length=32, write_only=True)
+
+    def validate(self, attrs):
+        token = attrs.pop('token')
+        attrs = super().validate(attrs)
+
+        try:
+            self.invited_user = InvitedUsers.objects.get(token=token)
+        except InvitedUsers.DoesNotExist:
+            raise exceptions.ValidationError(
+                {'token': 'Недействительный токен для этого пользователя'},
+            )
+
+        return attrs

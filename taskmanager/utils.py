@@ -45,4 +45,3 @@ def create_default_ws(user):
         ws.users.add(user)
 
         Board.objects.create(name='Доска 1', work_space=ws)
-

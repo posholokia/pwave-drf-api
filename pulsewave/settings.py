@@ -242,8 +242,8 @@ DOMAIN = 'https://front.pwave.pnpl.tech'
 
 
 WORKSAPCES = {
-    'INVITE_NEW_USER_EMAIL_URL': 'auth/invite-new-user/{wuid}/{uid}/{token}',
-    'INVITE_EXISTS_USER_EMAIL_URL': 'u/security/invite-exists-user/{wuid}/{uid}/{token}',
+    # 'INVITE_NEW_USER_EMAIL_URL': 'auth/invite-new-user/{wuid}/{uid}/{token}',
+    'INVITE_USER_EMAIL_URL': 'invite/workspace/{token}',
     'INVITE_TOKEN_TIMEOUT': 3600 * 24,
 }
 
