@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='board',
             name='work_space',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='boards', to='workspaces.workspace'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='board', to='workspaces.workspace'),
         ),
         migrations.AlterField(
             model_name='workspace',
