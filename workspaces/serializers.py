@@ -1,9 +1,10 @@
 from datetime import timedelta
+
 from django.utils.timezone import now
+from django.contrib.auth import get_user_model
+
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-
-from django.contrib.auth import get_user_model
 
 from pulsewave.settings import WORKSAPCES
 from taskmanager.serializers import CurrentUserSerializer
@@ -176,5 +177,3 @@ class ResendInviteSerializer(mixins.GetUserMixin,
             {"user_id": self.default_error_messages["incorrect_invite"]},
             'incorrect_invite'
         )
-
-

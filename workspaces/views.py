@@ -6,16 +6,13 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from django.contrib.auth import get_user_model
-from django.db.models import Q
-from django.utils.crypto import get_random_string
 
 from django_eventstream import send_event
 
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
-from taskmanager.email import InviteUserEmail
 from taskmanager.serializers import CurrentUserSerializer
-from .models import WorkSpace, InvitedUsers, Board
+from .models import WorkSpace, Board
 from . import serializers, mixins
 from .serializers import InviteUserSerializer
 
@@ -83,7 +80,7 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user_email = request.POST['email']
+        user_email = serializer.validated_data.get('email')
 
         self.workspace = serializer.get_workspace()
         self.user = self.get_or_create_user(user_email)
@@ -97,11 +94,7 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
                             data={'email': 'Пользователь уже приглашен в это рабочее пространство'})
 
         self.workspace.invited.add(self.user)
-        invite_user = self.get_or_create_invited_users(self.user, self.workspace)
-
-        context = {'invite_user': invite_user, }
-        to = [user_email]
-        InviteUserEmail(self.request, context).send(to)
+        self.get_or_create_invited_users(self.user, self.workspace)
 
         return Response(data=self.serializer_class(self.workspace).data, status=status.HTTP_200_OK)
 
@@ -155,11 +148,7 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         user = serializer.user
         workspace = serializer.workspace
 
-        invite_user = self.get_or_create_invited_users(user, workspace)
-
-        context = {'invite_user': invite_user, }
-        to = [user.email]
-        InviteUserEmail(self.request, context).send(to)
+        self.get_or_create_invited_users(user, workspace)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 

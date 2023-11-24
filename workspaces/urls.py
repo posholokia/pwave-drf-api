@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path
 from workspaces.views import UserList, WorkSpaceViewSet, TestSSEMessage, TestSSEUser, BoardViewSet
 
 from rest_framework import routers
