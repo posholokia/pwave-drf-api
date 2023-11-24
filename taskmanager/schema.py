@@ -50,6 +50,11 @@ class Fix1(OpenApiViewExtension):
             def reset_password_confirm(self, request, *args, **kwargs):
                 return super().reset_password_confirm(request, *args, **kwargs)
 
+            @extend_schema(description='Сброс пароля для пользователей, созданных приглашением',
+                           responses={200: TokenObtainPairSerializer, }, )
+            def reset_password_invited(self, request, *args, **kwargs):
+                return super().reset_password_invited(request, *args, **kwargs)
+
         return Fixed
 
 

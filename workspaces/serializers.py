@@ -39,7 +39,7 @@ class CreateWorkSpaceSerializer(serializers.ModelSerializer):
         return instance
 
 
-class BoardSerializer(serializers.ModelSerializer):
+class WorkspaceBoardsSerializer(serializers.ModelSerializer):
     members = CurrentUserSerializer(many=True, read_only=True)
 
     class Meta:
@@ -57,7 +57,7 @@ class WorkSpaceSerializer(serializers.ModelSerializer):
    """
     users = CurrentUserSerializer(many=True, read_only=True)
     invited = CurrentUserSerializer(many=True, read_only=True)
-    boards = BoardSerializer(many=True, source='board')
+    boards = WorkspaceBoardsSerializer(many=True, read_only=True, source='board')
 
     class Meta:
         model = WorkSpace
@@ -177,3 +177,17 @@ class ResendInviteSerializer(mixins.GetUserMixin,
             {"user_id": self.default_error_messages["incorrect_invite"]},
             'incorrect_invite'
         )
+
+
+class BoardSerializer(serializers.ModelSerializer):
+    members = CurrentUserSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Board
+        fields = (
+            'id',
+            'work_space',
+            'name',
+            'members',
+        )
+
