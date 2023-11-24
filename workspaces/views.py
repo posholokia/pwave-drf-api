@@ -80,7 +80,7 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user_email = request.POST['email']
+        user_email = serializer.validated_data.get('email')
 
         self.workspace = serializer.get_workspace()
         self.user = self.get_or_create_user(user_email)
