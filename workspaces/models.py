@@ -11,7 +11,7 @@ class WorkSpace(models.Model):
 
 
 class Board(models.Model):
-    work_space = models.ForeignKey(WorkSpace, related_name='boards', on_delete=models.CASCADE)
+    work_space = models.ForeignKey(WorkSpace, related_name='board', on_delete=models.CASCADE)
     name = models.CharField('Доска', max_length=50)
     members = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='joined_boards')
 
