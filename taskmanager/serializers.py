@@ -96,8 +96,7 @@ class PasswordResetSerializer(SendEmailResetSerializer):
             user = User._default_manager.get(
                 **{self.email_field: self.data.get(self.email_field, "")},
             )
-            if user.has_usable_password():
-                return user
+            return user
         except User.DoesNotExist:
             pass
         if (

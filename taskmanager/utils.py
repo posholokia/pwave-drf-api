@@ -40,7 +40,7 @@ def get_resized_django_obj(img: Image, width: int, height: int) -> InMemoryUploa
 
 
 def create_default_ws(user):
-    if not user.space_owner.all():
+    if not user.owned_workspaces.all():
         ws = WorkSpace.objects.create(owner=user, name='Рабочее пространство 1')
         ws.users.add(user)
 

@@ -41,7 +41,7 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
     def get_serializer_class(self):
         if self.action == 'create':
             return serializers.CreateWorkSpaceSerializer
-        elif self.action == 'invite_user':
+        if self.action == 'invite_user':
             return serializers.WorkSpaceInviteSerializer
         elif self.action == 'confirm_invite':
             return serializers.InviteUserSerializer
@@ -65,6 +65,15 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         user = self.request.user
         queryset = queryset.filter(users=user)
         return queryset
+
+    @extend_schema(responses={201: serializers.WorkSpaceSerializer(many=True)}, )
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        queryset = self.get_queryset()
+        serialized_data = self.serializer_class(queryset, many=True).data
+        return Response(data=serialized_data, status=status.HTTP_201_CREATED)
 
     @extend_schema(description='Пригласить пользователя по email.\n\n'
                                'Пользователи добавляются по одному.'
@@ -99,10 +108,13 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
 
         return Response(data=self.serializer_class(self.workspace).data, status=status.HTTP_200_OK)
 
-    @extend_schema(description='Подтверждение приглашения в РП.\n\nПройдя по ссылке пользователь будет добавлен в РП. '
-                               'Ссылка на приглашение: invite/workspace/{token}\n\n'
-                               'Если ответ 200 - у пользователя нет пароля, отправить на '
-                               '/auth/users/reset_password_invited/\n\nОтвет 204 - у пользователя есть пароль, ')
+    @extend_schema(
+        description='Подтверждение приглашения в РП.\n\nПройдя по ссылке пользователь будет добавлен в РП. '
+                    'Ссылка на приглашение: invite/workspace/{token}\n\n'
+                    'Если ответ 200 - у пользователя нет пароля, отправить на '
+                    '/auth/users/reset_password_invited/\n\nОтвет 204 - у пользователя есть пароль ',
+        responses={204: None, 200: InviteUserSerializer, },
+    )
     @action(['post'], detail=False)
     def confirm_invite(self, request, *args, **kwargs):
         """
@@ -125,7 +137,7 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         return Response(data=data, status=status.HTTP_200_OK)
 
     @extend_schema(description='Удаление пользователей из РП\n\nУдаление как из участников так и из приглашенных',
-                   responses={200: serializers.WorkSpaceSerializer},)
+                   responses={200: serializers.WorkSpaceSerializer}, )
     @action(['post'], detail=True)
     def kick_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -159,7 +171,7 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
     description='Список всех пользователей для поиска.\n\n'
                 'Поиск ведется по почте и имени, начало передается через query '
                 'параметр users.\n\n Например: /api/user_list/?users=foobar'
-    ), )
+), )
 class UserList(generics.ListAPIView):
     """
     Вывод списка всех пользователей при поиске по имени и почте.
