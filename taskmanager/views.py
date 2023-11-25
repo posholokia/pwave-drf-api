@@ -100,6 +100,7 @@ class CustomUserViewSet(UserViewSet):
 
         user = serializer.invited_user.user
         user.set_password(serializer.data["new_password"])
+        user.is_active = True
         user.save()
 
         serializer.invited_user.delete()

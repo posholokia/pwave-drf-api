@@ -45,9 +45,9 @@ class WorkspaceBoardsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Board
         fields = (
+            'id',
             'name',
             'members',
-            'id',
         )
 
 
@@ -140,9 +140,9 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+            'id',
             'name',
             'email',
-            'id',
         )
 
 
@@ -186,8 +186,8 @@ class BoardSerializer(serializers.ModelSerializer):
         model = Board
         fields = (
             'id',
-            'work_space',
             'name',
+            'work_space',
             'members',
         )
 
