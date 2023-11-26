@@ -137,7 +137,10 @@ class UserListSerializer(serializers.ModelSerializer):
     """
     Сериализатор списка пользователей при поиске.
     """
+
     name = serializers.SerializerMethodField()
+    added = serializers.SerializerMethodField()
+    invited = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -145,10 +148,24 @@ class UserListSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'email',
+            'added',
+            'invited',
         )
 
     def get_name(self, obj):
         return obj.representation_name()
+
+    def get_added(self, obj):
+        workspace_id = self.context.get('view').request.query_params.get('workspace')
+        if obj.joined_workspaces.filter(id=workspace_id).exists():
+            return True
+        return False
+
+    def get_invited(self, obj):
+        workspace_id = self.context.get('view').request.query_params.get('workspace')
+        if obj.invited_to_workspaces.filter(id=workspace_id).exists():
+            return True
+        return False
 
 
 class UserIDSerializer(serializers.Serializer):
