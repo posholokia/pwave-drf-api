@@ -137,6 +137,8 @@ class UserListSerializer(serializers.ModelSerializer):
     """
     Сериализатор списка пользователей при поиске.
     """
+    name = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = (
@@ -144,6 +146,9 @@ class UserListSerializer(serializers.ModelSerializer):
             'name',
             'email',
         )
+
+    def get_name(self, obj):
+        return obj.representation_name()
 
 
 class UserIDSerializer(serializers.Serializer):
