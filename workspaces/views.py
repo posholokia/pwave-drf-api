@@ -176,7 +176,6 @@ class UserList(generics.ListAPIView):
     def get_queryset(self):
         queryset = super().get_queryset()
         filter_email = self.request.query_params.get('users')
-        filter_ws = self.request.query_params.get('workspace')
 
         if filter_email and len(filter_email) > 2:
             queryset = (queryset
@@ -184,12 +183,12 @@ class UserList(generics.ListAPIView):
                         .exclude(pk=self.request.user.id)
                         )
 
-            if filter_ws:
-                queryset = (queryset
-                            .exclude(owned_workspaces=filter_ws)
-                            .exclude(joined_workspaces=filter_ws)
-                            .exclude(invited_to_workspaces=filter_ws)
-                            )
+            # if self.filter_ws:
+            #     queryset = (queryset
+            #                 # .exclude(owned_workspaces=filter_ws)
+            #                 # .exclude(joined_workspaces=filter_ws)
+            #                 # .exclude(invited_to_workspaces=filter_ws)
+            #                 )
             return queryset
         return None
 
