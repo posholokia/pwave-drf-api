@@ -19,15 +19,14 @@ from .serializers import InviteUserSerializer
 User = get_user_model()
 
 
-@extend_schema_view(list=extend_schema(description='Список всех Рабочих пространств '
-                                                   'авторизованного пользователя'),
-                    create=extend_schema(description='Создать Рабочее пространство'),
-                    retrieve=extend_schema(description='Информация о конктретном рабочем пространстве'),
-                    update=extend_schema(description='Обновить все данные РП (на данный момент только имя)'),
-                    partial_update=extend_schema(
-                        description='Частично обновить данные РП (на данный момент только имя)'),
-                    destroy=extend_schema(description='Удалить РП'),
-                    )
+@extend_schema_view(
+    list=extend_schema(description='Список всех Рабочих пространств авторизованного пользователя'),
+    create=extend_schema(description='Создать Рабочее пространство'),
+    retrieve=extend_schema(description='Информация о конктретном рабочем пространстве'),
+    update=extend_schema(description='Обновить все данные РП (на данный момент только имя)'),
+    partial_update=extend_schema(description='Частично обновить данные РП (на данный момент только имя)'),
+    destroy=extend_schema(description='Удалить РП'),
+)
 class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
                        mixins.CheckWorkSpaceInvitedMixin,
                        mixins.GetInvitedUsersMixin,
@@ -36,7 +35,6 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
     serializer_class = serializers.WorkSpaceSerializer
     queryset = WorkSpace.objects.all()
     permission_classes = [permissions.IsAuthenticated]
-    ordering_fields = 'created_at'  # вывод РП сортируется по дате создания
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -64,7 +62,7 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         queryset = super().get_queryset()
         user = self.request.user
         queryset = queryset.filter(users=user)
-        return queryset
+        return queryset.order_by('created_at')  # вывод РП сортируется по дате создания
 
     @extend_schema(responses={201: serializers.WorkSpaceSerializer(many=True)}, )
     def create(self, request, *args, **kwargs):
@@ -167,11 +165,6 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema_view(list=extend_schema(
-    description='Список всех пользователей для поиска.\n\n'
-                'Поиск ведется по почте и имени, начало передается через query '
-                'параметр users.\n\n Например: /api/user_list/?users=foobar'
-), )
 class UserList(generics.ListAPIView):
     """
     Вывод списка всех пользователей при поиске по имени и почте.
@@ -182,18 +175,30 @@ class UserList(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        filter_parameter = self.request.query_params.get('users')
-        if filter_parameter and len(filter_parameter) > 2:
-            queryset = queryset.filter(email__istartswith=filter_parameter)
+        filter_email = self.request.query_params.get('users')
+        filter_ws = self.request.query_params.get('workspace')
+
+        if filter_email and len(filter_email) > 2:
+            queryset = (queryset
+                        .filter(email__istartswith=filter_email, is_active=True)
+                        .exclude(pk=self.request.user.id)
+                        )
+
+            if filter_ws:
+                queryset = (queryset
+                            .exclude(owned_workspaces=filter_ws)
+                            .exclude(joined_workspaces=filter_ws)
+                            .exclude(invited_to_workspaces=filter_ws)
+                            )
             return queryset
         return None
 
 
 class TestSSEMessage(generics.CreateAPIView):
     """
-    Создать SSE - передает случайную строку.
-    Слушать /events/
-    channel: test
+    Создать SSE - передает случайную строку.\n\n
+    Слушать /events/\n\n
+    channel: test\n\n
     event_type: test_message
     """
     serializer_class = None
@@ -207,9 +212,9 @@ class TestSSEMessage(generics.CreateAPIView):
 
 class TestSSEUser(generics.CreateAPIView):
     """
-    Создать SSE - передает текущего юзера.
-    Слушать /events/
-    channel: test
+    Создать SSE - передает текущего юзера.\n\n
+    Слушать /events/\n\n
+    channel: test\n\n
     event_type: test_user
     """
     serializer_class = CurrentUserSerializer
