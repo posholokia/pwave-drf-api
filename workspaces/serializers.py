@@ -168,7 +168,11 @@ class ResendInviteSerializer(mixins.GetUserMixin,
         self.get_workspace()
         self.get_user_object(pk=user_id)
 
-        self.is_user_added()
+        if self.is_user_added():
+            raise ValidationError(
+                {"user_id": self.default_error_messages['already_invited']},
+                'already_invited'
+            )
 
         if self.is_user_invited():
             return attrs

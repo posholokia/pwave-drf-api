@@ -187,3 +187,6 @@ class RegistrationTestCase(APITestCase):
         }
         response = self.client.post('/auth/users/check_link/', data)
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)  # негативный тест
+
+    def test_reset_password_invited(self):
+        pass
