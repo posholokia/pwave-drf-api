@@ -128,8 +128,7 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         user = serializer.invited_user.user
         workspace = serializer.invited_user.workspace
 
-        workspace.invited.remove(user)
-        workspace.users.add(user)
+        Q(workspace.invited.remove(user)) | Q(workspace.users.add(user))
 
         data = InviteUserSerializer(serializer.invited_user).data
         serializer.invited_user.delete()
@@ -152,10 +151,9 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         if user_id == self.workspace.owner_id:
             return Response(data={'detail': 'Нельзя удалить владельца РП'},
                             status=status.HTTP_400_BAD_REQUEST)
-
         self.kick_from_workspace(user_id)
 
-        workspace_data = self.serializer_class(self.workspace).data,
+        workspace_data = self.serializer_class(self.workspace).data
         return Response(data=workspace_data, status=status.HTTP_200_OK)
 
     @extend_schema(description='Повторная отправка ссылки с приглашением пользователя.',
@@ -173,11 +171,9 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def kick_from_workspace(self, user_id):
-        (
-                Q(self.workspace.invited.remove(user_id))
-                | Q(self.workspace.users.remove(user_id))
-                | Q(InvitedUsers.objects.filter(user_id=user_id).delete())
-        )
+        self.workspace.users.remove(user_id)
+        self.workspace.invited.remove(user_id)
+        InvitedUsers.objects.filter(user_id=user_id).delete()
 
 
 class UserList(generics.ListAPIView):
@@ -258,11 +254,17 @@ class BoardViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        # user = self.request.user
-        # queryset = queryset.filter(members=user)
+        user = self.request.user
+        queryset = queryset.filter(work_space__users=user)
         workspace = self.request.query_params.get('space_id')
 
         if workspace:
             queryset = queryset.filter(work_space=workspace)
 
         return queryset
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return serializers.CreateBoardSerializer
+
+        return super().get_serializer_class()

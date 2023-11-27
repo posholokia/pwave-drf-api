@@ -9,8 +9,6 @@ from rest_framework import status
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from freezegun import freeze_time
-
 from pulsewave.settings import WORKSAPCES
 from workspaces.models import WorkSpace, InvitedUsers
 
@@ -19,7 +17,7 @@ from freezegun import freeze_time
 User = get_user_model()
 
 
-class BoardTestCase(APITestCase):
+class WorkSpaceTestCase(APITestCase):
     def setUp(self):
         user_data = {
             'email': 'user1@example.com',
@@ -214,7 +212,7 @@ class BoardTestCase(APITestCase):
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEquals('invalid_token', response.data['token'][0].code)
 
-    def test_fail_invite_user_added(self):
+    def test_fail_confirm_user_added(self):
         no_auth_client = APIClient()
         data = {
             'email': 'user2@example.com',
@@ -279,4 +277,10 @@ class BoardTestCase(APITestCase):
 
         response = self.client.post(reverse('workspace-resend_invite', kwargs={'pk': self.ws1.id}), data)
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_search_user(self):
+        response = self.client.get(reverse('search_user'), data={'users': 'use'})
+        self.assertEquals(status.HTTP_200_OK, response.status_code)
+        self.assertEquals(1, len(response.data))
+
 

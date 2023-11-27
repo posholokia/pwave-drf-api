@@ -205,11 +205,22 @@ class ResendInviteSerializer(mixins.GetUserMixin,
         )
 
 
+class CreateBoardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Board
+        fields = (
+            'id',
+            'name',
+            'work_space',
+        )
+
+
 class BoardSerializer(serializers.ModelSerializer):
     members = CurrentUserSerializer(many=True, read_only=True)
 
     class Meta:
         model = Board
+        read_only_fields = ['work_space']
         fields = (
             'id',
             'name',

@@ -12,9 +12,12 @@ User = get_user_model()
 
 class GetInvitedMixin:
     def get_invited_user(self, **key):
-        try:
-            self.invited_user = InvitedUsers.objects.get(**key)
-        except InvitedUsers.DoesNotExist:
+        self.invited_user = (
+            InvitedUsers.objects.filter(**key)
+            .select_related('user', 'workspace')
+            .first()
+        )
+        if self.invited_user is None:
             raise ValidationError(
                 {"token": self.default_error_messages['invalid_token']},
                 'invalid_token'
@@ -36,7 +39,12 @@ class GetWorkSpaceMixin:
     def get_workspace(self):
         try:
             pk = self.context.get('view').kwargs.get('pk')
-            self.workspace = WorkSpace.objects.get(pk=pk)
+            self.workspace = (
+                WorkSpace.objects
+                .prefetch_related('users', 'invited', 'board', )
+                .get(pk=pk)
+            )
+
         except WorkSpace.DoesNotExist:
             raise ValidationError(
                 {"detail": 'Такого РП не существует'},
@@ -46,7 +54,7 @@ class GetWorkSpaceMixin:
 
 class CheckWorkSpaceUsersMixin:
     def is_user_added(self):
-        if self.workspace.users.filter(pk=self.user.id).exists():
+        if self.user in self.workspace.users.all():
             return True
 
         return False
@@ -54,7 +62,7 @@ class CheckWorkSpaceUsersMixin:
 
 class CheckWorkSpaceInvitedMixin:
     def is_user_invited(self):
-        if self.workspace.invited.filter(pk=self.user.id).exists():
+        if self.user in self.workspace.invited.all():
             return True
 
         return False
@@ -70,7 +78,7 @@ class GetInvitedUsersMixin:
                 token=get_random_string(length=32),
                 workspace=workspace,
             )
-        delete_invited.apply_async((invite_user.id,), countdown=24*60*60)
+        delete_invited.apply_async((invite_user.id,), countdown=24 * 60 * 60)
 
         context = {'invite_user': invite_user, }
         to = [invite_user.user.email]
