@@ -6,13 +6,13 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from django.contrib.auth import get_user_model
-
+from django.db.models import Q
 from django_eventstream import send_event
 
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from taskmanager.serializers import CurrentUserSerializer
-from .models import WorkSpace, Board
+from .models import WorkSpace, Board, InvitedUsers
 from . import serializers, mixins
 from .serializers import InviteUserSerializer
 
@@ -66,6 +66,10 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
 
     @extend_schema(responses={201: serializers.WorkSpaceSerializer(many=True)}, )
     def create(self, request, *args, **kwargs):
+        """
+        Создание рабочего пространства.
+        Изменен только ответ Клиенту - вместо созданного обьекта возвращается массив объектов.
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -77,7 +81,7 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
                                'Пользователи добавляются по одному.'
                                'Если пользователя не существует, он будет создан.',
                    responses={200: serializers.WorkSpaceSerializer}, )
-    @action(methods=['post'], detail=True)
+    @action(methods=['post'], detail=True, url_name='invite_user')
     def invite_user(self, request, *args, **kwargs):
         """
         Представление для приглашения пользователей в РП.
@@ -113,7 +117,7 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
                     '/auth/users/reset_password_invited/\n\nОтвет 204 - у пользователя есть пароль ',
         responses={204: None, 200: InviteUserSerializer, },
     )
-    @action(['post'], detail=False)
+    @action(['post'], detail=False, url_name='confirm_invite')
     def confirm_invite(self, request, *args, **kwargs):
         """
         Добавление пользователя в РП и удаление из приглашенных.
@@ -128,31 +132,35 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         workspace.users.add(user)
 
         data = InviteUserSerializer(serializer.invited_user).data
+        serializer.invited_user.delete()
+
         if user.has_usable_password():
-            serializer.invited_user.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         return Response(data=data, status=status.HTTP_200_OK)
 
     @extend_schema(description='Удаление пользователей из РП\n\nУдаление как из участников так и из приглашенных',
                    responses={200: serializers.WorkSpaceSerializer}, )
-    @action(['post'], detail=True)
+    @action(['post'], detail=True, url_name='kick_user')
     def kick_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         user_id = serializer.data['user_id']
-        workspace = WorkSpace.objects.get(pk=kwargs['pk'])
+        self.workspace = WorkSpace.objects.get(pk=kwargs['pk'])
 
-        workspace.invited.remove(user_id)
-        workspace.users.remove(user_id)
+        if user_id == self.workspace.owner_id:
+            return Response(data={'detail': 'Нельзя удалить владельца РП'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-        workspace_data = self.serializer_class(workspace).data,
+        self.kick_from_workspace(user_id)
+
+        workspace_data = self.serializer_class(self.workspace).data,
         return Response(data=workspace_data, status=status.HTTP_200_OK)
 
     @extend_schema(description='Повторная отправка ссылки с приглашением пользователя.',
                    responses={204: None, }, )
-    @action(['post'], detail=True)
+    @action(['post'], detail=True, url_name='resend_invite')
     def resend_invite(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -163,6 +171,13 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         self.get_or_create_invited_users(user, workspace)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def kick_from_workspace(self, user_id):
+        (
+                Q(self.workspace.invited.remove(user_id))
+                | Q(self.workspace.users.remove(user_id))
+                | Q(InvitedUsers.objects.filter(user_id=user_id).delete())
+        )
 
 
 class UserList(generics.ListAPIView):
