@@ -7,7 +7,7 @@ docker-compose.yaml
 __pycache__/
 *.py[cod]
 *$py.class
-
+/telebot/.env.example
 # C extensions
 *.so
 
