@@ -134,10 +134,10 @@ class InviteUserSerializer(mixins.GetInvitedMixin,
         self.get_invitation(**attrs)
 
         time_out = timedelta(seconds=WORKSAPCES['INVITE_TOKEN_TIMEOUT'])
-        expired_token = self.invited_user.created_at + time_out
+        expired_token = self.invitation.created_at + time_out
 
-        self.workspace = self.invited_user.workspace
-        self.user = self.invited_user.user
+        self.workspace = self.invitation.workspace
+        self.user = self.invitation.user
 
         if now() > expired_token:
             raise ValidationError(

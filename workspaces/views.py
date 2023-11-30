@@ -6,7 +6,6 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from django.contrib.auth import get_user_model
-from django.db.models import Q
 from django_eventstream import send_event
 
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -28,6 +27,7 @@ User = get_user_model()
     destroy=extend_schema(description='Удалить РП'),
 )
 class WorkSpaceViewSet(mixins.GetInvitationMixin,
+                       mixins.UserNoAuthOrThisUser,
                        viewsets.ModelViewSet):
     serializer_class = serializers.WorkSpaceSerializer
     queryset = WorkSpace.objects.all()
@@ -48,10 +48,8 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         return self.serializer_class
 
     def get_permissions(self):
-        if self.action == "confirm_invite_new_user":
-            self.permission_classes = [permissions.AllowAny]
-        elif self.action == "confirm_invite":
-            self.permission_classes = [permissions.AllowAny]
+        if self.action == "confirm_invite":
+            self.permission_classes = [permissions.AllowAny, ]
 
         return super().get_permissions()
 
@@ -110,16 +108,19 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.invited_user.user
-        workspace = serializer.invited_user.workspace
+        user = serializer.invitation.user
+        workspace = serializer.invitation.workspace
+
+        if not self.check_auth_user(user):
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
         workspace.invited.remove(user)
         workspace.users.add(user)
 
-        data = InviteUserSerializer(serializer.invited_user).data
+        data = InviteUserSerializer(serializer.invitation).data
 
         if user.has_usable_password():
-            serializer.invited_user.delete()
+            serializer.invitation.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         return Response(data=data, status=status.HTTP_200_OK)
@@ -137,6 +138,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         if user_id == self.workspace.owner_id:
             return Response(data={'detail': 'Нельзя удалить владельца РП'},
                             status=status.HTTP_400_BAD_REQUEST)
+
         self.kick_from_workspace(user_id)
 
         workspace_data = self.serializer_class(self.workspace).data
@@ -180,12 +182,6 @@ class UserList(generics.ListAPIView):
                         .exclude(pk=self.request.user.id)
                         )
 
-            # if self.filter_ws:
-            #     queryset = (queryset
-            #                 # .exclude(owned_workspaces=filter_ws)
-            #                 # .exclude(joined_workspaces=filter_ws)
-            #                 # .exclude(invited_to_workspaces=filter_ws)
-            #                 )
             return queryset
         return None
 

@@ -165,7 +165,7 @@ class WorkSpaceTestCase(APITestCase):
         InvitedUsers.objects.create(user=self.user_two, workspace=self.ws1, token=token)
         self.ws1.invited.add(self.user_two)
 
-        response = self.client.post(reverse('workspace-confirm_invite'), {'token': token})
+        response = self.no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token})
         self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)
         self.assertEquals(0, len(self.ws1.invited.all()))
         self.assertEquals(2, len(self.ws1.users.all()))
@@ -178,11 +178,29 @@ class WorkSpaceTestCase(APITestCase):
         self.client.post(reverse('workspace-invite_user', kwargs={'pk': self.ws1.id}), data)
         token = InvitedUsers.objects.get(user__email=data['email']).token
 
-        response = self.client.post(reverse('workspace-confirm_invite'), {'token': token})
+        response = self.no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token})
         self.assertEquals(status.HTTP_200_OK, response.status_code)
         self.assertEquals(0, len(self.ws1.invited.all()))
         self.assertEquals(2, len(self.ws1.users.all()))
         self.assertTrue(InvitedUsers.objects.filter(token=token))
+
+    def test_permission_confirm_invite(self):
+        self.ws1.invited.add(self.invited_user)
+        self.ws1.invited.add(self.user_two)
+        token = crypto.get_random_string(length=32)
+        InvitedUsers.objects.create(user=self.user_two, workspace=self.ws1, token=token)
+        user_token = RefreshToken.for_user(self.user_two).access_token
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'JWT {user_token}')
+
+        response = self.client.post(reverse('workspace-confirm_invite'), {'token': self.token})
+        self.assertEquals(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        response = self.client.post(reverse('workspace-confirm_invite'), {'token': token})
+        self.assertEquals(status.HTTP_403_FORBIDDEN, response.status_code)
+
+        response = client.post(reverse('workspace-confirm_invite'), {'token': token})
+        self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)
 
     def test_invite_confirm_expired_token(self):
         data = {

@@ -174,12 +174,12 @@ class WorkSpaceSerializersTestCase(APITestCase):
         token = crypto.get_random_string(length=32)
         InvitedUsers.objects.create(user=invited_user, workspace=self.ws1, token=token)
 
-        response = self.client.post(reverse('workspace-confirm_invite'), {'token': token}).data
+        response = self.no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token}).data
 
         invitation_data = {'token': token,
                            'user': 'invited-user@example.com',
                            'workspace': self.ws1.id}
-
+        # print(f'\n\n{response.status_code=}')
         self.assertEquals(InviteUserSerializer(InvitedUsers.objects.get(token=token)).data, response)
         self.assertEquals(invitation_data, response)
 

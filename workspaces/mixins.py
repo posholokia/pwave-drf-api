@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
+from django.contrib.auth.models import AnonymousUser
 
 from rest_framework.exceptions import ValidationError
 
@@ -12,12 +13,12 @@ User = get_user_model()
 
 class GetInvitedMixin:
     def get_invitation(self, **key):
-        self.invited_user = (
+        self.invitation = (
             InvitedUsers.objects.filter(**key)
             .select_related('user', 'workspace')
             .first()
         )
-        if self.invited_user is None:
+        if self.invitation is None:
             raise ValidationError(
                 {"token": self.default_error_messages['invalid_token']},
                 'invalid_token'
@@ -96,3 +97,11 @@ class GetOrCreateUserMixin:
             user = User.objects.create_user(**user_data)
 
         return user
+
+
+class UserNoAuthOrThisUser:
+    def check_auth_user(self, user):
+        if any([isinstance(self.request.user, AnonymousUser), self.request.user == user]):
+            return True
+
+        return False
