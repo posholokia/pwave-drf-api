@@ -11,7 +11,7 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, Ou
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from taskmanager.serializers import CurrentUserSerializer
-
+from workspaces.models import InvitedUsers, WorkSpace
 
 User = get_user_model()
 
@@ -187,6 +187,3 @@ class RegistrationTestCase(APITestCase):
         }
         response = self.client.post('/auth/users/check_link/', data)
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)  # негативный тест
-
-    def test_reset_password_invited(self):
-        pass

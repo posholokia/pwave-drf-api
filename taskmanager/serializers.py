@@ -265,11 +265,12 @@ class InvitedPasswordSerializer(PasswordRetypeSerializer):
         token = attrs.pop('token')
         attrs = super().validate(attrs)
 
-        try:
-            self.invited_user = InvitedUsers.objects.get(token=token)
-        except InvitedUsers.DoesNotExist:
+        self.invited_user = InvitedUsers.objects.filter(token=token).first()
+
+        if not self.invited_user or self.invited_user.user.has_usable_password():
             raise exceptions.ValidationError(
                 {'token': 'Недействительный токен для этого пользователя'},
+                'invalid_token'
             )
 
         return attrs

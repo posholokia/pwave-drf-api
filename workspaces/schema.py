@@ -5,7 +5,6 @@
 
 from drf_spectacular.extensions import OpenApiViewExtension
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 class Fix1(OpenApiViewExtension):

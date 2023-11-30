@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
+from django.contrib.auth.models import AnonymousUser
 
 from rest_framework.exceptions import ValidationError
 
@@ -11,75 +12,83 @@ User = get_user_model()
 
 
 class GetInvitedMixin:
-    def get_invited_user(self, **key):
-        try:
-            self.invited_user = InvitedUsers.objects.get(**key)
-        except InvitedUsers.DoesNotExist:
+    def get_invitation(self, **key):
+        self.invitation = (
+            InvitedUsers.objects.filter(**key)
+            .select_related('user', 'workspace')
+            .first()
+        )
+        if self.invitation is None:
             raise ValidationError(
                 {"token": self.default_error_messages['invalid_token']},
                 'invalid_token'
             )
 
 
-class GetUserMixin:
-    def get_user_object(self, **key):
-        try:
-            self.user = User.objects.get(**key)
-        except User.DoesNotExist:
-            raise ValidationError(
-                {"user": self.default_error_messages['invalid_user']},
-                'invalid_user'
-            )
+# class GetUserMixin:
+#     def get_user_object(self, **key):
+#         try:
+#             self.user = User.objects.get(**key)
+#         except User.DoesNotExist:
+#             raise ValidationError(
+#                 {"user": self.default_error_messages['invalid_user']},
+#                 'invalid_user'
+#             )
 
 
 class GetWorkSpaceMixin:
     def get_workspace(self):
         try:
             pk = self.context.get('view').kwargs.get('pk')
-            self.workspace = WorkSpace.objects.get(pk=pk)
+            workspace = (
+                WorkSpace.objects
+                .prefetch_related('users', 'invited', 'board', )
+                .get(pk=pk)
+            )
+            return workspace
+
         except WorkSpace.DoesNotExist:
             raise ValidationError(
                 {"detail": 'Такого РП не существует'},
             )
-        return self.workspace
 
 
 class CheckWorkSpaceUsersMixin:
-    def is_user_added(self):
-        if self.workspace.users.filter(pk=self.user.id).exists():
+    def user_is_added_to_workspace(self):
+        if self.user in self.workspace.users.all():
             return True
 
         return False
 
 
 class CheckWorkSpaceInvitedMixin:
-    def is_user_invited(self):
-        if self.workspace.invited.filter(pk=self.user.id).exists():
+    def user_is_invited_to_workspace(self):
+        if self.user in self.workspace.invited.all():
             return True
 
         return False
 
 
-class GetInvitedUsersMixin:
-    def get_or_create_invited_users(self, user, workspace):
+class GetInvitationMixin:
+    def get_or_create_invitation(self, user, workspace):
         try:
-            invite_user = InvitedUsers.objects.get(user=user, workspace=workspace)
+            invitation = InvitedUsers.objects.get(user=user, workspace=workspace)
         except InvitedUsers.DoesNotExist:
-            invite_user = InvitedUsers.objects.create(
+            invitation = InvitedUsers.objects.create(
                 user=user,
                 token=get_random_string(length=32),
                 workspace=workspace,
             )
-        delete_invited.apply_async((invite_user.id,), countdown=24*60*60)
+        delete_invited.apply_async((invitation.id,), countdown=24 * 60 * 60)
 
-        context = {'invite_user': invite_user, }
-        to = [invite_user.user.email]
+        context = {'invitation': invitation, }
+        to = [invitation.user.email]
         InviteUserEmail(self.request, context).send(to)
 
-        return invite_user
+        return invitation
 
 
-class GetCreateUserMixin:
+class GetOrCreateUserMixin:
     def get_or_create_user(self, email):
         try:
             user = User.objects.get(email=email)
@@ -88,3 +97,11 @@ class GetCreateUserMixin:
             user = User.objects.create_user(**user_data)
 
         return user
+
+
+class UserNoAuthOrThisUser:
+    def check_auth_user(self, user):
+        if any([isinstance(self.request.user, AnonymousUser), self.request.user == user]):
+            return True
+
+        return False
