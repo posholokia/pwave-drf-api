@@ -4,7 +4,7 @@ from .views import *
 from rest_framework_simplejwt.views import TokenBlacklistView
 
 router = routers.DefaultRouter()
-router.register('users', CustomUserViewSet)
+router.register('users', CustomUserViewSet, basename='users')
 
 urlpatterns = [
     path('jwt/blacklist/', TokenBlacklistView.as_view(), name='token_blacklist'),

@@ -27,10 +27,7 @@ User = get_user_model()
     partial_update=extend_schema(description='Частично обновить данные РП (на данный момент только имя)'),
     destroy=extend_schema(description='Удалить РП'),
 )
-class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
-                       mixins.CheckWorkSpaceInvitedMixin,
-                       mixins.GetInvitedUsersMixin,
-                       mixins.GetCreateUserMixin,
+class WorkSpaceViewSet(mixins.GetInvitationMixin,
                        viewsets.ModelViewSet):
     serializer_class = serializers.WorkSpaceSerializer
     queryset = WorkSpace.objects.all()
@@ -92,23 +89,11 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user_email = serializer.validated_data.get('email')
+        user, workspace = serializer.user, serializer.workspace
+        workspace.invited.add(user)
+        self.get_or_create_invitation(user, workspace)
 
-        self.workspace = serializer.get_workspace()
-        self.user = self.get_or_create_user(user_email)
-
-        if self.is_user_added():
-            return Response(status=status.HTTP_400_BAD_REQUEST,
-                            data={'email': 'Пользователь уже добавлен в это рабочее пространство'})
-
-        if self.is_user_invited():
-            return Response(status=status.HTTP_400_BAD_REQUEST,
-                            data={'email': 'Пользователь уже приглашен в это рабочее пространство'})
-
-        self.workspace.invited.add(self.user)
-        self.get_or_create_invited_users(self.user, self.workspace)
-
-        return Response(data=self.serializer_class(self.workspace).data, status=status.HTTP_200_OK)
+        return Response(data=self.serializer_class(workspace).data, status=status.HTTP_200_OK)
 
     @extend_schema(
         description='Подтверждение приглашения в РП.\n\nПройдя по ссылке пользователь будет добавлен в РП. '
@@ -128,12 +113,13 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         user = serializer.invited_user.user
         workspace = serializer.invited_user.workspace
 
-        Q(workspace.invited.remove(user)) | Q(workspace.users.add(user))
+        workspace.invited.remove(user)
+        workspace.users.add(user)
 
         data = InviteUserSerializer(serializer.invited_user).data
-        serializer.invited_user.delete()
 
         if user.has_usable_password():
+            serializer.invited_user.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         return Response(data=data, status=status.HTTP_200_OK)
@@ -166,7 +152,7 @@ class WorkSpaceViewSet(mixins.CheckWorkSpaceUsersMixin,
         user = serializer.user
         workspace = serializer.workspace
 
-        self.get_or_create_invited_users(user, workspace)
+        self.get_or_create_invitation(user, workspace)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 

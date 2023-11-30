@@ -11,7 +11,7 @@ User = get_user_model()
 
 
 class GetInvitedMixin:
-    def get_invited_user(self, **key):
+    def get_invitation(self, **key):
         self.invited_user = (
             InvitedUsers.objects.filter(**key)
             .select_related('user', 'workspace')
@@ -24,36 +24,36 @@ class GetInvitedMixin:
             )
 
 
-class GetUserMixin:
-    def get_user_object(self, **key):
-        try:
-            self.user = User.objects.get(**key)
-        except User.DoesNotExist:
-            raise ValidationError(
-                {"user": self.default_error_messages['invalid_user']},
-                'invalid_user'
-            )
+# class GetUserMixin:
+#     def get_user_object(self, **key):
+#         try:
+#             self.user = User.objects.get(**key)
+#         except User.DoesNotExist:
+#             raise ValidationError(
+#                 {"user": self.default_error_messages['invalid_user']},
+#                 'invalid_user'
+#             )
 
 
 class GetWorkSpaceMixin:
     def get_workspace(self):
         try:
             pk = self.context.get('view').kwargs.get('pk')
-            self.workspace = (
+            workspace = (
                 WorkSpace.objects
                 .prefetch_related('users', 'invited', 'board', )
                 .get(pk=pk)
             )
+            return workspace
 
         except WorkSpace.DoesNotExist:
             raise ValidationError(
                 {"detail": 'Такого РП не существует'},
             )
-        return self.workspace
 
 
 class CheckWorkSpaceUsersMixin:
-    def is_user_added(self):
+    def user_is_added_to_workspace(self):
         if self.user in self.workspace.users.all():
             return True
 
@@ -61,33 +61,33 @@ class CheckWorkSpaceUsersMixin:
 
 
 class CheckWorkSpaceInvitedMixin:
-    def is_user_invited(self):
+    def user_is_invited_to_workspace(self):
         if self.user in self.workspace.invited.all():
             return True
 
         return False
 
 
-class GetInvitedUsersMixin:
-    def get_or_create_invited_users(self, user, workspace):
+class GetInvitationMixin:
+    def get_or_create_invitation(self, user, workspace):
         try:
-            invite_user = InvitedUsers.objects.get(user=user, workspace=workspace)
+            invitation = InvitedUsers.objects.get(user=user, workspace=workspace)
         except InvitedUsers.DoesNotExist:
-            invite_user = InvitedUsers.objects.create(
+            invitation = InvitedUsers.objects.create(
                 user=user,
                 token=get_random_string(length=32),
                 workspace=workspace,
             )
-        delete_invited.apply_async((invite_user.id,), countdown=24 * 60 * 60)
+        delete_invited.apply_async((invitation.id,), countdown=24 * 60 * 60)
 
-        context = {'invite_user': invite_user, }
-        to = [invite_user.user.email]
+        context = {'invitation': invitation, }
+        to = [invitation.user.email]
         InviteUserEmail(self.request, context).send(to)
 
-        return invite_user
+        return invitation
 
 
-class GetCreateUserMixin:
+class GetOrCreateUserMixin:
     def get_or_create_user(self, email):
         try:
             user = User.objects.get(email=email)

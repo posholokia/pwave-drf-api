@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from django.utils import timezone
+from django.utils import timezone, crypto
 
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
@@ -25,22 +25,27 @@ class WorkSpaceTestCase(APITestCase):
             'is_active': True,
         }
         self.user = User.objects.create_user(**user_data)
-        self.user.save()
         user_token = RefreshToken.for_user(self.user).access_token
 
         self.ws1 = WorkSpace.objects.create(owner=self.user, name='WorkSpace1')
         self.ws1.users.add(self.user)
-        self.ws1.save()
 
         self.client = APIClient()
         self.client.credentials(HTTP_AUTHORIZATION=f'JWT {user_token}')
 
         user_data['email'] = 'user2@example.com'
         self.user_two = User.objects.create_user(**user_data)
-        self.user_two.save()
         ws2 = WorkSpace.objects.create(owner=self.user_two, name='WorkSpace2')
         ws2.users.add(self.user_two)
-        ws2.save()
+
+        self.no_auth_client = APIClient()
+        inactive_user = {
+            'email': 'invited-user@example.com',
+            'is_active': False,
+        }
+        self.invited_user = User.objects.create_user(**inactive_user)
+        self.token = crypto.get_random_string(length=32)
+        InvitedUsers.objects.create(user=self.invited_user, workspace=self.ws1, token=self.token)
 
     def test_ws_create(self):
         data = {
@@ -118,8 +123,8 @@ class WorkSpaceTestCase(APITestCase):
         }
         response = self.client.post(reverse('workspace-invite_user', kwargs={'pk': self.ws1.id}), data)
         self.assertEquals(status.HTTP_200_OK, response.status_code)
-        self.assertIn(('new_user@example.com', ), User.objects.all().values_list('email'))
-        self.assertIn(('new_user@example.com', ), self.ws1.invited.all().values_list('email'))
+        self.assertIn(('new_user@example.com',), User.objects.all().values_list('email'))
+        self.assertIn(('new_user@example.com',), self.ws1.invited.all().values_list('email'))
 
         invited_users = InvitedUsers.objects.filter(
             user__email=data['email'],
@@ -156,17 +161,15 @@ class WorkSpaceTestCase(APITestCase):
         self.assertEquals(False, invited_users)
 
     def test_confirm_invite_exists_user(self):
-        data = {
-            'email': 'user2@example.com',
-        }
-        self.client.post(reverse('workspace-invite_user', kwargs={'pk': self.ws1.id}), data)
-        token = InvitedUsers.objects.get(user__email=data['email']).token
+        token = crypto.get_random_string(length=32)
+        InvitedUsers.objects.create(user=self.user_two, workspace=self.ws1, token=token)
+        self.ws1.invited.add(self.user_two)
 
         response = self.client.post(reverse('workspace-confirm_invite'), {'token': token})
         self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)
         self.assertEquals(0, len(self.ws1.invited.all()))
         self.assertEquals(2, len(self.ws1.users.all()))
-        self.assertEquals(False, InvitedUsers.objects.filter(user__email=data['email']).exists())
+        self.assertFalse(InvitedUsers.objects.filter(token=token))
 
     def test_confirm_invite_new_user(self):
         data = {
@@ -179,10 +182,9 @@ class WorkSpaceTestCase(APITestCase):
         self.assertEquals(status.HTTP_200_OK, response.status_code)
         self.assertEquals(0, len(self.ws1.invited.all()))
         self.assertEquals(2, len(self.ws1.users.all()))
-        self.assertEquals(False, InvitedUsers.objects.filter(user__email=data['email']).exists())
+        self.assertTrue(InvitedUsers.objects.filter(token=token))
 
     def test_invite_confirm_expired_token(self):
-        no_auth_client = APIClient()
         data = {
             'email': 'user2@example.com',
         }
@@ -191,16 +193,15 @@ class WorkSpaceTestCase(APITestCase):
 
         timeout = timezone.now() + timedelta(seconds=(WORKSAPCES['INVITE_TOKEN_TIMEOUT']))
         with freeze_time(timeout + timedelta(seconds=1)):
-            response = no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token})
+            response = self.no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token})
             self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
             self.assertEquals('token_expired', response.data['token'][0].code)
 
         with freeze_time(timeout - timedelta(seconds=1)):
-            response = no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token})
+            response = self.no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token})
             self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)
 
     def test_fail_invite_confirm(self):
-        no_auth_client = APIClient()
         data = {
             'email': 'user2@example.com',
         }
@@ -208,12 +209,11 @@ class WorkSpaceTestCase(APITestCase):
         token = InvitedUsers.objects.get(user__email=data['email']).token
         InvitedUsers.objects.get(user__email=data['email']).delete()
 
-        response = no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token})
+        response = self.no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token})
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEquals('invalid_token', response.data['token'][0].code)
 
     def test_fail_confirm_user_added(self):
-        no_auth_client = APIClient()
         data = {
             'email': 'user2@example.com',
         }
@@ -221,12 +221,11 @@ class WorkSpaceTestCase(APITestCase):
         token = InvitedUsers.objects.get(user__email=data['email']).token
         self.ws1.users.add(self.user_two)
 
-        response = no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token})
+        response = self.no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token})
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEquals('already_invited', response.data['token'][0].code)
 
     def test_fail_confirm_invitation_canceled(self):
-        no_auth_client = APIClient()
         data = {
             'email': 'user2@example.com',
         }
@@ -234,7 +233,7 @@ class WorkSpaceTestCase(APITestCase):
         token = InvitedUsers.objects.get(user__email=data['email']).token
         self.ws1.invited.remove(self.user_two)
 
-        response = no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token})
+        response = self.no_auth_client.post(reverse('workspace-confirm_invite'), {'token': token})
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
         self.assertEquals('invalid_token', response.data['token'][0].code)
 
@@ -282,5 +281,61 @@ class WorkSpaceTestCase(APITestCase):
         response = self.client.get(reverse('search_user'), data={'users': 'use'})
         self.assertEquals(status.HTTP_200_OK, response.status_code)
         self.assertEquals(1, len(response.data))
+
+    def test_reset_password_invited(self):
+        data = {
+            'new_password': 'Pass!234',
+            're_new_password': 'Pass!234',
+            'token': self.token,
+        }
+
+        response = self.no_auth_client.post(reverse('users-reset_password_invited'), data)
+        self.assertEquals(status.HTTP_200_OK, response.status_code)
+        self.invited_user.refresh_from_db()
+        self.assertEquals(True, self.invited_user.has_usable_password())
+        self.assertEquals(True, self.invited_user.is_active)
+
+    def test_fail_usable_password(self):
+        token = crypto.get_random_string(length=32)
+        InvitedUsers.objects.create(user=self.user_two, workspace=self.ws1, token=token)
+
+        data = {
+            'new_password': 'Pass!234**',
+            're_new_password': 'Pass!234**',
+            'token': token,
+        }
+        response = self.no_auth_client.post(reverse('users-reset_password_invited'), data)
+
+        self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEquals(True, self.user_two.check_password('Pass!234'))
+
+    def test_reset_password_invited_bad_token(self):
+        data = {
+            'new_password': 'Pass!234',
+            're_new_password': 'Pass!234',
+            'token': crypto.get_random_string(length=32),
+        }
+
+        response = self.no_auth_client.post(reverse('users-reset_password_invited'), data)
+        self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEquals('invalid_token', response.data['token'][0].code)
+        self.invited_user.refresh_from_db()
+        self.assertEquals(False, self.invited_user.has_usable_password())
+        self.assertEquals(False, self.invited_user.is_active)
+
+    def test_reset_password_invited_no_invitation(self):
+        data = {
+            'new_password': 'Pass!234',
+            're_new_password': 'Pass!234',
+            'token': self.token,
+        }
+        InvitedUsers.objects.all().delete()
+
+        response = self.no_auth_client.post(reverse('users-reset_password_invited'), data)
+        self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEquals('invalid_token', response.data['token'][0].code)
+        self.invited_user.refresh_from_db()
+        self.assertEquals(False, self.invited_user.has_usable_password())
+        self.assertEquals(False, self.invited_user.is_active)
 
 

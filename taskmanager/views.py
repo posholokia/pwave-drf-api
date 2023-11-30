@@ -93,7 +93,7 @@ class CustomUserViewSet(UserViewSet):
         create_default_ws(serializer.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(["post"], detail=False)
+    @action(["post"], detail=False, url_name='reset_password_invited')
     def reset_password_invited(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

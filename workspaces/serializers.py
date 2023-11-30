@@ -71,12 +71,39 @@ class WorkSpaceSerializer(serializers.ModelSerializer):
 
 
 class WorkSpaceInviteSerializer(mixins.GetWorkSpaceMixin,
+                                mixins.GetOrCreateUserMixin,
+                                mixins.CheckWorkSpaceUsersMixin,
+                                mixins.CheckWorkSpaceInvitedMixin,
                                 serializers.Serializer):
     """
     Сериализотор пришлашения пользователей.
     Сериализует почту добавленного пользователя.
     """
     email = serializers.EmailField()
+
+    default_error_messages = {
+        'already_invited': 'Пользователь уже приглашен в это рабочее пространство',
+        'already_added': 'Пользователь уже добавлен в это рабочее пространство',
+    }
+
+    def validate(self, attrs):
+        user_email = attrs['email']
+        self.workspace = self.get_workspace()
+        self.user = self.get_or_create_user(user_email)
+
+        if self.user_is_added_to_workspace():
+            raise ValidationError(
+                {"email": self.default_error_messages['already_added']},
+                'already_added'
+            )
+
+        if self.user_is_invited_to_workspace():
+            raise ValidationError(
+                {"email": self.default_error_messages['already_invited']},
+                'already_invited'
+            )
+
+        return attrs
 
 
 class InviteUserSerializer(mixins.GetInvitedMixin,
@@ -104,10 +131,13 @@ class InviteUserSerializer(mixins.GetInvitedMixin,
         return obj.user.email
 
     def validate(self, attrs):
-        self.get_invited_user(**attrs)
+        self.get_invitation(**attrs)
 
         time_out = timedelta(seconds=WORKSAPCES['INVITE_TOKEN_TIMEOUT'])
         expired_token = self.invited_user.created_at + time_out
+
+        self.workspace = self.invited_user.workspace
+        self.user = self.invited_user.user
 
         if now() > expired_token:
             raise ValidationError(
@@ -115,16 +145,13 @@ class InviteUserSerializer(mixins.GetInvitedMixin,
                 'token_expired'
             )
 
-        self.workspace = self.invited_user.workspace
-        self.user = self.invited_user.user
-
-        if self.is_user_added():
+        if self.user_is_added_to_workspace():
             raise ValidationError(
                 {"token": self.default_error_messages['already_invited']},
                 'already_invited'
             )
 
-        if self.is_user_invited():
+        if self.user_is_invited_to_workspace():
             return attrs
 
         raise ValidationError(
@@ -171,12 +198,24 @@ class UserListSerializer(serializers.ModelSerializer):
 class UserIDSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
 
+    def validate(self, attrs):
+        try:
+            self.user = User.objects.get(pk=attrs['user_id'])
+            return attrs
+        except User.DoesNotExist:
+            raise ValidationError(
+                {"user_id": self.default_error_messages['invalid_user']},
+                'invalid_user'
+            )
 
-class ResendInviteSerializer(mixins.GetUserMixin,
-                             mixins.GetWorkSpaceMixin,
+
+class ResendInviteSerializer(mixins.GetWorkSpaceMixin,
                              mixins.CheckWorkSpaceUsersMixin,
                              mixins.CheckWorkSpaceInvitedMixin,
                              UserIDSerializer):
+    """
+    Сериализатор повторной отправки приглашения
+    """
     default_error_messages = {
         'already_invited': 'Пользователь уже принял приглашение',
         'incorrect_invite': 'Пользователя нет в списке приглашенных в это РП',
@@ -185,18 +224,16 @@ class ResendInviteSerializer(mixins.GetUserMixin,
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        user_id = attrs['user_id']
 
-        self.get_workspace()
-        self.get_user_object(pk=user_id)
+        self.workspace = self.get_workspace()
 
-        if self.is_user_added():
+        if self.user_is_added_to_workspace():
             raise ValidationError(
                 {"user_id": self.default_error_messages['already_invited']},
                 'already_invited'
             )
 
-        if self.is_user_invited():
+        if self.user_is_invited_to_workspace():
             return attrs
 
         raise ValidationError(
@@ -206,6 +243,10 @@ class ResendInviteSerializer(mixins.GetUserMixin,
 
 
 class CreateBoardSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор создания доски
+    """
+
     class Meta:
         model = Board
         fields = (
@@ -216,6 +257,9 @@ class CreateBoardSerializer(serializers.ModelSerializer):
 
 
 class BoardSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор доски
+    """
     members = CurrentUserSerializer(many=True, read_only=True)
 
     class Meta:
@@ -227,4 +271,3 @@ class BoardSerializer(serializers.ModelSerializer):
             'work_space',
             'members',
         )
-

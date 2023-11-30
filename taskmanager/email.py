@@ -31,7 +31,7 @@ class InviteUserEmail(BaseEmailMessage):
     def get_context_data(self):
         context = super().get_context_data()
 
-        invite_user = context['invite_user']
-        context['token'] = invite_user.token
+        invitation = context['invitation']
+        context['token'] = invitation.token
         context['url'] = settings.WORKSAPCES['INVITE_USER_EMAIL_URL'].format(**context)
         return context
