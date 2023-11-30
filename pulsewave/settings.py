@@ -52,6 +52,8 @@ INSTALLED_APPS = [
 
     #apps
     'taskmanager.apps.TaskmanagerConfig',
+    #telebot
+    'telebot',
     'workspaces.apps.WorkspacesConfig',
 ]
 
