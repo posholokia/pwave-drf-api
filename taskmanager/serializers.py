@@ -251,13 +251,6 @@ class SetPasswordSerializer(PasswordRetypeSerializer, CurrentPasswordSerializer)
         raise exceptions.ValidationError({'new_password': 'Новый пароль совпадает с текущим'}, )
 
 
-class CreateUserSerializer(UserCreatePasswordRetypeSerializer):
-    def perform_create(self, validated_data):
-        user = super().perform_create(validated_data)
-        delete_inactive_user.apply_async((user.id,), countdown=24*60*60)
-        return user
-
-
 class InvitedPasswordSerializer(PasswordRetypeSerializer):
     token = serializers.CharField(max_length=32, min_length=32, write_only=True)
 

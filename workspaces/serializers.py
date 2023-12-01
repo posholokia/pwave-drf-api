@@ -136,8 +136,8 @@ class InviteUserSerializer(mixins.GetInvitedMixin,
         time_out = timedelta(seconds=WORKSAPCES['INVITE_TOKEN_TIMEOUT'])
         expired_token = self.invitation.created_at + time_out
 
-        self.workspace = self.invitation.workspace
-        self.user = self.invitation.user
+        # self.workspace = self.invitation.workspace
+        # self.user = self.invitation.user
 
         if now() > expired_token:
             raise ValidationError(
@@ -145,19 +145,20 @@ class InviteUserSerializer(mixins.GetInvitedMixin,
                 'token_expired'
             )
 
-        if self.user_is_added_to_workspace():
-            raise ValidationError(
-                {"token": self.default_error_messages['already_invited']},
-                'already_invited'
-            )
+        return attrs
+        # if self.user_is_added_to_workspace():
+        #     raise ValidationError(
+        #         {"token": self.default_error_messages['already_invited']},
+        #         'already_invited'
+        #     )
+        #
+        # if self.user_is_invited_to_workspace():
 
-        if self.user_is_invited_to_workspace():
-            return attrs
 
-        raise ValidationError(
-            {"token": self.default_error_messages['invalid_token']},
-            'invalid_token'
-        )
+        # raise ValidationError(
+        #     {"token": self.default_error_messages['invalid_token']},
+        #     'invalid_token'
+        # )
 
 
 class UserListSerializer(serializers.ModelSerializer):
