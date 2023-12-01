@@ -28,6 +28,7 @@ User = get_user_model()
 )
 class WorkSpaceViewSet(mixins.GetInvitationMixin,
                        mixins.UserNoAuthOrThisUser,
+                       mixins.CheckWorkSpaceUsersMixin,
                        viewsets.ModelViewSet):
     serializer_class = serializers.WorkSpaceSerializer
     queryset = WorkSpace.objects.all()
@@ -108,18 +109,21 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.invitation.user
-        workspace = serializer.invitation.workspace
+        self.user = serializer.invitation.user
+        self.workspace = serializer.invitation.workspace
 
-        if not self.check_auth_user(user):
+        if not self.check_auth_user(self.user):
             return Response(status=status.HTTP_403_FORBIDDEN)
-
-        workspace.invited.remove(user)
-        workspace.users.add(user)
 
         data = InviteUserSerializer(serializer.invitation).data
 
-        if user.has_usable_password():
+        if not self.user.has_usable_password() and self.user_is_added_to_workspace():
+            return Response(data=data, status=status.HTTP_200_OK)
+
+        self.workspace.invited.remove(self.user)
+        self.workspace.users.add(self.user)
+
+        if self.user.has_usable_password():
             serializer.invitation.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 

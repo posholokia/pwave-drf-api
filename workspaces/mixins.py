@@ -6,7 +6,6 @@ from rest_framework.exceptions import ValidationError
 
 from taskmanager.email import InviteUserEmail
 from .models import WorkSpace, InvitedUsers
-from .tasks import delete_invited
 
 User = get_user_model()
 
@@ -23,17 +22,6 @@ class GetInvitedMixin:
                 {"token": self.default_error_messages['invalid_token']},
                 'invalid_token'
             )
-
-
-# class GetUserMixin:
-#     def get_user_object(self, **key):
-#         try:
-#             self.user = User.objects.get(**key)
-#         except User.DoesNotExist:
-#             raise ValidationError(
-#                 {"user": self.default_error_messages['invalid_user']},
-#                 'invalid_user'
-#             )
 
 
 class GetWorkSpaceMixin:
@@ -79,7 +67,6 @@ class GetInvitationMixin:
                 token=get_random_string(length=32),
                 workspace=workspace,
             )
-        delete_invited.apply_async((invitation.id,), countdown=24 * 60 * 60)
 
         context = {'invitation': invitation, }
         to = [invitation.user.email]
