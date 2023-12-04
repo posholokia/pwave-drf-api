@@ -31,7 +31,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
                        mixins.CheckWorkSpaceUsersMixin,
                        viewsets.ModelViewSet):
     serializer_class = serializers.WorkSpaceSerializer
-    queryset = WorkSpace.objects.all()
+    queryset = WorkSpace.objects.all().select_related('owner').prefetch_related('users', 'invited', 'board')
     permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
