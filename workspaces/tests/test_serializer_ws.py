@@ -50,25 +50,21 @@ class WorkSpaceSerializersTestCase(APITestCase):
                 'email': 'user1@example.com',
                 'name': '',
                 'represent_name': 'user1',
-                'avatar': None
+                'avatar': None,
+                'role': 'Owner',
             }],
             'invited': [{
                 'id': self.user2.id,
                 'email': 'test-user2@example.com',
                 'name': '',
                 'represent_name': 'test-user2',
-                'avatar': None
+                'avatar': None,
+                'role': 'Invited',
+
             }],
             'boards': [{
                 'id': self.board.id,
                 'name': 'test board',
-                'members': [{
-                    'id': self.user.id,
-                    'email': 'user1@example.com',
-                    'name': '',
-                    'represent_name': 'user1',
-                    'avatar': None
-                }]
             }]
         }
 
@@ -131,7 +127,8 @@ class WorkSpaceSerializersTestCase(APITestCase):
                     'email': 'user3@example.com',
                     'name': '',
                     'represent_name': 'user3',
-                    'avatar': None}
+                    'avatar': None,
+                    'role': 'Invited', }
         self.EXAMPLE_WS['invited'].append(new_user)
         response = self.client.post(reverse('workspace-invite_user', kwargs={'pk': self.ws1.id}), data).data
 
@@ -149,7 +146,8 @@ class WorkSpaceSerializersTestCase(APITestCase):
                 'email': 'new_user@example.com',
                 'name': '',
                 'represent_name': 'new_user',
-                'avatar': None}
+                'avatar': None,
+                'role': 'Invited', }
         self.EXAMPLE_WS['invited'].append(user)
 
         self.assertEquals(WorkSpaceSerializer(self.ws1).data, response)

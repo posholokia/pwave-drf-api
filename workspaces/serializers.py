@@ -15,9 +15,7 @@ User = get_user_model()
 
 
 class CreateWorkSpaceSerializer(serializers.ModelSerializer):
-    """
-    Сериализотор создания РП
-    """
+    """Сериализотор создания РП"""
     # поле owner скрыто для редактирования и автоматически заполняется текущим пользователем
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
@@ -40,23 +38,50 @@ class CreateWorkSpaceSerializer(serializers.ModelSerializer):
 
 
 class WorkspaceBoardsSerializer(serializers.ModelSerializer):
-    members = CurrentUserSerializer(many=True, read_only=True)
-
+    """Сериализация досок внутри РП"""
     class Meta:
         model = Board
         fields = (
             'id',
             'name',
-            'members',
         )
 
 
+class UserListWorkSpace(serializers.ModelSerializer):
+    """Сериализация пользователей внутри РП"""
+    represent_name = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        read_only_fields = ['email']
+        fields = (
+            'id',
+            'email',
+            'name',
+            'represent_name',
+            'avatar',
+            'role',
+        )
+
+    def get_role(self, obj):
+        workspace = self.context.get("workspace", None)
+
+        if not workspace:
+            return 'Invited'
+        elif workspace.owner.id == obj.id:
+            return 'Owner'
+        else:
+            return 'Member'
+
+    def get_represent_name(self, obj):
+        return obj.name if obj.name else obj.email.split('@')[0]
+
+
 class WorkSpaceSerializer(serializers.ModelSerializer):
-    """
-   Сериализотор РП
-   """
-    users = CurrentUserSerializer(many=True, read_only=True)
-    invited = CurrentUserSerializer(many=True, read_only=True)
+    """Сериализотор РП"""
+    users = serializers.SerializerMethodField()
+    invited = UserListWorkSpace(many=True, read_only=True)
     boards = WorkspaceBoardsSerializer(many=True, read_only=True, source='board')
 
     class Meta:
@@ -68,6 +93,11 @@ class WorkSpaceSerializer(serializers.ModelSerializer):
             'invited',
             'boards',
         )
+
+    def get_users(self, obj):
+        users_list = obj.users.all()
+        users = UserListWorkSpace(users_list, many=True, read_only=True, context={'workspace': obj}).data
+        return users
 
 
 class WorkSpaceInviteSerializer(mixins.GetWorkSpaceMixin,
@@ -136,9 +166,6 @@ class InviteUserSerializer(mixins.GetInvitedMixin,
         time_out = timedelta(seconds=WORKSAPCES['INVITE_TOKEN_TIMEOUT'])
         expired_token = self.invitation.created_at + time_out
 
-        # self.workspace = self.invitation.workspace
-        # self.user = self.invitation.user
-
         if now() > expired_token:
             raise ValidationError(
                 {"token": self.default_error_messages['token_expired']},
@@ -146,19 +173,6 @@ class InviteUserSerializer(mixins.GetInvitedMixin,
             )
 
         return attrs
-        # if self.user_is_added_to_workspace():
-        #     raise ValidationError(
-        #         {"token": self.default_error_messages['already_invited']},
-        #         'already_invited'
-        #     )
-        #
-        # if self.user_is_invited_to_workspace():
-
-
-        # raise ValidationError(
-        #     {"token": self.default_error_messages['invalid_token']},
-        #     'invalid_token'
-        # )
 
 
 class UserListSerializer(serializers.ModelSerializer):
