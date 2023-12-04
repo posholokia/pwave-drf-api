@@ -26,10 +26,23 @@ class InvitedUsers(models.Model):
 class Column(models.Model):
     name = models.CharField('Колонка', max_length=50)
     board = models.ForeignKey(Board, related_name='column_board', on_delete=models.CASCADE)
+    index = models.IntegerField('Порядковый номер')
 
 
 class Task(models.Model):
-    name = models.CharField('Задача', max_length=50)
-    index = models.IntegerField()
+    PRIORITY = (
+        (0, 'Срочный'),
+        (1, 'Высокий'),
+        (2, 'Нормальный'),
+        (3, 'Низкий'),
+    )
+    name = models.CharField('Название задачи', max_length=50)
+    index = models.IntegerField('Порядковый номер')
     column = models.ForeignKey(Column, related_name='task', on_delete=models.CASCADE)
-    # board = models.ForeignKey(Board, related_name='task_board', on_delete=models.CASCADE)
+    responsible = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='responsible_for_task')
+    deadline = models.DateField('Срок выполнения', null=True)
+    description = models.CharField('Описание', max_length=2048, blank=True)
+    file = models.FileField(upload_to='task_attach/', null=True)
+    priority = models.IntegerField('Флаг приоритета', choices=PRIORITY, null=True)
+    color_mark = models.CharField('Цветовая метка', max_length=16, blank=True)
+    created_at = models.DateTimeField('Время создания задачи', auto_now_add=True)
