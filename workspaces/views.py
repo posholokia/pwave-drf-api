@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from django.contrib.auth import get_user_model
+from django.http import Http404
 from django_eventstream import send_event
 
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -31,13 +32,13 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
                        mixins.CheckWorkSpaceUsersMixin,
                        viewsets.ModelViewSet):
     serializer_class = serializers.WorkSpaceSerializer
-    queryset = WorkSpace.objects.all()
+    queryset = WorkSpace.objects.all().select_related('owner').prefetch_related('users', 'invited', 'board')
     permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
         if self.action == 'create':
             return serializers.CreateWorkSpaceSerializer
-        if self.action == 'invite_user':
+        elif self.action == 'invite_user':
             return serializers.WorkSpaceInviteSerializer
         elif self.action == 'confirm_invite':
             return serializers.InviteUserSerializer
@@ -238,19 +239,31 @@ class BoardViewSet(viewsets.ModelViewSet):
     queryset = Board.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        user = self.request.user
-        queryset = queryset.filter(work_space__users=user)
-        workspace = self.request.query_params.get('space_id')
-
-        if workspace:
-            queryset = queryset.filter(work_space=workspace)
-
-        return queryset
+    # def get_queryset(self):
+    #     queryset = super().get_queryset()
+    #     user = self.request.user
+    #     queryset = queryset.filter(work_space__users=user)
+    #     workspace = self.request.query_params.get('space_id')
+    #
+    #     if workspace:
+    #         queryset = queryset.filter(work_space=workspace)
+    #
+    #     return queryset
 
     def get_serializer_class(self):
         if self.action == 'create':
             return serializers.CreateBoardSerializer
 
         return super().get_serializer_class()
+
+    def retrieve(self, request, *args, **kwargs):
+        # print(f'{}')
+        b = (Board.objects
+             .prefetch_related('column_board__task')
+             .filter(pk=kwargs['pk'])
+             .first())
+        if not b:
+            raise Http404
+
+        return Response(serializers.BoardSerializer(b).data)
+        # return super().retrieve(request, *args, **kwargs)

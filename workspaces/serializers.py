@@ -9,7 +9,7 @@ from rest_framework.exceptions import ValidationError
 from pulsewave.settings import WORKSAPCES
 from taskmanager.serializers import CurrentUserSerializer
 from . import mixins
-from .models import WorkSpace, Board, InvitedUsers
+from .models import WorkSpace, Board, InvitedUsers, Task, Column
 
 User = get_user_model()
 
@@ -40,24 +40,49 @@ class CreateWorkSpaceSerializer(serializers.ModelSerializer):
 
 
 class WorkspaceBoardsSerializer(serializers.ModelSerializer):
-    members = CurrentUserSerializer(many=True, read_only=True)
 
     class Meta:
         model = Board
         fields = (
             'id',
             'name',
-            'members',
         )
 
 
+class UserListWorkSpace(serializers.ModelSerializer):
+    represent_name = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        read_only_fields = ['email']
+        fields = (
+            'id',
+            'email',
+            'name',
+            'represent_name',
+            'avatar',
+            'role',
+        )
+
+    def get_role(self, obj):
+        workspace = self.context.get("workspace", None)
+
+        if not workspace:
+            return 'Invited'
+        elif workspace.owner.id == obj.id:
+            return 'Owner'
+        else:
+            return 'Member'
+
+    def get_represent_name(self, obj):
+        return obj.name if obj.name else obj.email.split('@')[0]
+
+
 class WorkSpaceSerializer(serializers.ModelSerializer):
-    """
-   Сериализотор РП
-   """
-    users = CurrentUserSerializer(many=True, read_only=True)
-    invited = CurrentUserSerializer(many=True, read_only=True)
     boards = WorkspaceBoardsSerializer(many=True, read_only=True, source='board')
+    users = serializers.SerializerMethodField()
+    invited = UserListWorkSpace(many=True, read_only=True)
 
     class Meta:
         model = WorkSpace
@@ -65,9 +90,14 @@ class WorkSpaceSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'users',
-            'invited',
             'boards',
+            'invited',
         )
+
+    def get_users(self, obj):
+        users_list = obj.users.all()
+        users = UserListWorkSpace(users_list, many=True, read_only=True, context={'workspace': obj}).data
+        return users
 
 
 class WorkSpaceInviteSerializer(mixins.GetWorkSpaceMixin,
@@ -136,9 +166,6 @@ class InviteUserSerializer(mixins.GetInvitedMixin,
         time_out = timedelta(seconds=WORKSAPCES['INVITE_TOKEN_TIMEOUT'])
         expired_token = self.invitation.created_at + time_out
 
-        # self.workspace = self.invitation.workspace
-        # self.user = self.invitation.user
-
         if now() > expired_token:
             raise ValidationError(
                 {"token": self.default_error_messages['token_expired']},
@@ -146,19 +173,6 @@ class InviteUserSerializer(mixins.GetInvitedMixin,
             )
 
         return attrs
-        # if self.user_is_added_to_workspace():
-        #     raise ValidationError(
-        #         {"token": self.default_error_messages['already_invited']},
-        #         'already_invited'
-        #     )
-        #
-        # if self.user_is_invited_to_workspace():
-
-
-        # raise ValidationError(
-        #     {"token": self.default_error_messages['invalid_token']},
-        #     'invalid_token'
-        # )
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -257,11 +271,46 @@ class CreateBoardSerializer(serializers.ModelSerializer):
         )
 
 
+class TaskSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор задачи
+    """
+
+    class Meta:
+        model = Task
+        fields = (
+            'id',
+            'name',
+            'index',
+            # 'column',
+            # 'board',
+        )
+
+
+class ColumnSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор задачи
+    """
+    tasks = TaskSerializer(many=True, read_only=True, source='task')
+
+    class Meta:
+        model = Column
+        fields = (
+            'id',
+            'name',
+            # 'board',
+            'tasks',
+        )
+
+
 class BoardSerializer(serializers.ModelSerializer):
     """
     Сериализатор доски
     """
     members = CurrentUserSerializer(many=True, read_only=True)
+    columns = ColumnSerializer(many=True, read_only=True, source='column_board')
+
+    # tasks = TaskSerializer(many=True, read_only=True, source='task_board')
 
     class Meta:
         model = Board
@@ -271,4 +320,6 @@ class BoardSerializer(serializers.ModelSerializer):
             'name',
             'work_space',
             'members',
+            'columns',
+            # 'tasks',
         )

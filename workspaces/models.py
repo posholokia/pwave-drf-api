@@ -22,3 +22,14 @@ class InvitedUsers(models.Model):
     workspace = models.ForeignKey(WorkSpace, related_name='workspace_invitations', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
+
+class Column(models.Model):
+    name = models.CharField('Колонка', max_length=50)
+    board = models.ForeignKey(Board, related_name='column_board', on_delete=models.CASCADE)
+
+
+class Task(models.Model):
+    name = models.CharField('Задача', max_length=50)
+    index = models.IntegerField()
+    column = models.ForeignKey(Column, related_name='task', on_delete=models.CASCADE)
+    # board = models.ForeignKey(Board, related_name='task_board', on_delete=models.CASCADE)
