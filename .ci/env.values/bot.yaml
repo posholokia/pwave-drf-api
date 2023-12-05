@@ -5,7 +5,8 @@ readinessProbe: {}
 
 ports: {}
 
-service: {}
+service:
+  enabled: false
 
 resources:
   limits:
