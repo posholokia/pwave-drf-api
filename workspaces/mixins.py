@@ -7,7 +7,7 @@ from django.contrib.auth.models import AnonymousUser
 from rest_framework.exceptions import ValidationError
 
 from taskmanager.email import InviteUserEmail
-from .models import WorkSpace, InvitedUsers, Board
+from .models import WorkSpace, InvitedUsers, Board, Column
 
 User = get_user_model()
 
@@ -105,3 +105,12 @@ class DefaultWorkSpaceMixin:
             return workspace
 
         Board.objects.create(name='Доска 1', work_space=workspace)
+
+
+class ShiftIndexMixin:
+    def shift_index(self, instance):
+        list_objects = list(self.get_queryset())
+        for obj in list_objects[instance.index + 1:]:
+            obj.index -= 1
+
+        Column.objects.bulk_update(list_objects, ['index'])

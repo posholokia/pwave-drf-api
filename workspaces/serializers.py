@@ -295,24 +295,42 @@ class TaskSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'index',
-            # 'column',
-            # 'board',
         )
+
+
+class CreateColumnSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Column
+        read_only_fields = ['index']
+        fields = (
+            'id',
+            'name',
+            'board',
+            'index',
+        )
+
+    def create(self, validated_data):
+        number_of_columns = len(self.context["view"].get_queryset())
+        index = number_of_columns
+        validated_data['index'] = index
+        return super().create(validated_data)
 
 
 class ColumnSerializer(serializers.ModelSerializer):
     """
     Сериализатор задачи
     """
-    tasks = TaskSerializer(many=True, read_only=True, source='task')
+    # tasks = TaskSerializer(many=True, read_only=True, source='task')
 
     class Meta:
         model = Column
+        # read_only_fields = ['index']
         fields = (
             'id',
             'name',
-            # 'board',
-            'tasks',
+            'index',
+            'board',
+            # 'tasks',
         )
 
 
@@ -323,8 +341,6 @@ class BoardSerializer(serializers.ModelSerializer):
     members = CurrentUserSerializer(many=True, read_only=True)
     columns = ColumnSerializer(many=True, read_only=True, source='column_board')
 
-    # tasks = TaskSerializer(many=True, read_only=True, source='task_board')
-
     class Meta:
         model = Board
         read_only_fields = ['work_space']
@@ -334,5 +350,4 @@ class BoardSerializer(serializers.ModelSerializer):
             'work_space',
             'members',
             'columns',
-            # 'tasks',
         )

@@ -9,11 +9,12 @@ from django.contrib.auth import get_user_model
 from django.http import Http404
 from django_eventstream import send_event
 
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 
 from taskmanager.serializers import CurrentUserSerializer
-from .models import WorkSpace, Board, InvitedUsers
+from .models import WorkSpace, Board, InvitedUsers, Column
 from . import serializers, mixins
+from .permissions import UserIsMember
 from .serializers import InviteUserSerializer
 
 User = get_user_model()
@@ -266,4 +267,48 @@ class BoardViewSet(viewsets.ModelViewSet):
             raise Http404
 
         return Response(serializers.BoardSerializer(b).data)
-        # return super().retrieve(request, *args, **kwargs)
+
+
+class ColumnViewSet(mixins.ShiftIndexMixin,
+                    viewsets.ModelViewSet):
+    serializer_class = serializers.ColumnSerializer
+    queryset = Column.objects.all()
+    permission_classes = [permissions.IsAuthenticated, UserIsMember]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return serializers.CreateColumnSerializer
+
+        return super().get_serializer_class()
+
+    @extend_schema(parameters=[  # TODO вынести в schema
+        OpenApiParameter("board", OpenApiTypes.INT)
+    ])
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        queryset = queryset.filter(board__members=user)
+
+        # фильтр для правильного присвоения индекса при создании колонки
+        if self.request.method == 'POST':
+            board_id = self.request.data.get("board", None)
+            return queryset.filter(board_id=board_id)
+
+        # фильтр по query параметру
+        board_id = self.request.query_params.get("board", None)
+        if board_id:
+            queryset = queryset.filter(board_id=board_id)
+
+        return queryset.order_by('index')
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        При удалении колонки перезаписывает порядковые номера оставшихся колонок
+        """
+        instance = self.get_object()
+        self.shift_index(instance)
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
