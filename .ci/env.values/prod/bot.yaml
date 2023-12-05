@@ -1,0 +1,9 @@
+env:
+  PYTHONUNBUFFERED: 1
+  BOT_TOKEN: "{{ .Values.BOT_TOKEN }}"
+  SECRET_KEY: "{{ .Values.APP_DJANGO_SECRET_KEY }}"
+
+imagePullSecrets:
+  - name: gitlab-cr
+
+replicaCount: 1

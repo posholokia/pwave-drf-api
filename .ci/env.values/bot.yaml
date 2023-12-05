@@ -1,0 +1,33 @@
+nameOverride: "{{ .Values.GIT_REPO }}"
+
+livenessProbe: {}
+readinessProbe: {}
+
+ports: {}
+
+service: {}
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 250Mi
+
+volumeMounts: {}
+
+sidecars: {}
+
+initContainers: {}
+
+volumes: {}
+
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+
+ingress:
+  enabled: false
