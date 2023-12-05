@@ -18,6 +18,8 @@ sidecars: {}
 
 initContainers: {}
 
+args: [ "manage.py", "startbot" ]
+
 volumes: {}
 
 securityContext:
