@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
 from django.contrib.auth.models import AnonymousUser
@@ -5,7 +7,7 @@ from django.contrib.auth.models import AnonymousUser
 from rest_framework.exceptions import ValidationError
 
 from taskmanager.email import InviteUserEmail
-from .models import WorkSpace, InvitedUsers
+from .models import WorkSpace, InvitedUsers, Board
 
 User = get_user_model()
 
@@ -58,7 +60,7 @@ class CheckWorkSpaceInvitedMixin:
 
 
 class GetInvitationMixin:
-    def get_or_create_invitation(self, user, workspace):
+    def get_or_create_invitation(self, user: User, workspace: WorkSpace):
         try:
             invitation = InvitedUsers.objects.get(user=user, workspace=workspace)
         except InvitedUsers.DoesNotExist:
@@ -76,7 +78,7 @@ class GetInvitationMixin:
 
 
 class GetOrCreateUserMixin:
-    def get_or_create_user(self, email):
+    def get_or_create_user(self, email: str):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -87,8 +89,19 @@ class GetOrCreateUserMixin:
 
 
 class UserNoAuthOrThisUser:
-    def check_auth_user(self, user):
+    def check_auth_user(self, user: User):
         if any([isinstance(self.request.user, AnonymousUser), self.request.user == user]):
             return True
 
         return False
+
+
+class DefaultWorkSpaceMixin:
+    def create_default_workspace(self, user: User, create_for_board: Optional[bool] = None):
+        workspace = WorkSpace.objects.create(owner=user, name='Рабочее пространство 1')
+        workspace.users.add(user)
+
+        if create_for_board:
+            return workspace
+
+        Board.objects.create(name='Доска 1', work_space=workspace)

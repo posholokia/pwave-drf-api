@@ -39,6 +39,18 @@ class BoardTestCase(APITestCase):
         self.assertEquals(status.HTTP_201_CREATED, response.status_code)
         self.assertEquals(2, len(Board.objects.all()))
 
+    def test_create_board_no_ws(self):
+        data = {
+            'name': 'My Board'
+        }
+        response = self.client.post(reverse('boards-list'), data)
+        self.assertEquals(status.HTTP_201_CREATED, response.status_code)
+        self.assertEquals(2, len(Board.objects.all()))
+
+        new_ws_id = response.data["work_space"]
+        assert WorkSpace.objects.filter(pk=new_ws_id).exists()
+        self.assertNotEqual(new_ws_id, self.ws.id)
+
     def test_board_create_fail_name(self):
         data = {
             'name': 'My Board name is very, very long, longer than necessary'

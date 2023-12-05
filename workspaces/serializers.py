@@ -257,10 +257,12 @@ class ResendInviteSerializer(mixins.GetWorkSpaceMixin,
         )
 
 
-class CreateBoardSerializer(serializers.ModelSerializer):
+class CreateBoardSerializer(mixins.DefaultWorkSpaceMixin,
+                            serializers.ModelSerializer):
     """
     Сериализатор создания доски
     """
+    work_space = serializers.PrimaryKeyRelatedField(queryset=WorkSpace.objects.all(), required=False)
 
     class Meta:
         model = Board
@@ -269,6 +271,17 @@ class CreateBoardSerializer(serializers.ModelSerializer):
             'name',
             'work_space',
         )
+
+    def create(self, validated_data):
+        user = self.context.get('request', None).user
+        workspace_id = self.context["request"].data.get("work_space", None)
+
+        if workspace_id:
+            return super().create(validated_data)
+        else:
+            workspace = self.create_default_workspace(user, create_for_board=True)
+            validated_data['work_space'] = workspace
+            return super().create(validated_data)
 
 
 class TaskSerializer(serializers.ModelSerializer):
