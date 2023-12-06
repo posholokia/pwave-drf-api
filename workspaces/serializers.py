@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
+from django.db import transaction
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -301,7 +302,7 @@ class TaskSerializer(serializers.ModelSerializer):
 class CreateColumnSerializer(serializers.ModelSerializer):
     class Meta:
         model = Column
-        read_only_fields = ['index']
+        read_only_fields = ['index', 'board']
         fields = (
             'id',
             'name',
@@ -312,7 +313,9 @@ class CreateColumnSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         number_of_columns = len(self.context["view"].get_queryset())
         index = number_of_columns
+        board_pk = self.context['view'].kwargs['board_pk']
         validated_data['index'] = index
+        validated_data['board'] = Board.objects.get(pk=board_pk)
         return super().create(validated_data)
 
 
@@ -320,18 +323,53 @@ class ColumnSerializer(serializers.ModelSerializer):
     """
     Сериализатор задачи
     """
-    # tasks = TaskSerializer(many=True, read_only=True, source='task')
-
     class Meta:
         model = Column
-        # read_only_fields = ['index']
+        read_only_fields = ['board']
         fields = (
             'id',
             'name',
             'index',
             'board',
-            # 'tasks',
         )
+
+    def update(self, instance, validated_data):
+        self.new_index = validated_data.get('index', None)
+
+        if self.new_index is not None:
+            self.objects = self.context['view'].get_queryset()
+            self.qs = self.context['view'].get_queryset()
+            if self.new_index > instance.index:
+                return self.left_shift(instance)
+            elif self.new_index < instance.index:
+                return self.right_shift(instance)
+
+        return super().update(instance, validated_data)
+
+    def left_shift(self, instance):
+        slice_objects = self.objects[instance.index: self.new_index + 1]
+
+        with transaction.atomic():
+            for obj in slice_objects:
+                if obj == instance:
+                    obj.index = instance.index = self.new_index
+                else:
+                    obj.index -= 1
+
+            Column.objects.bulk_update(slice_objects, ['index'])
+            return instance
+
+    def right_shift(self, instance):
+        slice_objects = self.objects[self.new_index: instance.index + 1]
+        with transaction.atomic():
+            for obj in slice_objects:
+                if obj == instance:
+                    obj.index = instance.index = self.new_index
+                else:
+                    obj.index += 1
+
+            Column.objects.bulk_update(slice_objects, ['index'])
+            return instance
 
 
 class BoardSerializer(serializers.ModelSerializer):

@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 from django.http import Http404
 from django_eventstream import send_event
+from django.db import transaction
 
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 
@@ -240,16 +241,16 @@ class BoardViewSet(viewsets.ModelViewSet):
     queryset = Board.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
-    # def get_queryset(self):
-    #     queryset = super().get_queryset()
-    #     user = self.request.user
-    #     queryset = queryset.filter(work_space__users=user)
-    #     workspace = self.request.query_params.get('space_id')
-    #
-    #     if workspace:
-    #         queryset = queryset.filter(work_space=workspace)
-    #
-    #     return queryset
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        queryset = queryset.filter(work_space__users=user)
+
+        workspace = self.request.query_params.get('space_id')
+        if workspace:
+            queryset = queryset.filter(work_space=workspace)
+
+        return queryset.order_by('id')
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -257,23 +258,12 @@ class BoardViewSet(viewsets.ModelViewSet):
 
         return super().get_serializer_class()
 
-    def retrieve(self, request, *args, **kwargs):
-        # print(f'{}')
-        b = (Board.objects
-             .prefetch_related('column_board__task')
-             .filter(pk=kwargs['pk'])
-             .first())
-        if not b:
-            raise Http404
-
-        return Response(serializers.BoardSerializer(b).data)
-
 
 class ColumnViewSet(mixins.ShiftIndexMixin,
                     viewsets.ModelViewSet):
     serializer_class = serializers.ColumnSerializer
-    queryset = Column.objects.all()
-    permission_classes = [permissions.IsAuthenticated, UserIsMember]
+    queryset = Column.objects.all().order_by('index')
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -281,28 +271,16 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
 
         return super().get_serializer_class()
 
-    @extend_schema(parameters=[  # TODO вынести в schema
-        OpenApiParameter("board", OpenApiTypes.INT)
-    ])
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
-
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
         queryset = queryset.filter(board__members=user)
 
-        # фильтр для правильного присвоения индекса при создании колонки
-        if self.request.method == 'POST':
-            board_id = self.request.data.get("board", None)
-            return queryset.filter(board_id=board_id)
+        board_pk = self.kwargs.get('board_pk', None)
+        if board_pk:
+            queryset = queryset.filter(board=board_pk)
 
-        # фильтр по query параметру
-        board_id = self.request.query_params.get("board", None)
-        if board_id:
-            queryset = queryset.filter(board_id=board_id)
-
-        return queryset.order_by('index')
+        return queryset
 
     def destroy(self, request, *args, **kwargs):
         """
