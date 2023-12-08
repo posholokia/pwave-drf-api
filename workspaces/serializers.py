@@ -275,14 +275,17 @@ class CreateBoardSerializer(mixins.DefaultWorkSpaceMixin,
 
     def create(self, validated_data):
         user = self.context.get('request', None).user
-        workspace_id = self.context["request"].data.get("work_space", None)
+        workspace_id = self.context['view'].kwargs.get('workspace_id', None)
 
         if workspace_id:
-            return super().create(validated_data)
+            validated_data['work_space_id'] = workspace_id
+            instance = Board.objects.create(**validated_data)
+            return instance
         else:
             workspace = self.create_default_workspace(user, create_for_board=True)
             validated_data['work_space'] = workspace
-            return super().create(validated_data)
+            instance = Board.objects.create(**validated_data)
+            return instance
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -312,11 +315,13 @@ class CreateColumnSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         number_of_columns = len(self.context["view"].get_queryset())
-        index = number_of_columns
-        board_pk = self.context['view'].kwargs['board_pk']
-        validated_data['index'] = index
-        validated_data['board'] = Board.objects.get(pk=board_pk)
-        return super().create(validated_data)
+        board_pk = self.context['view'].kwargs['board_id']
+
+        validated_data['index'] = number_of_columns
+        validated_data['board_id'] = board_pk
+
+        instance = Column.objects.create(**validated_data)
+        return instance
 
 
 class ColumnSerializer(serializers.ModelSerializer):

@@ -101,10 +101,10 @@ class DefaultWorkSpaceMixin:
         workspace = WorkSpace.objects.create(owner=user, name='Рабочее пространство 1')
         workspace.users.add(user)
 
-        if create_for_board:
-            return workspace
+        if not create_for_board:
+            Board.objects.create(name='Доска 1', work_space=workspace)
 
-        Board.objects.create(name='Доска 1', work_space=workspace)
+        return workspace
 
 
 class ShiftIndexMixin:

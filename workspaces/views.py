@@ -6,16 +6,14 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from django.contrib.auth import get_user_model
-from django.http import Http404
 from django_eventstream import send_event
-from django.db import transaction
 
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from taskmanager.serializers import CurrentUserSerializer
 from .models import WorkSpace, Board, InvitedUsers, Column
 from . import serializers, mixins
-from .permissions import UserIsMember
+from .permissions import UserInWorkSpaceUsers, UserIsBoardMember
 from .serializers import InviteUserSerializer
 
 User = get_user_model()
@@ -239,16 +237,16 @@ class TestSSEUser(generics.CreateAPIView):
 class BoardViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.BoardSerializer
     queryset = Board.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, UserInWorkSpaceUsers]
 
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
-        queryset = queryset.filter(work_space__users=user)
-
-        workspace = self.request.query_params.get('space_id')
-        if workspace:
-            queryset = queryset.filter(work_space=workspace)
+        workspace = self.kwargs.get('workspace_id')
+        queryset = (queryset
+                    .filter(work_space__users=user)
+                    .filter(work_space_id=workspace)
+                    )
 
         return queryset.order_by('id')
 
@@ -259,11 +257,18 @@ class BoardViewSet(viewsets.ModelViewSet):
         return super().get_serializer_class()
 
 
+class BoardCreateWithoutWorkSpace(mixins.DefaultWorkSpaceMixin,
+                                  generics.CreateAPIView):
+    serializer_class = serializers.CreateBoardSerializer
+    queryset = Board.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+
 class ColumnViewSet(mixins.ShiftIndexMixin,
                     viewsets.ModelViewSet):
     serializer_class = serializers.ColumnSerializer
     queryset = Column.objects.all().order_by('index')
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, UserIsBoardMember]
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -274,11 +279,13 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
-        queryset = queryset.filter(board__members=user)
+        board_id = self.kwargs.get('board_id', None)
 
-        board_pk = self.kwargs.get('board_pk', None)
-        if board_pk:
-            queryset = queryset.filter(board=board_pk)
+        queryset = (queryset
+                    .filter(board_id=board_id)
+                    # .filter(board__members=user)  # расскомментировать после реализации добавления участников доски
+                    .filter(board__work_space__users=user)  # а это удалить
+                    )
 
         return queryset
 
