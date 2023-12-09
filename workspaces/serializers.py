@@ -90,14 +90,19 @@ class WorkSpaceSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'users',
-            'boards',
             'invited',
+            'boards',
         )
 
     def get_users(self, obj):
         users_list = obj.users.all()
         users = UserListWorkSpace(users_list, many=True, read_only=True, context={'workspace': obj}).data
         return users
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['boards'] = sorted(representation['boards'], key=lambda x: x['id'], reverse=True)
+        return representation
 
 
 class WorkSpaceInviteSerializer(mixins.GetWorkSpaceMixin,
@@ -354,7 +359,6 @@ class ColumnSerializer(mixins.ShiftIndexMixin,
             instance = self.shift_indexes(instance)
 
         return super().update(instance, validated_data)
-
 
 
 class BoardSerializer(serializers.ModelSerializer):

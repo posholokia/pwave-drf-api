@@ -248,7 +248,7 @@ class BoardViewSet(viewsets.ModelViewSet):
                     .filter(work_space_id=workspace)
                     )
 
-        return queryset.order_by('id')
+        return queryset.order_by('-id')
 
     def get_serializer_class(self):
         if self.action == 'create':
