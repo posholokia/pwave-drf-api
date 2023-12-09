@@ -71,7 +71,10 @@ class GetInvitationMixin:
                 workspace=workspace,
             )
 
-        context = {'invitation': invitation, }
+        context = {
+            'invitation': invitation,
+            'workspace': workspace.name,
+        }
         to = [invitation.user.email]
         InviteUserEmail(self.request, context).send(to)
 
