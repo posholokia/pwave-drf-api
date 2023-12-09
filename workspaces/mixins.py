@@ -112,33 +112,33 @@ class DefaultWorkSpaceMixin:
 
 
 class ShiftIndexMixin:
-    def shift_indexes(self, instance):
-        if self.new_index > instance.index:
-            instance = self.left_shift(instance)
-        elif self.new_index < instance.index:
-            instance = self.right_shift(instance)
+    def shift_indexes(self, instance, new_index):
+        if new_index > instance.index:
+            instance = self.left_shift(instance, new_index)
+        elif new_index < instance.index:
+            instance = self.right_shift(instance, new_index)
         return instance
 
-    def left_shift(self, instance):
-        slice_objects = self.objects[instance.index: self.new_index + 1]
+    def left_shift(self, instance, new_index):
+        slice_objects = self.objects[instance.index: new_index + 1]
 
         with transaction.atomic():
             for obj in slice_objects:
                 if obj == instance:
-                    obj.index = instance.index = self.new_index
+                    obj.index = instance.index = new_index
                 else:
                     obj.index -= 1
 
             Column.objects.bulk_update(slice_objects, ['index'])
             return instance
 
-    def right_shift(self, instance):
-        slice_objects = self.objects[self.new_index: instance.index + 1]
+    def right_shift(self, instance, new_index):
+        slice_objects = self.objects[new_index: instance.index + 1]
 
         with transaction.atomic():
             for obj in slice_objects:
                 if obj == instance:
-                    obj.index = instance.index = self.new_index
+                    obj.index = instance.index = new_index
                 else:
                     obj.index += 1
 
@@ -147,7 +147,9 @@ class ShiftIndexMixin:
 
     def delete_shift_index(self, instance):
         list_objects = list(self.get_queryset())
-        for obj in list_objects[instance.index + 1:]:
-            obj.index -= 1
 
-        Column.objects.bulk_update(list_objects, ['index'])
+        with transaction.atomic():
+            for obj in list_objects[instance.index + 1:]:
+                obj.index -= 1
+
+            Column.objects.bulk_update(list_objects, ['index'])
