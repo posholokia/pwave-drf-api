@@ -261,8 +261,7 @@ class ResendInviteSerializer(mixins.GetWorkSpaceMixin,
         )
 
 
-class CreateBoardSerializer(mixins.DefaultWorkSpaceMixin,
-                            serializers.ModelSerializer):
+class CreateBoardSerializer(serializers.ModelSerializer):
     """
     Сериализатор создания доски
     """
@@ -277,25 +276,37 @@ class CreateBoardSerializer(mixins.DefaultWorkSpaceMixin,
         )
 
     def create(self, validated_data):
-        user = self.context.get('request', None).user
         workspace_id = self.context['view'].kwargs.get('workspace_id', None)
+        validated_data['work_space_id'] = workspace_id
+        instance = Board.objects.create(**validated_data)
+        return instance
 
-        if workspace_id:
-            validated_data['work_space_id'] = workspace_id
-            instance = Board.objects.create(**validated_data)
-            return instance
-        else:
-            workspace = self.create_default_workspace(user, create_for_board=True)
-            validated_data['work_space'] = workspace
-            instance = Board.objects.create(**validated_data)
-            return instance
+
+class CreateBoardNoWorkSpaceSerializer(mixins.DefaultWorkSpaceMixin,
+                            serializers.ModelSerializer):
+    """Создание доски вне РП, РП создается автоматически для доски"""
+
+    class Meta:
+        model = Board
+        read_only_fields = ['work_space']
+        fields = (
+            'id',
+            'name',
+            'work_space',
+        )
+
+    def create(self, validated_data):
+        user = self.context.get('request', None).user
+        workspace = self.create_default_workspace(user, create_for_board=True)
+        validated_data['work_space'] = workspace
+        instance = Board.objects.create(**validated_data)
+        return instance
 
 
 class TaskSerializer(serializers.ModelSerializer):
     """
     Сериализатор задачи
     """
-
     class Meta:
         model = Task
         fields = (
@@ -343,19 +354,19 @@ class ColumnSerializer(mixins.ShiftIndexMixin,
         )
 
     def update(self, instance, validated_data):
-        self.new_index = validated_data.pop('index', None)
+        new_index = validated_data.pop('index', None)
 
-        if self.new_index is not None:
+        if new_index is not None:
             self.objects = self.context['view'].get_queryset()
 
-            if self.new_index >= len(self.objects) or self.new_index < 0:
+            if new_index >= len(self.objects) or new_index < 0:
                 raise ValidationError(
                     {"index": f'Порядковый номер должен соответсвовать количеству обьектов: '
                               f'0 <= index <= {len(self.objects) - 1}'},
                     'invalid_index'
                 )
 
-            instance = self.shift_indexes(instance)
+            instance = self.shift_indexes(instance, new_index)
 
         return super().update(instance, validated_data)
 
