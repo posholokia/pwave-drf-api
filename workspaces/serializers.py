@@ -15,9 +15,7 @@ User = get_user_model()
 
 
 class CreateWorkSpaceSerializer(serializers.ModelSerializer):
-    """
-    Сериализотор создания РП
-    """
+    """Сериализотор создания РП"""
     # поле owner скрыто для редактирования и автоматически заполняется текущим пользователем
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
@@ -40,7 +38,7 @@ class CreateWorkSpaceSerializer(serializers.ModelSerializer):
 
 
 class WorkspaceBoardsSerializer(serializers.ModelSerializer):
-
+    """Сериализация досок внутри РП"""
     class Meta:
         model = Board
         fields = (
@@ -50,6 +48,7 @@ class WorkspaceBoardsSerializer(serializers.ModelSerializer):
 
 
 class UserListWorkSpace(serializers.ModelSerializer):
+    """Сериализация пользователей внутри РП"""
     represent_name = serializers.SerializerMethodField()
     role = serializers.SerializerMethodField()
 
