@@ -236,7 +236,7 @@ class TestSSEUser(generics.CreateAPIView):
                     )
 class BoardViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.BoardSerializer
-    queryset = Board.objects.all()
+    queryset = Board.objects.all().prefetch_related('column_board', 'members')
     permission_classes = [permissions.IsAuthenticated, UserInWorkSpaceUsers]
 
     def get_queryset(self):
@@ -267,7 +267,7 @@ class BoardCreateWithoutWorkSpace(mixins.DefaultWorkSpaceMixin,
 class ColumnViewSet(mixins.ShiftIndexMixin,
                     viewsets.ModelViewSet):
     serializer_class = serializers.ColumnSerializer
-    queryset = Column.objects.all().order_by('index')
+    queryset = Column.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserIsBoardMember]
 
     def get_serializer_class(self):
@@ -286,7 +286,7 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
                     # .filter(board__members=user)  # расскомментировать после реализации добавления участников доски
                     .filter(board__work_space__users=user)  # а это удалить
                     )
-        return queryset
+        return queryset.order_by('index')
 
     def destroy(self, request, *args, **kwargs):
         """
