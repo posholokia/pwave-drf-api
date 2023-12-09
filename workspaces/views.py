@@ -113,11 +113,12 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         self.user = serializer.invitation.user
         self.workspace = serializer.invitation.workspace
 
-        if not self.check_auth_user(self.user):
+        if not self.check_auth_user(self.user):  # TODO надо будет вынести в permissions
             return Response(status=status.HTTP_403_FORBIDDEN)
 
+        # если пользователь уже добавлен в РП, но не закончил регистрацию, нужно вернуть ответ,
+        # по которому его направят на установку пароля
         data = InviteUserSerializer(serializer.invitation).data
-
         if not self.user.has_usable_password() and self.user_is_added_to_workspace():
             return Response(data=data, status=status.HTTP_200_OK)
 
@@ -138,6 +139,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         serializer.is_valid(raise_exception=True)
 
         user_id = serializer.data['user_id']
+
         self.workspace = WorkSpace.objects.get(pk=kwargs['pk'])
 
         if user_id == self.workspace.owner_id:
@@ -225,9 +227,7 @@ class TestSSEUser(generics.CreateAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema_view(list=extend_schema(description='Список всех досок этого пользователя. '
-                                                   'Для получения досок конкретного РП нужно передать query параметр'
-                                                   '"space_id": /api/board/?space_id=4'),
+@extend_schema_view(list=extend_schema(description='Список всех досок указанного РП.'),
                     create=extend_schema(description='Создать Доску'),
                     retrieve=extend_schema(description='Информация о конкретной доске'),
                     update=extend_schema(description='Обновить доску'),
@@ -235,8 +235,9 @@ class TestSSEUser(generics.CreateAPIView):
                     destroy=extend_schema(description='Удалить доску'),
                     )
 class BoardViewSet(viewsets.ModelViewSet):
+    """Представление досок"""
     serializer_class = serializers.BoardSerializer
-    queryset = Board.objects.all()
+    queryset = Board.objects.all().prefetch_related('column_board', 'members')
     permission_classes = [permissions.IsAuthenticated, UserInWorkSpaceUsers]
 
     def get_queryset(self):
@@ -259,15 +260,23 @@ class BoardViewSet(viewsets.ModelViewSet):
 
 class BoardCreateWithoutWorkSpace(mixins.DefaultWorkSpaceMixin,
                                   generics.CreateAPIView):
-    serializer_class = serializers.CreateBoardSerializer
+    """Создание доски вне РП"""
+    serializer_class = serializers.CreateBoardNoWorkSpaceSerializer
     queryset = Board.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
 
+@extend_schema_view(list=extend_schema(description='Список всех колонок доски.'),
+                    create=extend_schema(description='Создать колонку на доске'),
+                    retrieve=extend_schema(description='Информация о конкретной колонке'),
+                    update=extend_schema(description='Обновить колонку (название и порядковый номер)'),
+                    partial_update=extend_schema(description='Частично обновить колонку (название/порядковый номер)'),
+                    destroy=extend_schema(description='Удалить колонку'),
+                    )
 class ColumnViewSet(mixins.ShiftIndexMixin,
                     viewsets.ModelViewSet):
     serializer_class = serializers.ColumnSerializer
-    queryset = Column.objects.all().order_by('index')
+    queryset = Column.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserIsBoardMember]
 
     def get_serializer_class(self):
@@ -286,7 +295,7 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
                     # .filter(board__members=user)  # расскомментировать после реализации добавления участников доски
                     .filter(board__work_space__users=user)  # а это удалить
                     )
-        return queryset
+        return queryset.order_by('index')
 
     def destroy(self, request, *args, **kwargs):
         """
