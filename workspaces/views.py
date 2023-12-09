@@ -286,7 +286,6 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
                     # .filter(board__members=user)  # расскомментировать после реализации добавления участников доски
                     .filter(board__work_space__users=user)  # а это удалить
                     )
-
         return queryset
 
     def destroy(self, request, *args, **kwargs):
@@ -294,6 +293,6 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
         При удалении колонки перезаписывает порядковые номера оставшихся колонок
         """
         instance = self.get_object()
-        self.shift_index(instance)
+        self.delete_shift_index(instance)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)

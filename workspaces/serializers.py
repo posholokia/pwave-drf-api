@@ -2,7 +2,6 @@ from datetime import timedelta
 
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
-from django.db import transaction
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -324,9 +323,10 @@ class CreateColumnSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ColumnSerializer(serializers.ModelSerializer):
+class ColumnSerializer(mixins.ShiftIndexMixin,
+                       serializers.ModelSerializer):
     """
-    Сериализатор задачи
+    Сериализатор колонки с задачами
     """
     class Meta:
         model = Column
@@ -339,42 +339,22 @@ class ColumnSerializer(serializers.ModelSerializer):
         )
 
     def update(self, instance, validated_data):
-        self.new_index = validated_data.get('index', None)
+        self.new_index = validated_data.pop('index', None)
 
         if self.new_index is not None:
             self.objects = self.context['view'].get_queryset()
-            self.qs = self.context['view'].get_queryset()
-            if self.new_index > instance.index:
-                return self.left_shift(instance)
-            elif self.new_index < instance.index:
-                return self.right_shift(instance)
+
+            if self.new_index >= len(self.objects) or self.new_index < 0:
+                raise ValidationError(
+                    {"index": f'Порядковый номер должен соответсвовать количеству обьектов: '
+                              f'0 <= index <= {len(self.objects) - 1}'},
+                    'invalid_index'
+                )
+
+            instance = self.shift_indexes(instance)
 
         return super().update(instance, validated_data)
 
-    def left_shift(self, instance):
-        slice_objects = self.objects[instance.index: self.new_index + 1]
-
-        with transaction.atomic():
-            for obj in slice_objects:
-                if obj == instance:
-                    obj.index = instance.index = self.new_index
-                else:
-                    obj.index -= 1
-
-            Column.objects.bulk_update(slice_objects, ['index'])
-            return instance
-
-    def right_shift(self, instance):
-        slice_objects = self.objects[self.new_index: instance.index + 1]
-        with transaction.atomic():
-            for obj in slice_objects:
-                if obj == instance:
-                    obj.index = instance.index = self.new_index
-                else:
-                    obj.index += 1
-
-            Column.objects.bulk_update(slice_objects, ['index'])
-            return instance
 
 
 class BoardSerializer(serializers.ModelSerializer):
