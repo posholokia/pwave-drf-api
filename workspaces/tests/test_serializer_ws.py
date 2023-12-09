@@ -130,9 +130,10 @@ class WorkSpaceSerializersTestCase(APITestCase):
                     'avatar': None,
                     'role': 'Invited', }
         self.EXAMPLE_WS['invited'].append(new_user)
-        response = self.client.post(reverse('workspace-invite_user', kwargs={'pk': self.ws1.id}), data).data
-
+        response = self.client.post(reverse('workspace-invite_user', kwargs={'pk': self.ws1.id}), data).json()
         self.assertEquals(WorkSpaceSerializer(self.ws1).data, response)
+        print(f'\n\n{response=}\n')
+        print(f'\n\n{self.EXAMPLE_WS=}\n')
         self.assertEquals(self.EXAMPLE_WS, response)
 
     def test_invite_new_user(self):

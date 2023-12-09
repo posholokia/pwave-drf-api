@@ -35,8 +35,8 @@ class WorkSpaceTestCase(APITestCase):
 
         user_data['email'] = 'user2@example.com'
         self.user_two = User.objects.create_user(**user_data)
-        ws2 = WorkSpace.objects.create(owner=self.user_two, name='WorkSpace2')
-        ws2.users.add(self.user_two)
+        self.ws2 = WorkSpace.objects.create(owner=self.user_two, name='WorkSpace2')
+        self.ws2.users.add(self.user_two)
 
         self.no_auth_client = APIClient()
         inactive_user = {
@@ -78,6 +78,10 @@ class WorkSpaceTestCase(APITestCase):
         response = self.client.get(reverse('workspace-detail', kwargs={'pk': self.ws1.id}))
         self.assertEquals(status.HTTP_200_OK, response.status_code)
 
+    def test_get_else_ws(self):
+        response = self.client.get(reverse('workspace-detail', kwargs={'pk': self.ws2.id}))
+        self.assertEquals(status.HTTP_404_NOT_FOUND, response.status_code)
+
     def test_patch_ws(self):
         data = {
             'name': 'Changed name',
@@ -87,6 +91,14 @@ class WorkSpaceTestCase(APITestCase):
         self.assertEquals(status.HTTP_200_OK, response.status_code)
         self.ws1.refresh_from_db()
         self.assertEquals('Changed name', self.ws1.name)
+
+    def test_patch_else_ws(self):
+        data = {
+            'name': 'Changed name',
+        }
+        response = self.client.patch(reverse('workspace-detail', kwargs={'pk': self.ws2.id}),
+                                     data=data)
+        self.assertEquals(status.HTTP_404_NOT_FOUND, response.status_code)
 
     def test_put_ws(self):
         data = {
@@ -98,10 +110,22 @@ class WorkSpaceTestCase(APITestCase):
         self.ws1.refresh_from_db()
         self.assertEquals('Changed name', self.ws1.name)
 
+    def test_put_else_ws(self):
+        data = {
+            'name': 'Changed name',
+        }
+        response = self.client.put(reverse('workspace-detail', kwargs={'pk': self.ws2.id}),
+                                   data=data)
+        self.assertEquals(status.HTTP_404_NOT_FOUND, response.status_code)
+
     def test_delete_ws(self):
         response = self.client.delete(reverse('workspace-detail', kwargs={'pk': self.ws1.id}))
         self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)
         self.assertEquals(0, len(self.user.owned_workspaces.all()))
+
+    def test_delete_else_ws(self):
+        response = self.client.delete(reverse('workspace-detail', kwargs={'pk': self.ws2.id}))
+        self.assertEquals(status.HTTP_404_NOT_FOUND, response.status_code)
 
     def test_invite_exists_user(self):
         data = {

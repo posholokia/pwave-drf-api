@@ -11,8 +11,9 @@ from django_eventstream import send_event
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from taskmanager.serializers import CurrentUserSerializer
-from .models import WorkSpace, Board, InvitedUsers
+from .models import WorkSpace, Board, InvitedUsers, Column
 from . import serializers, mixins
+from .permissions import UserInWorkSpaceUsers, UserIsBoardMember
 from .serializers import InviteUserSerializer
 
 User = get_user_model()
@@ -37,7 +38,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
     def get_serializer_class(self):
         if self.action == 'create':
             return serializers.CreateWorkSpaceSerializer
-        if self.action == 'invite_user':
+        elif self.action == 'invite_user':
             return serializers.WorkSpaceInviteSerializer
         elif self.action == 'confirm_invite':
             return serializers.InviteUserSerializer
@@ -236,21 +237,62 @@ class TestSSEUser(generics.CreateAPIView):
 class BoardViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.BoardSerializer
     queryset = Board.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, UserInWorkSpaceUsers]
 
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
-        queryset = queryset.filter(work_space__users=user)
-        workspace = self.request.query_params.get('space_id')
+        workspace = self.kwargs.get('workspace_id')
+        queryset = (queryset
+                    .filter(work_space__users=user)
+                    .filter(work_space_id=workspace)
+                    )
 
-        if workspace:
-            queryset = queryset.filter(work_space=workspace)
-
-        return queryset
+        return queryset.order_by('-id')
 
     def get_serializer_class(self):
         if self.action == 'create':
             return serializers.CreateBoardSerializer
 
         return super().get_serializer_class()
+
+
+class BoardCreateWithoutWorkSpace(mixins.DefaultWorkSpaceMixin,
+                                  generics.CreateAPIView):
+    serializer_class = serializers.CreateBoardSerializer
+    queryset = Board.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class ColumnViewSet(mixins.ShiftIndexMixin,
+                    viewsets.ModelViewSet):
+    serializer_class = serializers.ColumnSerializer
+    queryset = Column.objects.all().order_by('index')
+    permission_classes = [permissions.IsAuthenticated, UserIsBoardMember]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return serializers.CreateColumnSerializer
+
+        return super().get_serializer_class()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        board_id = self.kwargs.get('board_id', None)
+
+        queryset = (queryset
+                    .filter(board_id=board_id)
+                    # .filter(board__members=user)  # расскомментировать после реализации добавления участников доски
+                    .filter(board__work_space__users=user)  # а это удалить
+                    )
+        return queryset
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        При удалении колонки перезаписывает порядковые номера оставшихся колонок
+        """
+        instance = self.get_object()
+        self.delete_shift_index(instance)
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
