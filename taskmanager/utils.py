@@ -1,7 +1,6 @@
 from django.core.files.uploadedfile import InMemoryUploadedFile
 import tempfile
 from PIL import Image
-from workspaces.models import WorkSpace, Board
 
 
 def proportional_reduction(width: int, height: int, max_size: int) -> tuple[int, int]:
@@ -37,11 +36,3 @@ def get_resized_django_obj(img: Image, width: int, height: int) -> InMemoryUploa
         charset=None
     )
     return file
-
-
-def create_default_ws(user):
-    if not user.owned_workspaces.all():
-        ws = WorkSpace.objects.create(owner=user, name='Рабочее пространство 1')
-        ws.users.add(user)
-
-        Board.objects.create(name='Доска 1', work_space=ws)
