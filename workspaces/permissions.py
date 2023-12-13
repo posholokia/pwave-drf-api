@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
 
-from workspaces.models import Board
+from workspaces.models import Board, Column
 
 
 class UserInWorkSpaceUsers(BasePermission):
@@ -23,6 +23,21 @@ class UserIsBoardMember(BasePermission):
             if request.user in Board.objects.get(pk=board_id).work_space.users.all():
                 return True
         except Board.DoesNotExist:
+            return False
+
+        return False
+
+
+class UserHasAccessTasks(BasePermission):
+    """ """
+
+    def has_permission(self, request, view):
+        column_id = int(view.kwargs.get('column_id', None))
+
+        try:
+            if request.user in Column.objects.get(pk=column_id).board.work_space.users.all():
+                return True
+        except Column.DoesNotExist:
             return False
 
         return False

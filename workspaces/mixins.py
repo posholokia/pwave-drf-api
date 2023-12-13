@@ -112,10 +112,23 @@ class DefaultWorkSpaceMixin:
 
 
 class ShiftIndexMixin:
+    def rearrangement_of_objects(self, instance, new_index):
+        self.objects = self.context['view'].get_queryset()
+
+        if new_index >= len(self.objects) or new_index < 0:
+            raise ValidationError(
+                {"index": f'Порядковый номер должен соответсвовать количеству обьектов: '
+                          f'0 <= index <= {len(self.objects) - 1}'},
+                'invalid_index'
+            )
+
+        instance = self.shift_indexes(instance, new_index)
+        return instance
+
     def shift_indexes(self, instance, new_index):
-        if new_index > instance.index:
+        if new_index >= instance.index:
             instance = self.left_shift(instance, new_index)
-        elif new_index < instance.index:
+        elif new_index <= instance.index:
             instance = self.right_shift(instance, new_index)
         return instance
 
@@ -129,7 +142,7 @@ class ShiftIndexMixin:
                 else:
                     obj.index -= 1
 
-            Column.objects.bulk_update(slice_objects, ['index'])
+            instance.__class__.objects.bulk_update(slice_objects, ['index'])
             return instance
 
     def right_shift(self, instance, new_index):
@@ -142,7 +155,7 @@ class ShiftIndexMixin:
                 else:
                     obj.index += 1
 
-            Column.objects.bulk_update(slice_objects, ['index'])
+            instance.__class__.objects.bulk_update(slice_objects, ['index'])
             return instance
 
     def delete_shift_index(self, instance):
@@ -152,4 +165,4 @@ class ShiftIndexMixin:
             for obj in list_objects[instance.index + 1:]:
                 obj.index -= 1
 
-            Column.objects.bulk_update(list_objects, ['index'])
+            instance.__class__.objects.bulk_update(list_objects, ['index'])

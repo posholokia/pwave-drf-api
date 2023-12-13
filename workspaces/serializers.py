@@ -39,6 +39,7 @@ class CreateWorkSpaceSerializer(serializers.ModelSerializer):
 
 class WorkspaceBoardsSerializer(serializers.ModelSerializer):
     """Сериализация досок внутри РП"""
+
     class Meta:
         model = Board
         fields = (
@@ -283,7 +284,7 @@ class CreateBoardSerializer(serializers.ModelSerializer):
 
 
 class CreateBoardNoWorkSpaceSerializer(mixins.DefaultWorkSpaceMixin,
-                            serializers.ModelSerializer):
+                                       serializers.ModelSerializer):
     """Создание доски вне РП, РП создается автоматически для доски"""
 
     class Meta:
@@ -303,17 +304,78 @@ class CreateBoardNoWorkSpaceSerializer(mixins.DefaultWorkSpaceMixin,
         return instance
 
 
-class TaskSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор задачи
-    """
+class TaskCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор создания задач"""
+
     class Meta:
         model = Task
+        read_only_fields = ['column', 'index', 'responsible', ]
         fields = (
             'id',
             'name',
             'index',
+            'column',
+            'responsible',
+            'deadline',
+            'description',
+            'file',
+            'priority',
+            'color_mark',
         )
+
+    def create(self, validated_data):
+        number_of_tasks = len(self.context["view"].get_queryset())
+        column_id = self.context['view'].kwargs['column_id']
+
+        validated_data['index'] = number_of_tasks
+        validated_data['column_id'] = column_id
+
+        instance = Task.objects.create(**validated_data)
+        return instance
+
+
+class TaskListSerializer(mixins.ShiftIndexMixin,
+                         serializers.ModelSerializer):
+    """Сериализатор списка задач"""
+
+    class Meta:
+        model = Task
+        read_only_fields = ['column']
+        fields = (
+            'id',
+            'name',
+            'index',
+            'column',
+        )
+
+
+class TaskSerializer(mixins.ShiftIndexMixin,
+                     serializers.ModelSerializer):
+    """Сериализатор задач"""
+
+    class Meta:
+        model = Task
+        read_only_fields = ['responsible']
+        fields = (
+            'id',
+            'name',
+            'index',
+            'column',
+            'responsible',
+            'deadline',
+            'description',
+            'file',
+            'priority',
+            'color_mark',
+        )
+
+    def update(self, instance, validated_data):
+        new_index = validated_data.pop('index', None)
+
+        if new_index is not None:
+            self.rearrangement_of_objects(instance, new_index)
+
+        return super().update(instance, validated_data)
 
 
 class CreateColumnSerializer(serializers.ModelSerializer):
@@ -340,9 +402,8 @@ class CreateColumnSerializer(serializers.ModelSerializer):
 
 class ColumnSerializer(mixins.ShiftIndexMixin,
                        serializers.ModelSerializer):
-    """
-    Сериализатор колонки с задачами
-    """
+    """Сериализатор колонки с задачами"""
+
     class Meta:
         model = Column
         read_only_fields = ['board']
@@ -355,18 +416,10 @@ class ColumnSerializer(mixins.ShiftIndexMixin,
 
     def update(self, instance, validated_data):
         new_index = validated_data.pop('index', None)
+        self.objects = self.context['view'].get_queryset()
 
         if new_index is not None:
-            self.objects = self.context['view'].get_queryset()
-
-            if new_index >= len(self.objects) or new_index < 0:
-                raise ValidationError(
-                    {"index": f'Порядковый номер должен соответсвовать количеству обьектов: '
-                              f'0 <= index <= {len(self.objects) - 1}'},
-                    'invalid_index'
-                )
-
-            instance = self.shift_indexes(instance, new_index)
+            instance = self.rearrangement_of_objects(instance, new_index)
 
         return super().update(instance, validated_data)
 

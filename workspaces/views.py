@@ -11,9 +11,9 @@ from django_eventstream import send_event
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from taskmanager.serializers import CurrentUserSerializer
-from .models import WorkSpace, Board, InvitedUsers, Column
+from .models import WorkSpace, Board, InvitedUsers, Column, Task
 from . import serializers, mixins
-from .permissions import UserInWorkSpaceUsers, UserIsBoardMember
+from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks
 from .serializers import InviteUserSerializer
 
 User = get_user_model()
@@ -113,7 +113,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         self.user = serializer.invitation.user
         self.workspace = serializer.invitation.workspace
 
-        if not self.check_auth_user(self.user):  # TODO надо будет вынести в permissions
+        if not self.check_auth_user(self.user):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         # если пользователь уже добавлен в РП, но не закончил регистрацию, нужно вернуть ответ,
@@ -297,9 +297,51 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
                     )
         return queryset.order_by('index')
 
+
     def destroy(self, request, *args, **kwargs):
         """
         При удалении колонки перезаписывает порядковые номера оставшихся колонок
+        """
+        instance = self.get_object()
+        self.delete_shift_index(instance)
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema_view(list=extend_schema(description='Список всех колонок доски.'),
+                    create=extend_schema(description='Создать колонку на доске'),
+                    retrieve=extend_schema(description='Информация о конкретной колонке'),
+                    update=extend_schema(description='Обновить колонку (название и порядковый номер)'),
+                    partial_update=extend_schema(description='Частично обновить колонку (название/порядковый номер)'),
+                    destroy=extend_schema(description='Удалить колонку'),
+                    )
+class TaskViewSet(mixins.ShiftIndexMixin,
+                  viewsets.ModelViewSet):
+    serializer_class = serializers.TaskSerializer
+    queryset = Task.objects.all()
+    permission_classes = [permissions.IsAuthenticated, UserHasAccessTasks]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return serializers.TaskCreateSerializer
+
+        return super().get_serializer_class()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        column_id = self.kwargs.get('column_id', None)
+
+        queryset = (queryset
+                    .filter(column_id=column_id)
+                    # .filter(column__board__members=user)  # расскомментировать после реализации добавления участников доски
+                    .filter(column__board__work_space__users=user)  # а это удалить
+                    )
+        return queryset.order_by('index')
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        При удалении задачи перезаписывает порядковые номера оставшихся задач
         """
         instance = self.get_object()
         self.delete_shift_index(instance)
