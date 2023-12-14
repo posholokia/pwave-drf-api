@@ -274,6 +274,7 @@ class BoardCreateWithoutWorkSpace(mixins.DefaultWorkSpaceMixin,
                     destroy=extend_schema(description='Удалить колонку'),
                     )
 class ColumnViewSet(mixins.ShiftIndexMixin,
+                    mixins.ShiftIndexAfterDeleteMixin,
                     viewsets.ModelViewSet):
     serializer_class = serializers.ColumnSerializer
     queryset = Column.objects.all()
@@ -297,7 +298,6 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
                     )
         return queryset.order_by('index')
 
-
     def destroy(self, request, *args, **kwargs):
         """
         При удалении колонки перезаписывает порядковые номера оставшихся колонок
@@ -316,6 +316,7 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
                     destroy=extend_schema(description='Удалить колонку'),
                     )
 class TaskViewSet(mixins.ShiftIndexMixin,
+                  mixins.ShiftIndexAfterDeleteMixin,
                   viewsets.ModelViewSet):
     serializer_class = serializers.TaskSerializer
     queryset = Task.objects.all()
@@ -347,3 +348,21 @@ class TaskViewSet(mixins.ShiftIndexMixin,
         self.delete_shift_index(instance)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+
+        current_column = kwargs.get('column_id', None)
+        new_column = serializer.validated_data.get('column', None)
+
+        if new_column is not None and new_column != current_column:
+            self.delete_shift_index(instance)
+
+        return Response(serializer.data)

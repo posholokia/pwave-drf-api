@@ -8,7 +8,7 @@ from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
 from taskmanager.email import InviteUserEmail
-from .models import WorkSpace, InvitedUsers, Board, Column
+from .models import WorkSpace, InvitedUsers, Board, Column, Task
 
 User = get_user_model()
 
@@ -111,9 +111,12 @@ class DefaultWorkSpaceMixin:
         return workspace
 
 
-class ShiftIndexMixin:
-    def rearrangement_of_objects(self, instance, new_index):
-        self.objects = self.context['view'].get_queryset()
+class IndexValidateMixin:
+    def index_validate(self, new_index, new_col=None):
+        if new_col is not None:
+            self.objects = Task.objects.filter(column=new_col).order_by('index')
+        else:
+            self.objects = self.context['view'].get_queryset()
 
         if new_index >= len(self.objects) or new_index < 0:
             raise ValidationError(
@@ -122,9 +125,8 @@ class ShiftIndexMixin:
                 'invalid_index'
             )
 
-        instance = self.shift_indexes(instance, new_index)
-        return instance
 
+class ShiftIndexMixin:
     def shift_indexes(self, instance, new_index):
         if new_index >= instance.index:
             instance = self.left_shift(instance, new_index)
@@ -132,37 +134,38 @@ class ShiftIndexMixin:
             instance = self.right_shift(instance, new_index)
         return instance
 
+    def insert_object(self, instance, new_index, new_col):
+        instance.column = new_col
+        instance.index = None
+        return self.right_shift(instance, new_index)
+
     def left_shift(self, instance, new_index):
         slice_objects = self.objects[instance.index: new_index + 1]
 
         with transaction.atomic():
             for obj in slice_objects:
-                if obj == instance:
-                    obj.index = instance.index = new_index
-                else:
-                    obj.index -= 1
-
+                obj.index -= 1
+            instance.index = new_index
             instance.__class__.objects.bulk_update(slice_objects, ['index'])
             return instance
 
     def right_shift(self, instance, new_index):
-        slice_objects = self.objects[new_index: instance.index + 1]
+        right_border = instance.index + 1 if instance.index is not None else None
+        slice_objects = self.objects[new_index: right_border]
 
         with transaction.atomic():
             for obj in slice_objects:
-                if obj == instance:
-                    obj.index = instance.index = new_index
-                else:
-                    obj.index += 1
-
+                obj.index += 1
+            instance.index = new_index
             instance.__class__.objects.bulk_update(slice_objects, ['index'])
             return instance
 
-    def delete_shift_index(self, instance):
-        list_objects = list(self.get_queryset())
 
+class ShiftIndexAfterDeleteMixin:
+    def delete_shift_index(self, instance):
+        list_objects = self.get_queryset()[instance.index + 1:]
         with transaction.atomic():
-            for obj in list_objects[instance.index + 1:]:
+            for obj in list_objects:
                 obj.index -= 1
 
             instance.__class__.objects.bulk_update(list_objects, ['index'])

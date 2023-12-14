@@ -350,6 +350,7 @@ class TaskListSerializer(mixins.ShiftIndexMixin,
 
 
 class TaskSerializer(mixins.ShiftIndexMixin,
+                     mixins.IndexValidateMixin,
                      serializers.ModelSerializer):
     """Сериализатор задач"""
 
@@ -371,9 +372,15 @@ class TaskSerializer(mixins.ShiftIndexMixin,
 
     def update(self, instance, validated_data):
         new_index = validated_data.pop('index', None)
+        new_col = validated_data.pop('column', None)
 
         if new_index is not None:
-            self.rearrangement_of_objects(instance, new_index)
+            self.index_validate(new_index, new_col)
+
+            if (new_col is not None) and (instance.column != new_col):
+                instance = self.insert_object(instance, new_index, new_col)
+            else:
+                instance = self.shift_indexes(instance, new_index)
 
         return super().update(instance, validated_data)
 
@@ -401,6 +408,7 @@ class CreateColumnSerializer(serializers.ModelSerializer):
 
 
 class ColumnSerializer(mixins.ShiftIndexMixin,
+                       mixins.IndexValidateMixin,
                        serializers.ModelSerializer):
     """Сериализатор колонки с задачами"""
 
@@ -419,7 +427,8 @@ class ColumnSerializer(mixins.ShiftIndexMixin,
         self.objects = self.context['view'].get_queryset()
 
         if new_index is not None:
-            instance = self.rearrangement_of_objects(instance, new_index)
+            self.index_validate(new_index)
+            instance = self.shift_indexes(instance, new_index)
 
         return super().update(instance, validated_data)
 
