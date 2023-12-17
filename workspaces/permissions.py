@@ -37,11 +37,8 @@ class UserHasAccessTasks(BasePermission):
         try:
             column = Column.objects.select_related('board__work_space').get(pk=column_id)
             if user in column.board.work_space.users.all():
-                print('\nEND PERM')
                 return True
 
         except Column.DoesNotExist:
-            print('\nEND PERM')
             return False
-        print('\nEND PERM')
         return False

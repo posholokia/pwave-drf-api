@@ -4,7 +4,6 @@ import random
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action
-
 from django.contrib.auth import get_user_model
 from django_eventstream import send_event
 
@@ -303,12 +302,27 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema_view(list=extend_schema(description='Список всех колонок доски.'),
-                    create=extend_schema(description='Создать колонку на доске'),
-                    retrieve=extend_schema(description='Информация о конкретной колонке'),
-                    update=extend_schema(description='Обновить колонку (название и порядковый номер)'),
-                    partial_update=extend_schema(description='Частично обновить колонку (название/порядковый номер)'),
-                    destroy=extend_schema(description='Удалить колонку'),
+@extend_schema_view(list=extend_schema(description='Список всех задач колонки.'),  # надо бы в schema это спрятать
+                    create=extend_schema(
+                        description='Создать задачу\n\n'
+                                    'responsible: Список ответсвенны пользователей. Передается массивом из id,'
+                                    'например {"responsible": [1,2,3]}\n\n'
+                                    'deadline: Срок выполнения задачи\n\n'
+                                    'description: Описание\n\n'
+                                    'priority: Приоритет, число от 0 до 3, где 0 - высочайший приоритет\n\n'
+                                    'color_mark: Цвет метки\n\n'
+                                    'name_mark: Название метки', ),
+                    retrieve=extend_schema(description='Информация о конкретной задачу'),
+                    update=extend_schema(
+                        description='Обновить задачу.\n\n'
+                                    'Для преремещения между колонок нужно передать column - id новой колонки и index - '
+                                    'куда ее вставить.'
+                    ),
+                    partial_update=extend_schema(
+                        description='Частично обновить задачу.\n\n'
+                                    'Перемещение между колонками возможно только PUT запросом'
+                    ),
+                    destroy=extend_schema(description='Удалить задачу'),
                     )
 class TaskViewSet(mixins.ShiftIndexMixin,
                   mixins.ShiftIndexAfterDeleteMixin,
@@ -330,10 +344,9 @@ class TaskViewSet(mixins.ShiftIndexMixin,
         queryset = (queryset
                     .filter(column_id=column_id)
                     .select_related('column', 'column__board')
-                    # .prefetch_related('column__board__column_board')
                     )
         return queryset.order_by('index')
-        '13 select 4 update'
+
     def destroy(self, request, *args, **kwargs):
         """
         При удалении задачи перезаписывает порядковые номера оставшихся задач
@@ -351,7 +364,6 @@ class TaskViewSet(mixins.ShiftIndexMixin,
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
 
@@ -360,8 +372,6 @@ class TaskViewSet(mixins.ShiftIndexMixin,
 
         # если задачу переместили в другую колонку, в текущей порядковые номера нужно сдвинуть
         if new_column is not None and new_column != current_column:
-            print('\np5')
             self.delete_shift_index(instance)
-        print('\np7')
 
         return Response(serializer.data)
