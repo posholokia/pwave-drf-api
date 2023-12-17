@@ -31,7 +31,7 @@ def get_resized_django_obj(img: Image, width: int, height: int) -> InMemoryUploa
         file=temp_file,
         field_name=None,
         name=f'NoName',
-        content_type='image/jpeg',
+        content_type='image/png',
         size=temp_file.tell,
         charset=None
     )

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
@@ -8,13 +8,13 @@ from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
 from taskmanager.email import InviteUserEmail
-from .models import WorkSpace, InvitedUsers, Board, Column
+from .models import WorkSpace, InvitedUsers, Board, Column, Task
 
 User = get_user_model()
 
 
 class GetInvitedMixin:
-    def get_invitation(self, **key):
+    def get_invitation(self, **key) -> None:
         self.invitation = (
             InvitedUsers.objects.filter(**key)
             .select_related('user', 'workspace')
@@ -28,7 +28,7 @@ class GetInvitedMixin:
 
 
 class GetWorkSpaceMixin:
-    def get_workspace(self):
+    def get_workspace(self) -> WorkSpace:
         try:
             pk = self.context.get('view').kwargs.get('pk')
             workspace = (
@@ -45,7 +45,8 @@ class GetWorkSpaceMixin:
 
 
 class CheckWorkSpaceUsersMixin:
-    def user_is_added_to_workspace(self):
+    """Проверка, что пользователь является участником РП"""
+    def user_is_added_to_workspace(self) -> bool:
         if self.user in self.workspace.users.all():
             return True
 
@@ -53,7 +54,8 @@ class CheckWorkSpaceUsersMixin:
 
 
 class CheckWorkSpaceInvitedMixin:
-    def user_is_invited_to_workspace(self):
+    """Проверка, что пользователь приглашен в РП"""
+    def user_is_invited_to_workspace(self) -> bool:
         if self.user in self.workspace.invited.all():
             return True
 
@@ -61,7 +63,7 @@ class CheckWorkSpaceInvitedMixin:
 
 
 class GetInvitationMixin:
-    def get_or_create_invitation(self, user: User, workspace: WorkSpace):
+    def get_or_create_invitation(self, user: User, workspace: WorkSpace) -> InvitedUsers:
         try:
             invitation = InvitedUsers.objects.get(user=user, workspace=workspace)
         except InvitedUsers.DoesNotExist:
@@ -82,7 +84,8 @@ class GetInvitationMixin:
 
 
 class GetOrCreateUserMixin:
-    def get_or_create_user(self, email: str):
+    def get_or_create_user(self, email: str) -> User:
+        """При добавлении пользователя в РП находит указанного пользователя или создает нового"""
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -93,7 +96,11 @@ class GetOrCreateUserMixin:
 
 
 class UserNoAuthOrThisUser:
-    def check_auth_user(self, user: User):
+    def check_auth_user(self, user: User) -> bool:
+        """
+        Проверка, если пользователь авторизован, то это нужный пользователь.
+        (Например, что по приглашению перешел тот же пользователь, которого пригласили)
+        """
         if any([isinstance(self.request.user, AnonymousUser), self.request.user == user]):
             return True
 
@@ -101,7 +108,8 @@ class UserNoAuthOrThisUser:
 
 
 class DefaultWorkSpaceMixin:
-    def create_default_workspace(self, user: User, create_for_board: Optional[bool] = None):
+    """Создание РП по умолчанию"""
+    def create_default_workspace(self, user: User, create_for_board: Optional[bool] = None) -> WorkSpace:
         workspace = WorkSpace.objects.create(owner=user, name='Рабочее пространство 1')
         workspace.users.add(user)
 
@@ -111,45 +119,97 @@ class DefaultWorkSpaceMixin:
         return workspace
 
 
+class ColumnValidateMixin:
+    def column_validate(self, new_index: int, new_col: Column):
+        valid_columns = self.instance.column.board.column_board.all()
+        if new_col not in valid_columns:
+            raise ValidationError(
+                {"column": 'Задачи можно перемещать только между колонками внутри доски'},
+                'invalid_column'
+            )
+
+        with transaction.atomic():
+            # меняем номер колонки, чтобы при валидации индекса задачи
+            # не было ошибок в крайних случаях (0 или максимальное значение индекса)
+            self.instance.column = new_col
+            self.instance.save()
+
+            if new_index is not None:
+                self.index_validate(new_index, new_col)
+
+
+class IndexValidateMixin:
+    def index_validate(self, new_index: int, new_col: Optional[Column] = None):
+        """
+        Валидация нового индекса обьекта. Проверяет, что индекс не выходит за
+        пределы количества обьектов
+        """
+        if new_col is not None:
+            # условие применяется для задач, если задачу перемещают между колонками,
+            # список обьектов нужно получить из другой колонки
+            # self.objects = Task.objects.filter(column=new_col).order_by('index')
+            self.objects = new_col.task.all().order_by('index')
+
+        else:
+            self.objects = self.context['view'].get_queryset()
+
+        if new_index >= len(self.objects) or new_index < 0:
+            raise ValidationError(
+                {"index": f'Порядковый номер должен соответсвовать количеству обьектов: '
+                          f'0 <= index <= {len(self.objects) - 1}'},
+                'invalid_index'
+            )
+
+
 class ShiftIndexMixin:
-    def shift_indexes(self, instance, new_index):
+    def shift_indexes(self, instance: Union[Task, Column], new_index: int) -> Union[Task, Column]:
+        """Функция пересчитывает порядковые номера обьектов при их перемещении"""
         if new_index > instance.index:
             instance = self.left_shift(instance, new_index)
         elif new_index < instance.index:
             instance = self.right_shift(instance, new_index)
+
         return instance
 
-    def left_shift(self, instance, new_index):
+    def insert_object(self, instance: Task, new_index: int) -> Task:
+        """Функция перемещения задачи между колонками"""
+        # присваиваем индекс None, так как при вставке задачи в новую колонку вставка идет с конца
+        instance.index = None
+        return self.right_shift(instance, new_index)
+
+    def left_shift(self, instance: Union[Task, Column], new_index: int) -> Union[Task, Column]:
+        """Сдвиг порядковых номеров влево при перемещении обьекта вправо"""
         slice_objects = self.objects[instance.index: new_index + 1]
 
         with transaction.atomic():
             for obj in slice_objects:
-                if obj == instance:
-                    obj.index = instance.index = new_index
-                else:
-                    obj.index -= 1
-
-            Column.objects.bulk_update(slice_objects, ['index'])
+                obj.index -= 1
+            instance.index = new_index
+            instance.__class__.objects.bulk_update(slice_objects, ['index'])
             return instance
 
-    def right_shift(self, instance, new_index):
-        slice_objects = self.objects[new_index: instance.index + 1]
+    def right_shift(self, instance: Union[Task, Column], new_index: int) -> Union[Task, Column]:
+        """Сдвиг порядковых номеров вправо при перемещении обьекта влево"""
+        # если индекс None, то пересчет порядковых номеров идет до последнего элемента
+        right_border = instance.index + 1 if instance.index is not None else None
+        slice_objects = self.objects[new_index: right_border]
 
         with transaction.atomic():
             for obj in slice_objects:
-                if obj == instance:
-                    obj.index = instance.index = new_index
-                else:
-                    obj.index += 1
+                obj.index += 1
 
-            Column.objects.bulk_update(slice_objects, ['index'])
+            instance.index = new_index
+            instance.__class__.objects.bulk_update(slice_objects, ['index'])
             return instance
 
-    def delete_shift_index(self, instance):
-        list_objects = list(self.get_queryset())
+
+class ShiftIndexAfterDeleteMixin:
+    def delete_shift_index(self, instance: Union[Task, Column]) -> None:
+        """Пересчет порядковых номеров при удалении обьекта"""
+        list_objects = self.get_queryset()[instance.index + 1:]
 
         with transaction.atomic():
-            for obj in list_objects[instance.index + 1:]:
+            for obj in list_objects:
                 obj.index -= 1
 
-            Column.objects.bulk_update(list_objects, ['index'])
+            instance.__class__.objects.bulk_update(list_objects, ['index'])

@@ -4,16 +4,15 @@ import random
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action
-
 from django.contrib.auth import get_user_model
 from django_eventstream import send_event
 
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from taskmanager.serializers import CurrentUserSerializer
-from .models import WorkSpace, Board, InvitedUsers, Column
+from .models import WorkSpace, Board, InvitedUsers, Column, Task
 from . import serializers, mixins
-from .permissions import UserInWorkSpaceUsers, UserIsBoardMember
+from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks
 from .serializers import InviteUserSerializer
 
 User = get_user_model()
@@ -113,7 +112,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         self.user = serializer.invitation.user
         self.workspace = serializer.invitation.workspace
 
-        if not self.check_auth_user(self.user):  # TODO надо будет вынести в permissions
+        if not self.check_auth_user(self.user):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         # если пользователь уже добавлен в РП, но не закончил регистрацию, нужно вернуть ответ,
@@ -274,6 +273,7 @@ class BoardCreateWithoutWorkSpace(mixins.DefaultWorkSpaceMixin,
                     destroy=extend_schema(description='Удалить колонку'),
                     )
 class ColumnViewSet(mixins.ShiftIndexMixin,
+                    mixins.ShiftIndexAfterDeleteMixin,
                     viewsets.ModelViewSet):
     serializer_class = serializers.ColumnSerializer
     queryset = Column.objects.all()
@@ -286,15 +286,10 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
         return super().get_serializer_class()
 
     def get_queryset(self):
+        """Колонки отфилрованы по доске"""
         queryset = super().get_queryset()
-        user = self.request.user
         board_id = self.kwargs.get('board_id', None)
-
-        queryset = (queryset
-                    .filter(board_id=board_id)
-                    # .filter(board__members=user)  # расскомментировать после реализации добавления участников доски
-                    .filter(board__work_space__users=user)  # а это удалить
-                    )
+        queryset = queryset.filter(board_id=board_id)
         return queryset.order_by('index')
 
     def destroy(self, request, *args, **kwargs):
@@ -305,3 +300,78 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
         self.delete_shift_index(instance)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema_view(list=extend_schema(description='Список всех задач колонки.'),  # надо бы в schema это спрятать
+                    create=extend_schema(
+                        description='Создать задачу\n\n'
+                                    'responsible: Список ответсвенны пользователей. Передается массивом из id,'
+                                    'например {"responsible": [1,2,3]}\n\n'
+                                    'deadline: Срок выполнения задачи\n\n'
+                                    'description: Описание\n\n'
+                                    'priority: Приоритет, число от 0 до 3, где 0 - высочайший приоритет\n\n'
+                                    'color_mark: Цвет метки\n\n'
+                                    'name_mark: Название метки', ),
+                    retrieve=extend_schema(description='Информация о конкретной задачу'),
+                    update=extend_schema(
+                        description='Обновить задачу.\n\n'
+                                    'Для преремещения между колонок нужно передать column - id новой колонки и index - '
+                                    'куда ее вставить.'
+                    ),
+                    partial_update=extend_schema(
+                        description='Частично обновить задачу.\n\n'
+                                    'Перемещение между колонками возможно только PUT запросом'
+                    ),
+                    destroy=extend_schema(description='Удалить задачу'),
+                    )
+class TaskViewSet(mixins.ShiftIndexMixin,
+                  mixins.ShiftIndexAfterDeleteMixin,
+                  viewsets.ModelViewSet):
+    serializer_class = serializers.TaskSerializer
+    queryset = Task.objects.all()
+    permission_classes = [permissions.IsAuthenticated, UserHasAccessTasks]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return serializers.TaskCreateSerializer
+
+        return super().get_serializer_class()
+
+    def get_queryset(self):
+        """Задачи фильтруются по колонкам"""
+        queryset = super().get_queryset()
+        column_id = self.kwargs.get('column_id', None)
+        queryset = (queryset
+                    .filter(column_id=column_id)
+                    .select_related('column', 'column__board')
+                    )
+        return queryset.order_by('index')
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        При удалении задачи перезаписывает порядковые номера оставшихся задач
+        """
+        instance = self.get_object()
+        self.delete_shift_index(instance)
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def update(self, request, *args, **kwargs):
+        """Обновление задач"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+
+        current_column = kwargs.get('column_id', None)
+        new_column = serializer.validated_data.get('column', None)
+
+        # если задачу переместили в другую колонку, в текущей порядковые номера нужно сдвинуть
+        if new_column is not None and new_column != current_column:
+            self.delete_shift_index(instance)
+
+        return Response(serializer.data)
