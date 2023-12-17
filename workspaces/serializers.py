@@ -351,9 +351,9 @@ class TaskListSerializer(mixins.ShiftIndexMixin,
 
 class TaskSerializer(mixins.ShiftIndexMixin,
                      mixins.IndexValidateMixin,
+                     mixins.ColumnValidateMixin,
                      serializers.ModelSerializer):
     """Сериализатор задач"""
-
     class Meta:
         model = Task
         read_only_fields = ['responsible']
@@ -370,17 +370,31 @@ class TaskSerializer(mixins.ShiftIndexMixin,
             'color_mark',
         )
 
+    def validate(self, attrs):
+        new_index = attrs.get('index', None)
+        new_col = attrs.get('column', None)
+
+        if (new_col is not None) and (self.instance.column != new_col):
+            self.column_validate(new_index, new_col)
+            return attrs
+        elif new_index is not None:
+            self.index_validate(new_index, new_col)
+            # если у задачи не сменилась колонка, удаляем из атрибутов,
+            # обновлять ее у обьекта не требуется
+            # иначе в методе update сработает insert вместо shift
+            attrs.pop('column', None)
+
+        return attrs
+
     def update(self, instance, validated_data):
+        """При перемещении задач их порядковые номера нужно пересчитать"""
         new_index = validated_data.pop('index', None)
         new_col = validated_data.pop('column', None)
 
-        if new_index is not None:
-            self.index_validate(new_index, new_col)
-
-            if (new_col is not None) and (instance.column != new_col):
-                instance = self.insert_object(instance, new_index, new_col)
-            else:
-                instance = self.shift_indexes(instance, new_index)
+        if new_col is not None:
+            instance = self.insert_object(instance, new_index)
+        elif new_index is not None:
+            instance = self.shift_indexes(instance, new_index)
 
         return super().update(instance, validated_data)
 
@@ -422,12 +436,18 @@ class ColumnSerializer(mixins.ShiftIndexMixin,
             'board',
         )
 
-    def update(self, instance, validated_data):
-        new_index = validated_data.pop('index', None)
-        self.objects = self.context['view'].get_queryset()
+    def validate(self, attrs):
+        new_index = attrs.get('index', None)
 
         if new_index is not None:
             self.index_validate(new_index)
+
+        return attrs
+
+    def update(self, instance, validated_data):
+        new_index = validated_data.pop('index', None)
+
+        if new_index is not None:
             instance = self.shift_indexes(instance, new_index)
 
         return super().update(instance, validated_data)

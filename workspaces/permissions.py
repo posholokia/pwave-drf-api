@@ -29,15 +29,19 @@ class UserIsBoardMember(BasePermission):
 
 
 class UserHasAccessTasks(BasePermission):
-    """ """
+    """Только участники РП имеют доступ к задачам"""
 
     def has_permission(self, request, view):
         column_id = int(view.kwargs.get('column_id', None))
-
+        user = request.user
         try:
-            if request.user in Column.objects.get(pk=column_id).board.work_space.users.all():
+            column = Column.objects.select_related('board__work_space').get(pk=column_id)
+            if user in column.board.work_space.users.all():
+                print('\nEND PERM')
                 return True
-        except Column.DoesNotExist:
-            return False
 
+        except Column.DoesNotExist:
+            print('\nEND PERM')
+            return False
+        print('\nEND PERM')
         return False

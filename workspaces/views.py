@@ -287,15 +287,10 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
         return super().get_serializer_class()
 
     def get_queryset(self):
+        """Колонки отфилрованы по доске"""
         queryset = super().get_queryset()
-        user = self.request.user
         board_id = self.kwargs.get('board_id', None)
-
-        queryset = (queryset
-                    .filter(board_id=board_id)
-                    # .filter(board__members=user)  # расскомментировать после реализации добавления участников доски
-                    .filter(board__work_space__users=user)  # а это удалить
-                    )
+        queryset = queryset.filter(board_id=board_id)
         return queryset.order_by('index')
 
     def destroy(self, request, *args, **kwargs):
@@ -329,17 +324,16 @@ class TaskViewSet(mixins.ShiftIndexMixin,
         return super().get_serializer_class()
 
     def get_queryset(self):
+        """Задачи фильтруются по колонкам"""
         queryset = super().get_queryset()
-        user = self.request.user
         column_id = self.kwargs.get('column_id', None)
-
         queryset = (queryset
                     .filter(column_id=column_id)
-                    # .filter(column__board__members=user)  # расскомментировать после реализации добавления участников доски
-                    .filter(column__board__work_space__users=user)  # а это удалить
+                    .select_related('column', 'column__board')
+                    # .prefetch_related('column__board__column_board')
                     )
         return queryset.order_by('index')
-
+        '13 select 4 update'
     def destroy(self, request, *args, **kwargs):
         """
         При удалении задачи перезаписывает порядковые номера оставшихся задач
@@ -350,11 +344,13 @@ class TaskViewSet(mixins.ShiftIndexMixin,
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def update(self, request, *args, **kwargs):
+        """Обновление задач"""
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
+
 
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
@@ -362,7 +358,10 @@ class TaskViewSet(mixins.ShiftIndexMixin,
         current_column = kwargs.get('column_id', None)
         new_column = serializer.validated_data.get('column', None)
 
+        # если задачу переместили в другую колонку, в текущей порядковые номера нужно сдвинуть
         if new_column is not None and new_column != current_column:
+            print('\np5')
             self.delete_shift_index(instance)
+        print('\np7')
 
         return Response(serializer.data)
