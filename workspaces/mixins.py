@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
 from django.contrib.auth.models import AnonymousUser
 from django.db import transaction
+from django.db.models import F
 
 from rest_framework.exceptions import ValidationError
 
@@ -47,7 +48,7 @@ class GetWorkSpaceMixin:
 class CheckWorkSpaceUsersMixin:
     """Проверка, что пользователь является участником РП"""
     def user_is_added_to_workspace(self) -> bool:
-        if self.user in self.workspace.users.all():
+        if (self.user.id, ) in self.workspace.users.all().values_list('id'):
             return True
 
         return False
@@ -56,7 +57,7 @@ class CheckWorkSpaceUsersMixin:
 class CheckWorkSpaceInvitedMixin:
     """Проверка, что пользователь приглашен в РП"""
     def user_is_invited_to_workspace(self) -> bool:
-        if self.user in self.workspace.invited.all():
+        if (self.user.id, ) in self.workspace.invited.all().values_list('id'):
             return True
 
         return False
@@ -121,8 +122,8 @@ class DefaultWorkSpaceMixin:
 
 class ColumnValidateMixin:
     def column_validate(self, new_index: int, new_col: Column):
-        valid_columns = self.instance.column.board.column_board.all()
-        if new_col not in valid_columns:
+        valid_columns = self.instance.column.board.column_board.all().values_list('id')
+        if (new_col.id, ) not in valid_columns:
             raise ValidationError(
                 {"column": 'Задачи можно перемещать только между колонками внутри доски'},
                 'invalid_column'
@@ -149,7 +150,6 @@ class IndexValidateMixin:
             # список обьектов нужно получить из другой колонки
             # self.objects = Task.objects.filter(column=new_col).order_by('index')
             self.objects = new_col.task.all().order_by('index')
-
         else:
             self.objects = self.context['view'].get_queryset()
 
@@ -205,11 +205,15 @@ class ShiftIndexMixin:
 
 class ShiftIndexAfterDeleteMixin:
     def delete_shift_index(self, instance: Union[Task, Column]) -> None:
-        """Пересчет порядковых номеров при удалении обьекта"""
-        list_objects = self.get_queryset()[instance.index + 1:]
+        """Пересчет порядковых номеров при удалении объекта"""
+        model_class = instance.__class__
+        column_id = self.kwargs.get('column_id', None)
 
         with transaction.atomic():
-            for obj in list_objects:
-                obj.index -= 1
+            objs = model_class.objects.filter(index__gte=instance.index + 1)
 
-            instance.__class__.objects.bulk_update(list_objects, ['index'])
+            if model_class == Task:
+                assert column_id is not None
+                objs = objs.filter(column_id=column_id)
+
+            objs.update(index=F('index') - 1)

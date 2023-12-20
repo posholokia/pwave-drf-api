@@ -18,9 +18,10 @@ class UserIsBoardMember(BasePermission):
 
     def has_permission(self, request, view):
         board_id = int(view.kwargs.get('board_id', None))
+        user = request.user.id
 
         try:
-            if request.user in Board.objects.get(pk=board_id).work_space.users.all():
+            if (user, ) in Board.objects.get(pk=board_id).work_space.users.all().values_list('id'):
                 return True
         except Board.DoesNotExist:
             return False
@@ -33,10 +34,10 @@ class UserHasAccessTasks(BasePermission):
 
     def has_permission(self, request, view):
         column_id = int(view.kwargs.get('column_id', None))
-        user = request.user
+        user = request.user.id
         try:
             column = Column.objects.select_related('board__work_space').get(pk=column_id)
-            if user in column.board.work_space.users.all():
+            if (user, ) in column.board.work_space.users.all().values_list('id'):
                 return True
 
         except Column.DoesNotExist:

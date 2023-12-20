@@ -318,7 +318,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             'responsible',
             'deadline',
             'description',
-            'file',
+            # 'file',
             'priority',
             'color_mark',
             'name_mark',
@@ -338,7 +338,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
 class TaskListSerializer(mixins.ShiftIndexMixin,
                          serializers.ModelSerializer):
     """Сериализатор списка задач"""
-    responsible = CurrentUserSerializer(many=True)
+    responsible = CurrentUserSerializer(many=True, read_only=True)
 
     class Meta:
         model = Task
@@ -355,11 +355,36 @@ class TaskListSerializer(mixins.ShiftIndexMixin,
         )
 
 
+class TaskUsersListSerializer(serializers.ListSerializer):
+    def validate(self, attrs):
+        column_id = self.context["view"].kwargs['column_id']
+        column = (Column.objects.select_related('board__work_space')
+                  .only('board__work_space__users')
+                  .get(pk=column_id))
+        users = column.board.work_space.users.all().values_list('id')
+        for user_id in attrs:
+            if (user_id,) not in users:
+                raise ValidationError(
+                    {"responsible": f'Пользователь id:{user_id} не добавлен в рабочее пространство'},
+                    'invalid_user'
+                )
+        return attrs
+
+    def to_representation(self, data):
+        iterable = data.all()
+
+        return [
+            CurrentUserSerializer(item).data for item in iterable
+        ]
+
+
 class TaskSerializer(mixins.ShiftIndexMixin,
                      mixins.IndexValidateMixin,
                      mixins.ColumnValidateMixin,
                      serializers.ModelSerializer):
     """Сериализатор задач"""
+    responsible = TaskUsersListSerializer(child=serializers.IntegerField())
+
     class Meta:
         model = Task
         fields = (
@@ -376,11 +401,11 @@ class TaskSerializer(mixins.ShiftIndexMixin,
             'name_mark',
         )
 
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        users = self.instance.responsible.all()
-        representation['responsible'] = CurrentUserSerializer(users, many=True).data
-        return representation
+    # def to_representation(self, instance):
+    #     representation = super().to_representation(instance)
+    #     users = self.instance.responsible.all()
+    #     representation['responsible'] = CurrentUserSerializer(users, many=True).data
+    #     return representation
 
     def validate(self, attrs):
         new_index = attrs.get('index', None)
@@ -390,7 +415,7 @@ class TaskSerializer(mixins.ShiftIndexMixin,
             self.column_validate(new_index, new_col)
             return attrs
         elif new_index is not None:
-            self.index_validate(new_index, new_col)
+            self.index_validate(new_index, new_col)  # 1
             # если у задачи не сменилась колонка, удаляем из атрибутов,
             # обновлять ее у обьекта не требуется
             # иначе в методе update сработает insert вместо shift
@@ -402,6 +427,10 @@ class TaskSerializer(mixins.ShiftIndexMixin,
         """При перемещении задач их порядковые номера нужно пересчитать"""
         new_index = validated_data.pop('index', None)
         new_col = validated_data.pop('column', None)
+        users = validated_data.pop('responsible', None)
+
+        if users is not None:
+            instance.responsible.set(users)
 
         if new_col is not None:
             instance = self.insert_object(instance, new_index)
@@ -437,7 +466,7 @@ class ColumnSerializer(mixins.ShiftIndexMixin,
                        mixins.IndexValidateMixin,
                        serializers.ModelSerializer):
     """Сериализатор колонки с задачами"""
-    tasks = TaskListSerializer(many=True, source='task')
+    tasks = TaskListSerializer(many=True, source='task', read_only=True)
 
     class Meta:
         model = Column

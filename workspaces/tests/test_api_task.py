@@ -190,6 +190,7 @@ class TaskTestCase(APITestCase):
             'name': 'Changed name',
             'index': 1,
             'column': self.column1.id,
+            'responsible': [],
         }
         response = self.client.put(
             reverse('task-detail', kwargs={'column_id': self.column1.id, 'pk': self.task1.id}),
@@ -222,6 +223,7 @@ class TaskTestCase(APITestCase):
             'index': 0,
             'name': self.task1.name,
             'column': self.column2.id,
+            'responsible': [],
         }
         response = self.client.put(
             reverse('task-detail', kwargs={'column_id': self.column1.id, 'pk': self.task1.id}),
@@ -257,6 +259,7 @@ class TaskTestCase(APITestCase):
             'index': 0,
             'name': self.task1.name,
             'column': self.column2.id,
+            'responsible': [],
         }
         response = self.client.put(
             reverse('task-detail', kwargs={'column_id': self.column1.id, 'pk': self.task1.id}),

@@ -302,28 +302,6 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema_view(list=extend_schema(description='Список всех задач колонки.'),  # надо бы в schema это спрятать
-                    create=extend_schema(
-                        description='Создать задачу\n\n'
-                                    'responsible: Список ответсвенны пользователей. Передается массивом из id,'
-                                    'например {"responsible": [1,2,3]}\n\n'
-                                    'deadline: Срок выполнения задачи\n\n'
-                                    'description: Описание\n\n'
-                                    'priority: Приоритет, число от 0 до 3, где 0 - высочайший приоритет\n\n'
-                                    'color_mark: Цвет метки\n\n'
-                                    'name_mark: Название метки', ),
-                    retrieve=extend_schema(description='Информация о конкретной задачу'),
-                    update=extend_schema(
-                        description='Обновить задачу.\n\n'
-                                    'Для преремещения между колонок нужно передать column - id новой колонки и index - '
-                                    'куда ее вставить.'
-                    ),
-                    partial_update=extend_schema(
-                        description='Частично обновить задачу.\n\n'
-                                    'Перемещение между колонками возможно только PUT запросом'
-                    ),
-                    destroy=extend_schema(description='Удалить задачу'),
-                    )
 class TaskViewSet(mixins.ShiftIndexMixin,
                   mixins.ShiftIndexAfterDeleteMixin,
                   viewsets.ModelViewSet):
@@ -343,7 +321,8 @@ class TaskViewSet(mixins.ShiftIndexMixin,
         column_id = self.kwargs.get('column_id', None)
         queryset = (queryset
                     .filter(column_id=column_id)
-                    .select_related('column', 'column__board')
+                    .select_related('column')
+                    .select_related('column__board')
                     )
         return queryset.order_by('index')
 
