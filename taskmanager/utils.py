@@ -24,7 +24,7 @@ def get_resized_django_obj(img: Image, width: int, height: int) -> InMemoryUploa
     :return: InMemoryUploadedFile
     """
     resized_img = img.resize((width, height))  # смена разрешения загруженной картинки
-    temp_file = tempfile.NamedTemporaryFile(suffix='.jpg')  # создаем временный файл под аватар
+    temp_file = tempfile.NamedTemporaryFile(suffix='.png')  # создаем временный файл под аватар
     resized_img.save(temp_file.name)  # сохраняем сокращенное изображение во временный файл
     # преобразование изображения из временного файла в объект модели Джанго
     file = InMemoryUploadedFile(
