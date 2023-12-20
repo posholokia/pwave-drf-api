@@ -182,6 +182,7 @@ class ColumnTestCase(APITestCase):
             reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.column.id}),
             data
         )
+        print(f'\n\n{response.json()=}\n\n')
         self.assertEquals(status.HTTP_200_OK, response.status_code)
         self.column.refresh_from_db()
         col.refresh_from_db()
