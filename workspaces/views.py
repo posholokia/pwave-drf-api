@@ -68,10 +68,13 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        queryset = self.get_queryset()
-        serialized_data = self.serializer_class(queryset, many=True).data
-        return Response(data=serialized_data, status=status.HTTP_201_CREATED)
+        if WorkSpace.objects.filter(self.request.user).count() < 10:
+            self.perform_create(serializer)
+            queryset = self.get_queryset()
+            serialized_data = self.serializer_class(queryset, many=True).data
+            return Response(data=serialized_data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(data={'detail': 'Возможно создать не более 10 РП'}, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(description='Пригласить пользователя по email.\n\n'
                                'Пользователи добавляются по одному.'
