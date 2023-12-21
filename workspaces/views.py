@@ -259,6 +259,17 @@ class BoardViewSet(viewsets.ModelViewSet):
 
         return super().get_serializer_class()
 
+    def create(self, request, *args, **kwargs):
+        """ Создание доски с ограничением в 10 шт"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if Board.objects.filter(self.request.user).count() < 10:
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        else:
+            return Response(data={'detail': 'Возможно создать не более 10 Досок'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class BoardCreateWithoutWorkSpace(mixins.DefaultWorkSpaceMixin,
                                   generics.CreateAPIView):
