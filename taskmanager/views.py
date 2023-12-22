@@ -29,7 +29,6 @@ class CustomUserViewSet(mixins.DefaultWorkSpaceMixin,
     Вьюсет на базе вьюсета библиотеки Djoser.
     Часть методов переопределена под требования проекта.
     """
-
     def get_serializer_class(self):
         if self.action == 'check_link':
             return UidAndTokenSerializer

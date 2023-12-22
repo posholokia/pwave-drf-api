@@ -3,7 +3,7 @@ import random
 
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from django.contrib.auth import get_user_model
 from django_eventstream import send_event
 
@@ -354,3 +354,23 @@ class TaskViewSet(mixins.ShiftIndexMixin,
             self.delete_shift_index(instance)
 
         return Response(serializer.data)
+
+
+@api_view(['POST'])
+def index_columns(request):
+    boards = Board.objects.all()
+    for board in boards:
+        columns = Column.objects.filter(board=board).order_by('index')
+        c_index = 0
+        for column in columns:
+            tasks = Task.objects.filter(column=column).order_by('index')
+            t_index = 0
+            for task in tasks:
+                task.index = t_index
+                task.save()
+                t_index += 1
+
+            column.index = c_index
+            column.save()
+            c_index += 1
+    return Response(status=status.HTTP_200_OK)
