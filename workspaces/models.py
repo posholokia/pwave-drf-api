@@ -26,7 +26,7 @@ class InvitedUsers(models.Model):
 class Column(models.Model):
     name = models.CharField('Колонка', max_length=50)
     board = models.ForeignKey(Board, related_name='column_board', on_delete=models.CASCADE)
-    index = models.IntegerField('Порядковый номер')
+    index = models.PositiveIntegerField('Порядковый номер')
 
 
 class Task(models.Model):
@@ -37,7 +37,7 @@ class Task(models.Model):
         (3, 'Низкий'),
     )
     name = models.CharField('Название задачи', max_length=50)
-    index = models.IntegerField('Порядковый номер')
+    index = models.PositiveIntegerField('Порядковый номер')
     column = models.ForeignKey(Column, related_name='task', on_delete=models.CASCADE)
     responsible = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='responsible_for_task')
     deadline = models.DateField('Срок выполнения', null=True)
