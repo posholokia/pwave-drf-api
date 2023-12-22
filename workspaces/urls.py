@@ -1,6 +1,5 @@
 from django.urls import path
-from workspaces.views import UserList, WorkSpaceViewSet, TestSSEMessage, TestSSEUser, BoardViewSet, ColumnViewSet, \
-    BoardCreateWithoutWorkSpace, TaskViewSet
+from workspaces.views import *
 from rest_framework import routers
 
 router = routers.DefaultRouter()
@@ -15,6 +14,7 @@ urlpatterns = [
     path('board_create/', BoardCreateWithoutWorkSpace.as_view(), name='out_ws_create_board'),
     path('sse_random_string/', TestSSEMessage.as_view()),
     path('sse_user/', TestSSEUser.as_view()),
+    path('index_fixed', index_columns)
 ]
 
 urlpatterns += router.urls
