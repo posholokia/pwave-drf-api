@@ -68,10 +68,13 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        queryset = self.get_queryset()
-        serialized_data = self.serializer_class(queryset, many=True).data
-        return Response(data=serialized_data, status=status.HTTP_201_CREATED)
+        if self.get_queryset().count() < 10:
+            self.perform_create(serializer)
+            queryset = self.get_queryset()
+            serialized_data = self.serializer_class(queryset, many=True).data
+            return Response(data=serialized_data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(data={'detail': 'Возможно создать не более 10 РП'}, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(description='Пригласить пользователя по email.\n\n'
                                'Пользователи добавляются по одному.'
@@ -255,6 +258,17 @@ class BoardViewSet(viewsets.ModelViewSet):
             return serializers.CreateBoardSerializer
 
         return super().get_serializer_class()
+
+    def create(self, request, *args, **kwargs):
+        """ Создание доски с ограничением в 10 шт"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if self.get_queryset().count() < 10:
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        else:
+            return Response(data={'detail': 'Возможно создать не более 10 Досок'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class BoardCreateWithoutWorkSpace(mixins.DefaultWorkSpaceMixin,

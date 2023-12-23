@@ -59,6 +59,13 @@ class WorkSpaceTestCase(APITestCase):
         self.assertEquals(self.user, ws.owner)
         self.assertIn(self.user, ws.users.all())
 
+    def test_ws_create_11ws(self):
+        for i in range(2, 12):
+            data = {'name': f'My WorkSpace {i}'}
+            response = self.client.post(reverse('workspace-list'), data)
+        self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEquals(10, len(WorkSpace.objects.filter(owner=self.user)))
+
     def test_ws_create_fail_name(self):
         data = {
             'name': 'My WorkSpace name is very, very long, longer than necessary'
