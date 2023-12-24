@@ -181,13 +181,14 @@ class ShiftIndexMixin:
         """Сдвиг порядковых номеров влево при перемещении обьекта вправо"""
         slice_objects = self.objects[instance.index: new_index + 1]
 
-        with transaction.atomic():
-            for obj in slice_objects:
-                obj.index -= 1
-                if obj == instance:
-                    obj.index = instance.index = new_index
-            instance.__class__.objects.bulk_update(slice_objects, ['index'])
-            return instance
+        # with transaction.atomic():
+        for obj in slice_objects:
+            obj.index -= 1
+            if obj == instance:
+                obj.index = instance.index = new_index
+        instance.__class__.objects.bulk_update(slice_objects, ['index'])
+
+        return instance
 
     def right_shift(self, instance: Union[Task, Column], new_index: int) -> Union[Task, Column]:
         """Сдвиг порядковых номеров вправо при перемещении обьекта влево"""
@@ -195,13 +196,14 @@ class ShiftIndexMixin:
         right_border = instance.index + 1 if instance.index is not None else None
         slice_objects = self.objects[new_index: right_border]
 
-        with transaction.atomic():
-            for obj in slice_objects:
-                obj.index += 1
-                if obj == instance:
-                    obj.index = instance.index = new_index
-            instance.__class__.objects.bulk_update(slice_objects, ['index'])
-            return instance
+        # with transaction.atomic():
+        for obj in slice_objects:
+            obj.index += 1
+            if obj == instance:
+                obj.index = instance.index = new_index
+        instance.__class__.objects.bulk_update(slice_objects, ['index'])
+
+        return instance
 
 
 class ShiftIndexAfterDeleteMixin:

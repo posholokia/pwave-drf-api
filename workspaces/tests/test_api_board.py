@@ -44,6 +44,13 @@ class BoardTestCase(APITestCase):
         self.assertEquals(status.HTTP_201_CREATED, response.status_code)
         self.assertEquals(2, len(WorkSpace.objects.get(pk=self.ws.id).board.all()))
 
+    def test_board_create_11Boards(self):
+        for i in range(2, 12):
+            data = {'name': f'My Board {i}'}
+            response = self.client.post(reverse('boards-list', kwargs={'workspace_id': self.ws.id}), data)
+        self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEquals(10, len(WorkSpace.objects.get(pk=self.ws.id).board.all()))
+
     def test_denied_board_create(self):
         data = {'name': 'My Board'}
         client = APIClient()
