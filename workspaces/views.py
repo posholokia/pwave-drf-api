@@ -68,7 +68,8 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if self.get_queryset().count() < 10:
+
+        if WorkSpace.objects.filter(owner=request.user) < 10:
             self.perform_create(serializer)
             queryset = self.get_queryset()
             serialized_data = self.serializer_class(queryset, many=True).data
@@ -249,6 +250,8 @@ class BoardViewSet(viewsets.ModelViewSet):
         queryset = (queryset
                     .filter(work_space__users=user)
                     .filter(work_space_id=workspace)
+                    .prefetch_related('column_board')
+                    .prefetch_related('column_board__task')
                     )
 
         return queryset.order_by('-id')
@@ -263,7 +266,9 @@ class BoardViewSet(viewsets.ModelViewSet):
         """ Создание доски с ограничением в 10 шт"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if self.get_queryset().count() < 10:
+
+        workspace = self.kwargs.get('workspace_id')
+        if Board.objects.filter(work_space_id=workspace).count() < 10:
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)

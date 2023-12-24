@@ -10,6 +10,7 @@ from pulsewave.settings import WORKSAPCES
 from taskmanager.serializers import CurrentUserSerializer
 from . import mixins
 from .models import WorkSpace, Board, InvitedUsers, Task, Column
+from django.db import transaction
 
 User = get_user_model()
 
@@ -429,15 +430,16 @@ class TaskSerializer(mixins.ShiftIndexMixin,
         new_col = validated_data.pop('column', None)
         users = validated_data.pop('responsible', None)
 
-        if users is not None:
-            instance.responsible.set(users)
+        with transaction.atomic():
+            if users is not None:
+                instance.responsible.set(users)
 
-        if new_col is not None:
-            instance = self.insert_object(instance, new_index)
-        elif new_index is not None:
-            instance = self.shift_indexes(instance, new_index)
+            if new_col is not None:
+                instance = self.insert_object(instance, new_index)
+            elif new_index is not None:
+                instance = self.shift_indexes(instance, new_index)
 
-        return super().update(instance, validated_data)
+            return super().update(instance, validated_data)
 
 
 class CreateColumnSerializer(serializers.ModelSerializer):
@@ -495,10 +497,11 @@ class ColumnSerializer(mixins.ShiftIndexMixin,
     def update(self, instance, validated_data):
         new_index = validated_data.pop('index', None)
 
-        if new_index is not None:
-            instance = self.shift_indexes(instance, new_index)
+        with transaction.atomic():
+            if new_index is not None:
+                instance = self.shift_indexes(instance, new_index)
 
-        return super().update(instance, validated_data)
+            return super().update(instance, validated_data)
 
 
 class BoardSerializer(serializers.ModelSerializer):
