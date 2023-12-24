@@ -184,7 +184,6 @@ class WorkSpaceTestCase(APITestCase):
         self.ws1.invited.add(self.user_two)
         response = self.client.post(reverse('workspace-invite_user', kwargs={'pk': self.ws1.id}), data)
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
-        print(f'\n\n{response.json()=}')
 
         invited_users = InvitedUsers.objects.filter(
             user__email=data['email'],

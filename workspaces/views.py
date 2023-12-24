@@ -69,7 +69,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if WorkSpace.objects.filter(owner=request.user) < 10:
+        if WorkSpace.objects.filter(owner=request.user).count() < 10:
             self.perform_create(serializer)
             queryset = self.get_queryset()
             serialized_data = self.serializer_class(queryset, many=True).data

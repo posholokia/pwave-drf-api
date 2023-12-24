@@ -186,7 +186,6 @@ class ShiftIndexMixin:
             obj.index -= 1
             if obj == instance:
                 obj.index = instance.index = new_index
-        raise
         instance.__class__.objects.bulk_update(slice_objects, ['index'])
 
         return instance
