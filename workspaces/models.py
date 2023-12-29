@@ -47,7 +47,7 @@ class Task(models.Model):
     created_at = models.DateTimeField('Время создания задачи', auto_now_add=True)
 
 
-class Sticker(models.Model) :
+class Sticker(models.Model):
     name = models.CharField('Название стикера', max_length=32)
-    color = models.CharField('Цвет', max_length=16)
-    task = models.ForeignKey(Task, on_delete=models.CASCADE)
+    color = models.CharField('Цвет', max_length=7)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='sticker')

@@ -1,3 +1,5 @@
+import re
+
 from datetime import timedelta
 
 from django.utils.timezone import now
@@ -326,8 +328,6 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             'description',
             # 'file',
             'priority',
-            'color_mark',
-            'name_mark',
         )
 
     def create(self, validated_data):
@@ -356,8 +356,6 @@ class TaskListSerializer(mixins.ShiftIndexMixin,
             'column',
             'responsible',
             'priority',
-            'color_mark',
-            'name_mark',
         )
 
 
@@ -403,8 +401,6 @@ class TaskSerializer(mixins.ShiftIndexMixin,
             'description',
             # 'file',
             'priority',
-            'color_mark',
-            'name_mark',
         )
 
     # def to_representation(self, instance):
@@ -537,11 +533,34 @@ class BoardSerializer(serializers.ModelSerializer):
 
 
 class StickerSerializer(serializers.ModelSerializer):
+    default_error_messages = {
+        'invalid_color': 'Поле должно содержать HEX обозначение цвета',
+    }
+
     class Meta:
         model = Sticker
+        read_only_fields = ['task', ]
         fields = (
             'id',
             'name',
             'color',
             'task',
         )
+
+    def validate(self, attrs):
+        color = attrs.get('color', None)
+        color_pattern = re.compile(r'^#(?:[0-9a-fA-F]{3}){1,2}$')
+
+        if color is not None and color_pattern.match(color):
+            return attrs
+        else:
+            raise ValidationError(
+                {'color': self.default_error_messages['invalid_color'], },
+                'invalid_color'
+            )
+
+    def create(self, validated_data):
+        task_id = self.context['view'].kwargs['task_id']
+        validated_data['task_id'] = task_id
+        instance = Sticker.objects.create(**validated_data)
+        return instance
