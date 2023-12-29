@@ -254,7 +254,7 @@ class BoardViewSet(viewsets.ModelViewSet):
                     .prefetch_related('column_board__task')
                     )
 
-        return queryset.order_by('-id')
+        return queryset.order_by('id')
 
     def get_serializer_class(self):
         if self.action == 'create':
