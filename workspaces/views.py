@@ -10,10 +10,9 @@ from django_eventstream import send_event
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from taskmanager.serializers import CurrentUserSerializer
-from .models import WorkSpace, Board, InvitedUsers, Column, Task
+from .models import *
 from . import serializers, mixins
 from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks
-from .serializers import InviteUserSerializer
 
 User = get_user_model()
 
@@ -69,13 +68,10 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if WorkSpace.objects.filter(owner=request.user).count() < 10:
-            self.perform_create(serializer)
-            queryset = self.get_queryset()
-            serialized_data = self.serializer_class(queryset, many=True).data
-            return Response(data=serialized_data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(data={'detail': 'Возможно создать не более 10 РП'}, status=status.HTTP_400_BAD_REQUEST)
+        self.perform_create(serializer)
+        queryset = self.get_queryset()
+        serialized_data = self.serializer_class(queryset, many=True).data
+        return Response(data=serialized_data, status=status.HTTP_201_CREATED)
 
     @extend_schema(description='Пригласить пользователя по email.\n\n'
                                'Пользователи добавляются по одному.'
@@ -103,7 +99,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
                     'Ссылка на приглашение: invite/workspace/{token}\n\n'
                     'Если ответ 200 - у пользователя нет пароля, отправить на '
                     '/auth/users/reset_password_invited/\n\nОтвет 204 - у пользователя есть пароль ',
-        responses={204: None, 200: InviteUserSerializer, },
+        responses={204: None, 200: serializers.InviteUserSerializer, },
     )
     @action(['post'], detail=False, url_name='confirm_invite')
     def confirm_invite(self, request, *args, **kwargs):
@@ -121,7 +117,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
 
         # если пользователь уже добавлен в РП, но не закончил регистрацию, нужно вернуть ответ,
         # по которому его направят на установку пароля
-        data = InviteUserSerializer(serializer.invitation).data
+        data = serializers.InviteUserSerializer(serializer.invitation).data
         if not self.user.has_usable_password() and self.user_is_added_to_workspace():
             return Response(data=data, status=status.HTTP_200_OK)
 
@@ -393,3 +389,15 @@ def index_columns(request):
             column.save()
             c_index += 1
     return Response(status=status.HTTP_200_OK)
+
+
+class StickerViewSet(viewsets.ModelViewSet):
+    serializer_class = serializers.StickerSerializer
+    queryset = Sticker.objects.all()
+
+    def get_queryset(self):
+        """Задачи фильтруются по колонкам"""
+        queryset = super().get_queryset()
+        task_id = self.kwargs.get('task_id', None)
+        queryset = queryset.filter(task_id=task_id)
+        return queryset

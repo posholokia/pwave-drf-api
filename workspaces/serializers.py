@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
+from django.db import transaction
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -9,8 +10,12 @@ from rest_framework.exceptions import ValidationError
 from pulsewave.settings import WORKSAPCES
 from taskmanager.serializers import CurrentUserSerializer
 from . import mixins
-from .models import WorkSpace, Board, InvitedUsers, Task, Column
-from django.db import transaction
+from .models import (WorkSpace,
+                     Board,
+                     InvitedUsers,
+                     Task,
+                     Column,
+                     Sticker)
 
 User = get_user_model()
 
@@ -529,3 +534,14 @@ class BoardSerializer(serializers.ModelSerializer):
         # удалить после реализации добавления участников доски
         representation['members'] = CurrentUserSerializer(users, many=True).data
         return representation
+
+
+class StickerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sticker
+        fields = (
+            'id',
+            'name',
+            'color',
+            'task',
+        )
