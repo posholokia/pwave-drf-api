@@ -12,7 +12,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from taskmanager.serializers import CurrentUserSerializer
 from .models import *
 from . import serializers, mixins
-from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks
+from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks, UserHasAccessStickers
 
 User = get_user_model()
 
@@ -394,6 +394,7 @@ def index_columns(request):
 class StickerViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.StickerSerializer
     queryset = Sticker.objects.all()
+    permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]
 
     def get_queryset(self):
         """Задачи фильтруются по колонкам"""

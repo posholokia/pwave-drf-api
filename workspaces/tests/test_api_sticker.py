@@ -55,6 +55,16 @@ class TaskTestCase(APITestCase):
         self.assertEquals(status.HTTP_201_CREATED, response.status_code)
         self.assertEquals(2, len(Sticker.objects.filter(task=self.task1.id)))
 
+    def test_sticker_else_create(self):
+        data = {
+            'name': 'new sticker',
+            'color': '#AD45E4',
+            'task': self.task3.id,
+        }
+        response = self.client.post(reverse('sticker-list', kwargs={'task_id': self.task3.id}), data)
+        self.assertEquals(status.HTTP_403_FORBIDDEN, response.status_code)
+        self.assertEquals(0, len(Sticker.objects.filter(task=self.task3.id)))
+
     def test_get_sticker_list(self):
         Sticker.objects.create(name='sticker2', color='#FA1', task=self.task1)
 
