@@ -44,6 +44,10 @@ class Task(models.Model):
     description = models.CharField('Описание', max_length=2048, blank=True)
     file = models.FileField(upload_to='task_attach/', null=True)
     priority = models.IntegerField('Флаг приоритета', choices=PRIORITY, null=True)
-    color_mark = models.CharField('Цветовая метка', max_length=16, blank=True)
-    name_mark = models.CharField('Название метки', max_length=16, blank=True)
     created_at = models.DateTimeField('Время создания задачи', auto_now_add=True)
+
+
+class Sticker(models.Model):
+    name = models.CharField('Название стикера', max_length=32)
+    color = models.CharField('Цвет', max_length=7)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='sticker')

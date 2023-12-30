@@ -183,9 +183,11 @@ class ShiftIndexMixin:
 
         # with transaction.atomic():
         for obj in slice_objects:
-            obj.index -= 1
             if obj == instance:
                 obj.index = instance.index = new_index
+                continue
+
+            obj.index -= 1
         instance.__class__.objects.bulk_update(slice_objects, ['index'])
 
         return instance
@@ -198,9 +200,11 @@ class ShiftIndexMixin:
 
         # with transaction.atomic():
         for obj in slice_objects:
-            obj.index += 1
             if obj == instance:
                 obj.index = instance.index = new_index
+                continue
+
+            obj.index += 1
         instance.__class__.objects.bulk_update(slice_objects, ['index'])
 
         return instance

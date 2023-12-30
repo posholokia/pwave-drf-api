@@ -7,6 +7,7 @@ router.register('workspace', WorkSpaceViewSet, basename='workspace')
 router.register(r'workspace/(?P<workspace_id>\d+)/boards', BoardViewSet, basename='boards')
 router.register(r'boards/(?P<board_id>\d+)/column', ColumnViewSet, basename='column')
 router.register(r'column/(?P<column_id>\d+)/task', TaskViewSet, basename='task')
+router.register(r'task/(?P<task_id>\d+)/sticker', StickerViewSet, basename='sticker')
 
 
 urlpatterns = [

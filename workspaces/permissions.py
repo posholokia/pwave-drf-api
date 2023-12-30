@@ -1,13 +1,14 @@
 from rest_framework.permissions import BasePermission
 
-from workspaces.models import Board, Column
+from workspaces.models import Board, Column, Task
 
 
 class UserInWorkSpaceUsers(BasePermission):
     """Настройка прав для досок, пользователь является участником РП"""
+
     def has_permission(self, request, view):
         workspace_id = int(view.kwargs.get('workspace_id', None))
-        if (workspace_id, ) in request.user.joined_workspaces.all().only('id').values_list('id'):
+        if (workspace_id,) in request.user.joined_workspaces.all().only('id').values_list('id'):
             return True
 
         return False
@@ -25,7 +26,7 @@ class UserIsBoardMember(BasePermission):
                      .select_related('work_space')
                      .only('work_space__users')
                      .get(pk=board_id))
-            if (user, ) in board.work_space.users.all().values_list('id'):
+            if (user,) in board.work_space.users.all().values_list('id'):
                 return True
         except Board.DoesNotExist:
             return False
@@ -44,7 +45,26 @@ class UserHasAccessTasks(BasePermission):
             column = (Column.objects.select_related('board__work_space')
                       .only('board__work_space__users')
                       .get(pk=column_id))
-            if (user, ) in column.board.work_space.users.all().values_list('id'):
+            if (user,) in column.board.work_space.users.all().values_list('id'):
+                return True
+
+        except Column.DoesNotExist:
+            return False
+        return False
+
+
+class UserHasAccessStickers(BasePermission):
+    """Только участники РП имеют доступ к стикерам задач"""
+
+    def has_permission(self, request, view):
+        task_id = int(view.kwargs.get('task_id', None))
+        user = request.user.id
+
+        try:
+            task = (Task.objects.select_related('column__board__work_space')
+                    .only('column__board__work_space__users')
+                    .get(pk=task_id))
+            if (user,) in task.column.board.work_space.users.all().values_list('id'):
                 return True
 
         except Column.DoesNotExist:
