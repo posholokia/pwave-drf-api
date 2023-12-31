@@ -28,6 +28,9 @@ class Column(models.Model):
     board = models.ForeignKey(Board, related_name='column_board', on_delete=models.CASCADE)
     index = models.PositiveIntegerField('Порядковый номер')
 
+    def __repr__(self):
+        return f'Column {self.name}, index: {self.index}'
+
 
 class Task(models.Model):
     PRIORITY = (
