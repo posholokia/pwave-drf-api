@@ -17,14 +17,6 @@ from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessT
 User = get_user_model()
 
 
-@extend_schema_view(
-    list=extend_schema(description='Список всех Рабочих пространств авторизованного пользователя'),
-    create=extend_schema(description='Создать Рабочее пространство'),
-    retrieve=extend_schema(description='Информация о конктретном рабочем пространстве'),
-    update=extend_schema(description='Обновить все данные РП (на данный момент только имя)'),
-    partial_update=extend_schema(description='Частично обновить данные РП (на данный момент только имя)'),
-    destroy=extend_schema(description='Удалить РП'),
-)
 class WorkSpaceViewSet(mixins.GetInvitationMixin,
                        mixins.UserNoAuthOrThisUser,
                        mixins.CheckWorkSpaceUsersMixin,
@@ -59,7 +51,6 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         queryset = queryset.filter(users=user)
         return queryset.order_by('created_at')  # вывод РП сортируется по дате создания
 
-    @extend_schema(responses={201: serializers.WorkSpaceSerializer(many=True)}, )
     def create(self, request, *args, **kwargs):
         """
         Создание рабочего пространства.
@@ -73,10 +64,6 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         serialized_data = self.serializer_class(queryset, many=True).data
         return Response(data=serialized_data, status=status.HTTP_201_CREATED)
 
-    @extend_schema(description='Пригласить пользователя по email.\n\n'
-                               'Пользователи добавляются по одному.'
-                               'Если пользователя не существует, он будет создан.',
-                   responses={200: serializers.WorkSpaceSerializer}, )
     @action(methods=['post'], detail=True, url_name='invite_user')
     def invite_user(self, request, *args, **kwargs):
         """
@@ -94,13 +81,6 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
 
         return Response(data=self.serializer_class(workspace).data, status=status.HTTP_200_OK)
 
-    @extend_schema(
-        description='Подтверждение приглашения в РП.\n\nПройдя по ссылке пользователь будет добавлен в РП. '
-                    'Ссылка на приглашение: invite/workspace/{token}\n\n'
-                    'Если ответ 200 - у пользователя нет пароля, отправить на '
-                    '/auth/users/reset_password_invited/\n\nОтвет 204 - у пользователя есть пароль ',
-        responses={204: None, 200: serializers.InviteUserSerializer, },
-    )
     @action(['post'], detail=False, url_name='confirm_invite')
     def confirm_invite(self, request, *args, **kwargs):
         """
@@ -130,8 +110,6 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
 
         return Response(data=data, status=status.HTTP_200_OK)
 
-    @extend_schema(description='Удаление пользователей из РП\n\nУдаление как из участников так и из приглашенных',
-                   responses={200: serializers.WorkSpaceSerializer}, )
     @action(['post'], detail=True, url_name='kick_user')
     def kick_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -150,8 +128,6 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         workspace_data = self.serializer_class(self.workspace).data
         return Response(data=workspace_data, status=status.HTTP_200_OK)
 
-    @extend_schema(description='Повторная отправка ссылки с приглашением пользователя.',
-                   responses={204: None, }, )
     @action(['post'], detail=True, url_name='resend_invite')
     def resend_invite(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -193,12 +169,7 @@ class UserList(generics.ListAPIView):
 
 
 class TestSSEMessage(generics.CreateAPIView):
-    """
-    Создать SSE - передает случайную строку.\n\n
-    Слушать /events/\n\n
-    channel: test\n\n
-    event_type: test_message
-    """
+    """Для тестов Server Events. Отправляет случайную строку"""
     serializer_class = None
     queryset = None
 
@@ -209,12 +180,7 @@ class TestSSEMessage(generics.CreateAPIView):
 
 
 class TestSSEUser(generics.CreateAPIView):
-    """
-    Создать SSE - передает текущего юзера.\n\n
-    Слушать /events/\n\n
-    channel: test\n\n
-    event_type: test_user
-    """
+    """Для тестов Server Events. Отправляет текущего юзера"""
     serializer_class = CurrentUserSerializer
     queryset = User.objects.all()
     permission_classes = [permissions.IsAuthenticated]
@@ -226,13 +192,6 @@ class TestSSEUser(generics.CreateAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema_view(list=extend_schema(description='Список всех досок указанного РП.'),
-                    create=extend_schema(description='Создать Доску'),
-                    retrieve=extend_schema(description='Информация о конкретной доске'),
-                    update=extend_schema(description='Обновить доску'),
-                    partial_update=extend_schema(description='Частично обновить доску'),
-                    destroy=extend_schema(description='Удалить доску'),
-                    )
 class BoardViewSet(viewsets.ModelViewSet):
     """Представление досок"""
     serializer_class = serializers.BoardSerializer
@@ -280,13 +239,6 @@ class BoardCreateWithoutWorkSpace(mixins.DefaultWorkSpaceMixin,
     permission_classes = [permissions.IsAuthenticated]
 
 
-@extend_schema_view(list=extend_schema(description='Список всех колонок доски.'),
-                    create=extend_schema(description='Создать колонку на доске'),
-                    retrieve=extend_schema(description='Информация о конкретной колонке'),
-                    update=extend_schema(description='Обновить колонку (название и порядковый номер)'),
-                    partial_update=extend_schema(description='Частично обновить колонку (название/порядковый номер)'),
-                    destroy=extend_schema(description='Удалить колонку'),
-                    )
 class ColumnViewSet(mixins.ShiftIndexMixin,
                     mixins.ShiftIndexAfterDeleteMixin,
                     viewsets.ModelViewSet):
