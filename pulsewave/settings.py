@@ -192,6 +192,7 @@ PASSWORD_RESET_TIMEOUT = 3600
 
 AUTHENTICATION_BACKENDS = (
     'taskmanager.backends.AuthBackend',  # кастомный бекэнд аутентификации
+    'django.contrib.auth.backends.ModelBackend',  # для входа в админ панель
 )
 
 #JWT tokens

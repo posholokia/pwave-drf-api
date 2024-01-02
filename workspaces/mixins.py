@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
 from django.contrib.auth.models import AnonymousUser
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Q
 
 from rest_framework.exceptions import ValidationError
 
@@ -129,14 +129,13 @@ class ColumnValidateMixin:
                 'invalid_column'
             )
 
-        with transaction.atomic():
-            # меняем номер колонки, чтобы при валидации индекса задачи
-            # не было ошибок в крайних случаях (0 или максимальное значение индекса)
-            self.instance.column = new_col
-            self.instance.save()
+        # меняем номер колонки, чтобы при валидации индекса задачи
+        # не было ошибок в крайних случаях (0 или максимальное значение индекса)
+        self.instance.column = new_col
+        self.instance.save()
 
-            if new_index is not None:
-                self.index_validate(new_index, new_col)
+        if new_index is not None:
+            self.index_validate(new_index, new_col)
 
 
 class IndexValidateMixin:
@@ -181,7 +180,6 @@ class ShiftIndexMixin:
         """Сдвиг порядковых номеров влево при перемещении обьекта вправо"""
         slice_objects = self.objects[instance.index: new_index + 1]
 
-        # with transaction.atomic():
         for obj in slice_objects:
             if obj == instance:
                 obj.index = instance.index = new_index
@@ -198,7 +196,6 @@ class ShiftIndexMixin:
         right_border = instance.index + 1 if instance.index is not None else None
         slice_objects = self.objects[new_index: right_border]
 
-        # with transaction.atomic():
         for obj in slice_objects:
             if obj == instance:
                 obj.index = instance.index = new_index
@@ -216,11 +213,10 @@ class ShiftIndexAfterDeleteMixin:
         model_class = instance.__class__
         column_id = self.kwargs.get('column_id', None)
 
-        with transaction.atomic():
-            objs = model_class.objects.filter(index__gte=instance.index + 1)
+        objs = model_class.objects.filter(index__gte=instance.index + 1)
 
-            if model_class == Task:
-                assert column_id is not None
-                objs = objs.filter(column_id=column_id)
+        if model_class == Task:
+            assert column_id is not None
+            objs = objs.filter(column_id=column_id)
 
-            objs.update(index=F('index') - 1)
+        objs.update(index=F('index') - 1)
