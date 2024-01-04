@@ -229,6 +229,7 @@ class TaskTestCase(APITestCase):
             reverse('task-detail', kwargs={'column_id': self.column1.id, 'pk': self.task1.id}),
             data,
         )
+        print(f'{response.json()=}')
         self.assertEquals(status.HTTP_200_OK, response.status_code)
         self.assertEquals(0, len(Column.objects.get(pk=self.column1.id).task.all()))
         self.assertEquals(1, len(Column.objects.get(pk=self.column2.id).task.all()))
