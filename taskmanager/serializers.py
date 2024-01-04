@@ -16,8 +16,7 @@ from djoser.conf import settings as djoser_settings
 
 from workspaces.models import InvitedUsers
 from .token import token_generator
-from .utils import proportional_reduction, get_resized_django_obj
-from PIL import Image
+from .utils import AvatarUploadImage
 
 User = get_user_model()
 
@@ -37,7 +36,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             'email',
             'name',
             'represent_name',
-            'avatar',  # до подключения медиа
+            'avatar',
         )
 
     def get_represent_name(self, obj):
@@ -45,28 +44,13 @@ class CurrentUserSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         """
-        Валидация аватара.
-        Если разрешение изображения слишком большое, оно будет пропорционально уменьшено
-        и заменено в словаре attrs
+        Валидация аватара и сохранение его с сжатым разрешением
         """
         avatar = attrs.get('avatar')
 
         if avatar:
-            name = avatar.name  # название изображения, которое загрузил пользователь
-            with Image.open(avatar.file) as img:
-                width, height = img.size
-                # пропорционально подгоняем разрешение, чтобы сторона не превышала стандарт max_size
-                new_width, new_height = proportional_reduction(width, height, max_size=200)
-
-                if new_width < 55 or new_height < 55:
-                    raise serializers.ValidationError(
-                        {'avatar': 'Слишком низкое качество изображения. '
-                                   'Допустимое разрешение не меньше 55х55', }
-                    )
-
-                file = get_resized_django_obj(img, new_width, new_height)
-                file.name = name
-                attrs['avatar'] = file
+            file = AvatarUploadImage.get_resized_img(avatar)
+            attrs['avatar'] = file
 
         return attrs
 

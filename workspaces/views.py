@@ -10,6 +10,7 @@ from django_eventstream import send_event
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from taskmanager.serializers import CurrentUserSerializer
+from .logic import WorkSpaceInvite, ShiftObjects
 from .models import *
 from . import serializers, mixins
 from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks, UserHasAccessStickers
@@ -22,7 +23,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
                        mixins.CheckWorkSpaceUsersMixin,
                        viewsets.ModelViewSet):
     serializer_class = serializers.WorkSpaceSerializer
-    queryset = WorkSpace.objects.all().select_related('owner').prefetch_related('users', 'invited', 'board')
+    queryset = WorkSpace.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
@@ -48,7 +49,11 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
-        queryset = queryset.filter(users=user)
+        queryset = (queryset
+                    .filter(users=user)
+                    .select_related('owner')
+                    .prefetch_related('users', 'invited', 'board')
+                    )
         return queryset.order_by('created_at')  # вывод РП сортируется по дате создания
 
     def create(self, request, *args, **kwargs):
@@ -75,8 +80,10 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user, workspace = serializer.user, serializer.workspace
-        workspace.invited.add(user)
+        wp = self.get_object()
+        email = serializer.validated_data['email']
+
+        workspace, user = WorkSpaceInvite().invite_user(wp, email)
         self.get_or_create_invitation(user, workspace)
 
         return Response(data=self.serializer_class(workspace).data, status=status.HTTP_200_OK)
@@ -144,6 +151,11 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         self.workspace.users.remove(user_id)
         self.workspace.invited.remove(user_id)
         InvitedUsers.objects.filter(user_id=user_id).delete()
+
+    def get_object(self):
+        obj = super().get_object()
+        setattr(self, 'workspace', obj)
+        return obj
 
 
 class UserList(generics.ListAPIView):
@@ -239,9 +251,7 @@ class BoardCreateWithoutWorkSpace(mixins.DefaultWorkSpaceMixin,
     permission_classes = [permissions.IsAuthenticated]
 
 
-class ColumnViewSet(mixins.ShiftIndexMixin,
-                    mixins.ShiftIndexAfterDeleteMixin,
-                    viewsets.ModelViewSet):
+class ColumnViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ColumnSerializer
     queryset = Column.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserIsBoardMember]
@@ -264,14 +274,12 @@ class ColumnViewSet(mixins.ShiftIndexMixin,
         При удалении колонки перезаписывает порядковые номера оставшихся колонок
         """
         instance = self.get_object()
-        self.delete_shift_index(instance)
+        ShiftObjects().delete_shift_index(instance)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class TaskViewSet(mixins.ShiftIndexMixin,
-                  mixins.ShiftIndexAfterDeleteMixin,
-                  viewsets.ModelViewSet):
+class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.TaskSerializer
     queryset = Task.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserHasAccessTasks]
@@ -291,6 +299,7 @@ class TaskViewSet(mixins.ShiftIndexMixin,
                     .select_related('column')
                     .select_related('column__board')
                     )
+        setattr(self, 'queryset', queryset)
         return queryset.order_by('index')
 
     def destroy(self, request, *args, **kwargs):
@@ -298,7 +307,7 @@ class TaskViewSet(mixins.ShiftIndexMixin,
         При удалении задачи перезаписывает порядковые номера оставшихся задач
         """
         instance = self.get_object()
-        self.delete_shift_index(instance)
+        ShiftObjects().delete_shift_index(instance)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -306,19 +315,13 @@ class TaskViewSet(mixins.ShiftIndexMixin,
         """Обновление задач"""
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
+
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
-
-        current_column = kwargs.get('column_id', None)
-        new_column = serializer.validated_data.get('column', None)
-
-        # если задачу переместили в другую колонку, в текущей порядковые номера нужно сдвинуть
-        if new_column is not None and new_column != current_column:
-            self.delete_shift_index(instance)
 
         return Response(serializer.data)
 
