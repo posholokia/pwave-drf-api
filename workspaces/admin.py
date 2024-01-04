@@ -6,9 +6,9 @@ User = get_user_model()
 
 
 class WorkSpaceViewAdmin(admin.ModelAdmin):
-    list_display = ('owner', 'name', 'users', 'invited')
-    list_filter = ('owner', 'name', 'users', 'invited')
-    search_fields = ('owner', 'name', 'users', 'invited')
+    list_display = ('owner', 'name', )
+    list_filter = ('owner', 'name', )
+    search_fields = ('owner', 'name', )
 
 
 admin.site.register(WorkSpace, WorkSpaceViewAdmin)
