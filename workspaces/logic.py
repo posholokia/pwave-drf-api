@@ -79,30 +79,30 @@ class ShiftObjects:
         if new_col is not None:
             self.delete_shift_index(instance)
 
-        return self.shift_indexes(self.instance, new_index, new_col)
+        return self._shift_indexes(self.instance, new_index, new_col)
 
-    def shift_indexes(self,
-                      instance: Union[Task, Column],
-                      new_index: int,
-                      new_col: Optional[Column] = None) -> Union[Task, Column]:
+    def _shift_indexes(self,
+                       instance: Union[Task, Column],
+                       new_index: int,
+                       new_col: Optional[Column] = None) -> Union[Task, Column]:
         """Функция пересчитывает порядковые номера обьектов при их перемещении"""
         if new_col is not None and instance.column != new_col:
             self.instance.column = new_col
-            instance = self.insert_object(self.instance, new_index)
+            instance = self._insert_object(self.instance, new_index)
         elif new_index > self.instance.index:
-            instance = self.left_shift(instance, new_index)
+            instance = self._left_shift(instance, new_index)
         elif new_index < self.instance.index:
-            instance = self.right_shift(instance, new_index)
+            instance = self._right_shift(instance, new_index)
 
         return instance
 
-    def insert_object(self, instance: Task, new_index: int) -> Task:
+    def _insert_object(self, instance: Task, new_index: int) -> Task:
         """Функция перемещения задачи между колонками"""
         # присваиваем индекс None, так как при вставке задачи в новую колонку вставка идет с конца
         instance.index = None
-        return self.right_shift(instance, new_index)
+        return self._right_shift(instance, new_index)
 
-    def left_shift(self, instance: Union[Task, Column], new_index: int) -> Union[Task, Column]:
+    def _left_shift(self, instance: Union[Task, Column], new_index: int) -> Union[Task, Column]:
         """Сдвиг порядковых номеров влево при перемещении обьекта вправо"""
         slice_objects = self.objects[instance.index: new_index + 1]
 
@@ -116,7 +116,7 @@ class ShiftObjects:
 
         return instance
 
-    def right_shift(self, instance: Union[Task, Column], new_index: int) -> Union[Task, Column]:
+    def _right_shift(self, instance: Union[Task, Column], new_index: int) -> Union[Task, Column]:
         """Сдвиг порядковых номеров вправо при перемещении обьекта влево"""
         # если индекс None, то пересчет порядковых номеров идет до последнего элемента
         right_border = instance.index + 1 if instance.index is not None else None
