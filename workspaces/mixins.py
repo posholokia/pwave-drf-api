@@ -143,17 +143,20 @@ class IndexValidateMixin:
         Валидация нового индекса обьекта. Проверяет, что индекс не выходит за
         пределы количества обьектов
         """
+        max_length = 0
         if new_col is not None:
             # условие применяется для задач, если задачу перемещают между колонками,
             # список обьектов нужно получить из другой колонки
             objects = new_col.task.all().order_by('index')
+            max_length += 1
         else:
             objects = self.context['view'].get_queryset()
 
-        if new_index > len(objects) or new_index < 0:
+        max_length += len(objects)
+        if new_index >= max_length or new_index < 0:
             raise ValidationError(
                 {"index": f'Порядковый номер должен соответсвовать количеству обьектов: '
-                          f'0 <= index <= {len(objects) - 1}'},
+                          f'0 <= index <= {max_length - 1}'},
                 'invalid_index'
             )
         return objects
