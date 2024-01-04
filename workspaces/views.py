@@ -4,10 +4,10 @@ import random
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
-from django.contrib.auth import get_user_model
-from django_eventstream import send_event
 
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from django.contrib.auth import get_user_model
+
+from django_eventstream import send_event
 
 from taskmanager.serializers import CurrentUserSerializer
 from .logic import WorkSpaceInvite, ShiftObjects

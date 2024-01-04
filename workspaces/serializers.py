@@ -110,7 +110,7 @@ class WorkSpaceSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        representation['boards'] = sorted(representation['boards'], key=lambda x: x['id'], reverse=True)
+        representation['boards'] = sorted(representation['boards'], key=lambda x: x['id'], reverse=False)
         return representation
 
 
