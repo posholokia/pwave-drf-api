@@ -34,7 +34,7 @@ class GetWorkSpaceMixin:
             pk = self.context.get('view').kwargs.get('pk')
             workspace = (
                 WorkSpace.objects
-                .prefetch_related('users', 'invited', 'board', )
+                # .prefetch_related('users', 'invited', 'board', )
                 .get(pk=pk)
             )
             return workspace
@@ -92,7 +92,6 @@ class GetOrCreateUserMixin:
         except User.DoesNotExist:
             user_data = {'email': email, 'password': None, 'is_active': False, }
             user = User.objects.create_user(**user_data)
-
         return user
 
 
@@ -147,76 +146,14 @@ class IndexValidateMixin:
         if new_col is not None:
             # условие применяется для задач, если задачу перемещают между колонками,
             # список обьектов нужно получить из другой колонки
-            # self.objects = Task.objects.filter(column=new_col).order_by('index')
-            self.objects = new_col.task.all().order_by('index')
+            objects = new_col.task.all().order_by('index')
         else:
-            self.objects = self.context['view'].get_queryset()
+            objects = self.context['view'].get_queryset()
 
-        if new_index >= len(self.objects) or new_index < 0:
+        if new_index > len(objects) or new_index < 0:
             raise ValidationError(
                 {"index": f'Порядковый номер должен соответсвовать количеству обьектов: '
-                          f'0 <= index <= {len(self.objects) - 1}'},
+                          f'0 <= index <= {len(objects) - 1}'},
                 'invalid_index'
             )
-
-
-class ShiftIndexMixin:
-    def shift_indexes(self, instance: Union[Task, Column], new_index: int) -> Union[Task, Column]:
-        """Функция пересчитывает порядковые номера обьектов при их перемещении"""
-        if new_index > instance.index:
-            instance = self.left_shift(instance, new_index)
-        elif new_index < instance.index:
-            instance = self.right_shift(instance, new_index)
-
-        return instance
-
-    def insert_object(self, instance: Task, new_index: int) -> Task:
-        """Функция перемещения задачи между колонками"""
-        # присваиваем индекс None, так как при вставке задачи в новую колонку вставка идет с конца
-        instance.index = None
-        return self.right_shift(instance, new_index)
-
-    def left_shift(self, instance: Union[Task, Column], new_index: int) -> Union[Task, Column]:
-        """Сдвиг порядковых номеров влево при перемещении обьекта вправо"""
-        slice_objects = self.objects[instance.index: new_index + 1]
-
-        for obj in slice_objects:
-            if obj == instance:
-                obj.index = instance.index = new_index
-                continue
-
-            obj.index -= 1
-        instance.__class__.objects.bulk_update(slice_objects, ['index'])
-
-        return instance
-
-    def right_shift(self, instance: Union[Task, Column], new_index: int) -> Union[Task, Column]:
-        """Сдвиг порядковых номеров вправо при перемещении обьекта влево"""
-        # если индекс None, то пересчет порядковых номеров идет до последнего элемента
-        right_border = instance.index + 1 if instance.index is not None else None
-        slice_objects = self.objects[new_index: right_border]
-
-        for obj in slice_objects:
-            if obj == instance:
-                obj.index = instance.index = new_index
-                continue
-
-            obj.index += 1
-        instance.__class__.objects.bulk_update(slice_objects, ['index'])
-
-        return instance
-
-
-class ShiftIndexAfterDeleteMixin:
-    def delete_shift_index(self, instance: Union[Task, Column]) -> None:
-        """Пересчет порядковых номеров при удалении объекта"""
-        model_class = instance.__class__
-        column_id = self.kwargs.get('column_id', None)
-
-        objs = model_class.objects.filter(index__gte=instance.index + 1)
-
-        if model_class == Task:
-            assert column_id is not None
-            objs = objs.filter(column_id=column_id)
-
-        objs.update(index=F('index') - 1)
+        return objects

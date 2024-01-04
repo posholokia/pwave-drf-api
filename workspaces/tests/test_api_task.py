@@ -277,3 +277,45 @@ class TaskTestCase(APITestCase):
         self.assertEquals(1, task2.index)
         self.assertEquals(2, task3.index)
         self.assertEquals(3, task4.index)
+
+    def test_after_delete_indexes(self):
+        Task.objects.create(name='task2', index=1, column=self.column1)
+        Task.objects.create(name='task3', index=2, column=self.column1)
+        Task.objects.create(name='task4', index=0, column=self.column2)
+        Task.objects.create(name='task4', index=1, column=self.column2)
+
+        self.client.delete(
+            reverse('task-detail', kwargs={'column_id': self.column1.id, 'pk': self.task1.id}),
+        )
+        col1_indexes = [(0, ), (1, ), ]
+        col2_indexes = [(0, ), (1, ), ]
+
+        col1_tasks_indexes = Task.objects.filter(column=self.column1).order_by('index').values_list('index')
+        col2_tasks_indexes = Task.objects.filter(column=self.column2).order_by('index').values_list('index')
+
+        self.assertEquals(col1_indexes, list(col1_tasks_indexes))
+        self.assertEquals(col2_indexes, list(col2_tasks_indexes))
+
+    def test_indexes_after_move_between_columns(self):
+        Task.objects.create(name='task2', index=1, column=self.column1)
+        Task.objects.create(name='task3', index=2, column=self.column1)
+        Task.objects.create(name='task4', index=3, column=self.column1)
+        Task.objects.create(name='task5', index=0, column=self.column2)
+        Task.objects.create(name='task6', index=1, column=self.column2)
+
+        data = {
+            'index': 0,
+            'column': self.column2.id,
+        }
+        self.client.patch(
+            reverse('task-detail', kwargs={'column_id': self.column1.id, 'pk': self.task1.id}),
+            data,
+        )
+        col1_tasks = [(0, ), (1, ), (2, ), ]
+        col2_tasks = [(0, ), (1, ), (2, ), ]
+
+        col1_tasks_indexes = Task.objects.filter(column=self.column1).order_by('index').values_list('index')
+        col2_tasks_indexes = Task.objects.filter(column=self.column2).order_by('index').values_list('index')
+
+        self.assertEquals(col1_tasks, list(col1_tasks_indexes))
+        self.assertEquals(col2_tasks, list(col2_tasks_indexes))
