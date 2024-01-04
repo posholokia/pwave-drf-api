@@ -203,3 +203,22 @@ class ColumnTestCase(APITestCase):
         self.assertEquals(2, len(Board.objects.get(pk=self.board.id).column_board.all()))
         self.assertEquals(0, col2.index)
         self.assertEquals(1, col3.index)
+
+    def test_after_delete_indexes(self):
+        board2 = Board.objects.create(work_space=self.ws, name='Board2')
+        Column.objects.create(name='col2', index=1, board=self.board)
+        Column.objects.create(name='col3', index=2, board=self.board)
+        Column.objects.create(name='col4', index=0, board=board2)
+        Column.objects.create(name='col5', index=1, board=board2)
+
+        self.client.delete(
+            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.column.id}),
+        )
+        col1_indexes = [(0, ), (1, ), ]
+        col2_indexes = [(0, ), (1, ), ]
+
+        board1_col_indexes = Column.objects.filter(board=self.board).order_by('index').values_list('index')
+        board2_col_indexes = Column.objects.filter(board=board2).order_by('index').values_list('index')
+
+        self.assertEquals(col1_indexes, list(board1_col_indexes))
+        self.assertEquals(col2_indexes, list(board2_col_indexes))
