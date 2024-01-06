@@ -76,7 +76,7 @@ class ShiftObjects:
         self.objects = objects
         self.instance = instance
 
-        if new_col is not None:
+        if self.is_new_column(new_col):
             self.delete_shift_index(instance)
 
         return self._shift_indexes(self.instance, new_index, new_col)
@@ -86,7 +86,7 @@ class ShiftObjects:
                        new_index: int,
                        new_col: Optional[Column] = None) -> Union[Task, Column]:
         """Функция пересчитывает порядковые номера обьектов при их перемещении"""
-        if new_col is not None and instance.column != new_col:
+        if self.is_new_column(new_col):
             self.instance.column = new_col
             instance = self._insert_object(self.instance, new_index)
         elif new_index > self.instance.index:
@@ -159,3 +159,12 @@ class ShiftObjects:
             assert False, ('Пересчет порядковых номеров осуществляется только'
                            ' для обьектов Task или Column')
         return kwargs
+
+    def is_new_column(self, new_col):
+        if new_col is not None and self.instance.column != new_col:
+            return True
+        else:
+            return False
+
+
+shift_objects = ShiftObjects()

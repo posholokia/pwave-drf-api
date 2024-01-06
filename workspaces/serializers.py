@@ -12,7 +12,7 @@ from rest_framework.exceptions import ValidationError
 from pulsewave.settings import WORKSAPCES
 from taskmanager.serializers import CurrentUserSerializer
 from . import mixins
-from .logic import ShiftObjects
+from .logic import shift_objects
 from .models import (WorkSpace,
                      Board,
                      InvitedUsers,
@@ -414,7 +414,7 @@ class TaskSerializer(
             if users is not None:
                 instance.responsible.set(users)
             if new_index is not None:
-                ShiftObjects().shift(self.objects, instance, new_index, new_col)
+                instance = shift_objects.shift(self.objects, instance, new_index, new_col)
 
             return super().update(instance, validated_data)
 
@@ -477,7 +477,7 @@ class ColumnSerializer(
 
         with transaction.atomic():
             if new_index is not None:
-                instance = ShiftObjects().shift(self.objects, instance, new_index)
+                instance = shift_objects.shift(self.objects, instance, new_index)
 
             return super().update(instance, validated_data)
 
