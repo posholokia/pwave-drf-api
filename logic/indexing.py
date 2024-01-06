@@ -1,70 +1,12 @@
 from typing import Union, Optional
 
-from workspaces.exeptions import InvalidAction
 from django.contrib.auth import get_user_model
-from django.db.models import F, Q
+from django.db.models import F
+from django.db.models.query import QuerySet
 
 from workspaces.models import Column, Task
 
 User = get_user_model()
-
-
-class WorkSpaceInvite:
-    def __init__(self):
-        self.workspace = None
-        self.user = None
-        self.errors = {}
-
-    def invite_user(self, workspace, user_email):
-        self.user = self.get_or_create_user(user_email)
-        self.workspace = workspace
-        self.checking_possibility_invitation()
-        self.add_user_in_workspace()
-        return self.workspace, self.user
-
-    def add_user_in_workspace(self):
-        if self.errors:
-            raise InvalidAction(
-                detail=self.errors['detail'],
-                code=self.errors['code']
-            )
-
-        self.workspace.invited.add(self.user)
-
-    def checking_possibility_invitation(self):
-        if self.user_is_added_to_workspace():
-            self.errors.update({
-                'detail': {"email": 'Пользователь уже добавлен в это рабочее пространство'},
-                'code': {'already_added'},
-            })
-
-        if self.user_is_invited_to_workspace():
-            self.errors.update({
-                'detail': {"email": 'Пользователь уже приглашен в это рабочее пространство'},
-                'code': {'already_invited'},
-            })
-
-    def get_or_create_user(self, email: str) -> User:
-        """При добавлении пользователя в РП находит указанного пользователя или создает нового"""
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            user_data = {'email': email, 'password': None, 'is_active': False, }
-            user = User.objects.create_user(**user_data)
-
-        return user
-
-    def user_is_added_to_workspace(self) -> bool:
-        if (self.user.id, ) in self.workspace.users.all().values_list('id'):
-            return True
-
-        return False
-
-    def user_is_invited_to_workspace(self) -> bool:
-        if (self.user.id, ) in self.workspace.invited.all().values_list('id'):
-            return True
-
-        return False
 
 
 class ShiftObjects:
@@ -72,7 +14,11 @@ class ShiftObjects:
         self.instance = None
         self.objects = None
 
-    def shift(self, objects, instance, new_index, new_col=None):
+    def shift(self,
+              objects: QuerySet,
+              instance: Union[Task, Column],
+              new_index: int,
+              new_col=None) -> Union[Task, Column]:
         self.objects = objects
         self.instance = instance
 
@@ -146,7 +92,7 @@ class ShiftObjects:
 
         objs.update(index=F('index') - 1)
 
-    def _getkwargs(self, model_class):
+    def _getkwargs(self, model_class: Union[Task, Column]) -> dict:
         if model_class is Column:
             kwargs = {
                 'board': self.instance.board
@@ -160,11 +106,11 @@ class ShiftObjects:
                            ' для обьектов Task или Column')
         return kwargs
 
-    def is_new_column(self, new_col):
+    def is_new_column(self, new_col: Column) -> bool:
         if new_col is not None and self.instance.column != new_col:
             return True
         else:
             return False
 
 
-shift_objects = ShiftObjects()
+index_recalculation = ShiftObjects()

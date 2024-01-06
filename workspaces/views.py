@@ -10,11 +10,11 @@ from django.contrib.auth import get_user_model
 from django_eventstream import send_event
 
 from taskmanager.serializers import CurrentUserSerializer
-from .logic import WorkSpaceInvite, ShiftObjects
 from .models import *
 from . import serializers, mixins
 from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks, UserHasAccessStickers
-
+from logic.ws_users import ws_users
+from logic.indexing import index_recalculation
 User = get_user_model()
 
 
@@ -83,7 +83,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         wp = self.get_object()
         email = serializer.validated_data['email']
 
-        workspace, user = WorkSpaceInvite().invite_user(wp, email)
+        workspace, user = ws_users.invite_user(wp, email)
         self.get_or_create_invitation(user, workspace)
 
         return Response(data=self.serializer_class(workspace).data, status=status.HTTP_200_OK)
@@ -274,7 +274,7 @@ class ColumnViewSet(viewsets.ModelViewSet):
         При удалении колонки перезаписывает порядковые номера оставшихся колонок
         """
         instance = self.get_object()
-        ShiftObjects().delete_shift_index(instance)
+        index_recalculation.delete_shift_index(instance)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -307,7 +307,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         При удалении задачи перезаписывает порядковые номера оставшихся задач
         """
         instance = self.get_object()
-        ShiftObjects().delete_shift_index(instance)
+        index_recalculation.delete_shift_index(instance)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 

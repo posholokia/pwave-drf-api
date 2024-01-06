@@ -71,4 +71,4 @@ class AvatarUpload:
         self.avatar = file
 
 
-AvatarUploadImage = AvatarUpload()
+avatar_upload_image = AvatarUpload()
