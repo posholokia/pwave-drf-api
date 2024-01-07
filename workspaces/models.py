@@ -1,5 +1,6 @@
 from django.db import models
 from pulsewave import settings
+from pulsewave.validators import validate_sticker_color
 
 
 class WorkSpace(models.Model):
@@ -52,5 +53,5 @@ class Task(models.Model):
 
 class Sticker(models.Model):
     name = models.CharField('Название стикера', max_length=32)
-    color = models.CharField('Цвет', max_length=7)
+    color = models.CharField('Цвет', max_length=7, validators=[validate_sticker_color, ])
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='sticker')

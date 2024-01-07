@@ -307,22 +307,6 @@ class StickerListSerializer(serializers.ModelSerializer):
 
 
 class StickerCreateSerializer(StickerListSerializer):
-    default_error_messages = {
-        'invalid_color': 'Поле должно содержать HEX обозначение цвета',
-    }
-
-    def validate(self, attrs):
-        color = attrs.get('color', None)
-        color_pattern = re.compile(r'^#(?:[0-9a-fA-F]{3}){1,2}$')
-
-        if color is not None and color_pattern.match(color):
-            return attrs
-        else:
-            raise ValidationError(
-                {'color': self.default_error_messages['invalid_color'], },
-                'invalid_color'
-            )
-
     def create(self, validated_data):
         task_id = self.context['view'].kwargs['task_id']
         validated_data['task_id'] = task_id

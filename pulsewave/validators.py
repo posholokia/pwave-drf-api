@@ -1,3 +1,5 @@
+import re
+
 from django.core.exceptions import ValidationError
 import string
 
@@ -56,7 +58,7 @@ class SpecialCharacterPasswordValidator:
 
 
 def validate_name(name):
-    union_string = ('.-_'
+    union_string = ('.-_ '
                    f'{string.ascii_letters}'
                    f'{string.digits}'
                    'абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ')
@@ -64,3 +66,11 @@ def validate_name(name):
     if not all(char in union_string for char in name):
         raise ValidationError(f'Имя может содержать буквы строчные и заглавные, цифры,'
                               f' символы (.-_), русский или латинский алфавит.')
+
+
+def validate_sticker_color(name):
+    color_pattern = re.compile(r'^#(?:[0-9a-fA-F]{3}){1,2}$')
+    if not color_pattern.match(name):
+        raise ValidationError(
+            'Может содержать только HEX обозначение цвета, например: #159ACF'
+        )
