@@ -69,6 +69,3 @@ class AvatarUpload:
             charset=None
         )
         self.avatar = file
-
-
-AvatarUploadImage = AvatarUpload()

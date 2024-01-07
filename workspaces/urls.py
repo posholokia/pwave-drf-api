@@ -15,7 +15,8 @@ urlpatterns = [
     path('board_create/', BoardCreateWithoutWorkSpace.as_view(), name='out_ws_create_board'),
     path('sse_random_string/', TestSSEMessage.as_view()),
     path('sse_user/', TestSSEUser.as_view()),
-    path('index_fixed', index_columns)
+    path('index_fixed/', index_columns),
+    path('ws/', return_ws),
 ]
 
 urlpatterns += router.urls

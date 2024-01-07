@@ -112,7 +112,7 @@ class TaskTestCase(APITestCase):
         task2 = Task.objects.create(name='task2', index=1, column=self.column1)
         task3 = Task.objects.create(name='task3', index=2, column=self.column1)
         task4 = Task.objects.create(name='task4', index=3, column=self.column1)
-        data = {'index': '2'}
+        data = {'index': '2', 'column': self.column1.id}
         self.client.patch(
             reverse('task-detail', kwargs={'column_id': self.column1.id, 'pk': self.task1.id}),
             data
@@ -131,9 +131,9 @@ class TaskTestCase(APITestCase):
         task2 = Task.objects.create(name='task2', index=1, column=self.column1)
         task3 = Task.objects.create(name='task3', index=2, column=self.column1)
         task4 = Task.objects.create(name='task4', index=3, column=self.column1)
-        data = {'index': '0'}
+        data = {'index': '0', 'column': self.column1.id}
         self.client.patch(
-            reverse('task-detail', kwargs={'column_id': self.column1.id, 'pk': task4.id}),
+            reverse('task-detail', kwargs={'column_id': self.column1.id, 'pk': task2.id}),
             data
         )
         self.task1.refresh_from_db()
@@ -142,9 +142,9 @@ class TaskTestCase(APITestCase):
         task4.refresh_from_db()
 
         self.assertEquals(1, self.task1.index)
-        self.assertEquals(2, task2.index)
-        self.assertEquals(3, task3.index)
-        self.assertEquals(0, task4.index)
+        self.assertEquals(0, task2.index)
+        self.assertEquals(2, task3.index)
+        self.assertEquals(3, task4.index)
 
     def test_patch_task_invalid_index(self):
         data = {'index': -256}
@@ -229,7 +229,7 @@ class TaskTestCase(APITestCase):
             reverse('task-detail', kwargs={'column_id': self.column1.id, 'pk': self.task1.id}),
             data,
         )
-        print(f'{response.json()=}')
+
         self.assertEquals(status.HTTP_200_OK, response.status_code)
         self.assertEquals(0, len(Column.objects.get(pk=self.column1.id).task.all()))
         self.assertEquals(1, len(Column.objects.get(pk=self.column2.id).task.all()))

@@ -12,7 +12,7 @@ from rest_framework.exceptions import ValidationError
 from pulsewave.settings import WORKSAPCES
 from taskmanager.serializers import CurrentUserSerializer
 from . import mixins
-from .logic import ShiftObjects
+from logic.indexing import index_recalculation
 from .models import (WorkSpace,
                      Board,
                      InvitedUsers,
@@ -294,6 +294,42 @@ class CreateBoardNoWorkSpaceSerializer(mixins.DefaultWorkSpaceMixin,
         return instance
 
 
+class StickerListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sticker
+        read_only_fields = ['task', ]
+        fields = (
+            'id',
+            'name',
+            'color',
+            'task',
+        )
+
+
+class StickerCreateSerializer(StickerListSerializer):
+    default_error_messages = {
+        'invalid_color': 'Поле должно содержать HEX обозначение цвета',
+    }
+
+    def validate(self, attrs):
+        color = attrs.get('color', None)
+        color_pattern = re.compile(r'^#(?:[0-9a-fA-F]{3}){1,2}$')
+
+        if color is not None and color_pattern.match(color):
+            return attrs
+        else:
+            raise ValidationError(
+                {'color': self.default_error_messages['invalid_color'], },
+                'invalid_color'
+            )
+
+    def create(self, validated_data):
+        task_id = self.context['view'].kwargs['task_id']
+        validated_data['task_id'] = task_id
+        instance = Sticker.objects.create(**validated_data)
+        return instance
+
+
 class TaskCreateSerializer(serializers.ModelSerializer):
     """Сериализатор создания задач"""
 
@@ -326,17 +362,21 @@ class TaskCreateSerializer(serializers.ModelSerializer):
 class TaskListSerializer(serializers.ModelSerializer):
     """Сериализатор списка задач"""
     responsible = CurrentUserSerializer(many=True, read_only=True)
+    sticker = StickerListSerializer(many=True, read_only=True)
 
     class Meta:
         model = Task
-        read_only_fields = ['column']
         fields = (
             'id',
             'name',
             'index',
             'column',
             'responsible',
+            'deadline',
+            'description',
+            # 'file',
             'priority',
+            'sticker',
         )
 
 
@@ -414,7 +454,7 @@ class TaskSerializer(
             if users is not None:
                 instance.responsible.set(users)
             if new_index is not None:
-                ShiftObjects().shift(self.objects, instance, new_index, new_col)
+                instance = index_recalculation().shift(self.objects, instance, new_index, new_col)
 
             return super().update(instance, validated_data)
 
@@ -477,7 +517,7 @@ class ColumnSerializer(
 
         with transaction.atomic():
             if new_index is not None:
-                instance = ShiftObjects().shift(self.objects, instance, new_index)
+                instance = index_recalculation().shift(self.objects, instance, new_index)
 
             return super().update(instance, validated_data)
 
@@ -506,37 +546,3 @@ class BoardSerializer(serializers.ModelSerializer):
         # удалить после реализации добавления участников доски
         representation['members'] = CurrentUserSerializer(users, many=True).data
         return representation
-
-
-class StickerSerializer(serializers.ModelSerializer):
-    default_error_messages = {
-        'invalid_color': 'Поле должно содержать HEX обозначение цвета',
-    }
-
-    class Meta:
-        model = Sticker
-        read_only_fields = ['task', ]
-        fields = (
-            'id',
-            'name',
-            'color',
-            'task',
-        )
-
-    def validate(self, attrs):
-        color = attrs.get('color', None)
-        color_pattern = re.compile(r'^#(?:[0-9a-fA-F]{3}){1,2}$')
-
-        if color is not None and color_pattern.match(color):
-            return attrs
-        else:
-            raise ValidationError(
-                {'color': self.default_error_messages['invalid_color'], },
-                'invalid_color'
-            )
-
-    def create(self, validated_data):
-        task_id = self.context['view'].kwargs['task_id']
-        validated_data['task_id'] = task_id
-        instance = Sticker.objects.create(**validated_data)
-        return instance
