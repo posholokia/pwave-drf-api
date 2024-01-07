@@ -59,7 +59,7 @@ def validate_name(name):
     union_string = ('.-_'
                    f'{string.ascii_letters}'
                    f'{string.digits}'
-                   'абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ')
+                   ' абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ')
 
     if not all(char in union_string for char in name):
         raise ValidationError(f'Имя может содержать буквы строчные и заглавные, цифры,'
