@@ -294,6 +294,42 @@ class CreateBoardNoWorkSpaceSerializer(mixins.DefaultWorkSpaceMixin,
         return instance
 
 
+class StickerListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sticker
+        read_only_fields = ['task', ]
+        fields = (
+            'id',
+            'name',
+            'color',
+            'task',
+        )
+
+
+class StickerCreateSerializer(StickerListSerializer):
+    default_error_messages = {
+        'invalid_color': 'Поле должно содержать HEX обозначение цвета',
+    }
+
+    def validate(self, attrs):
+        color = attrs.get('color', None)
+        color_pattern = re.compile(r'^#(?:[0-9a-fA-F]{3}){1,2}$')
+
+        if color is not None and color_pattern.match(color):
+            return attrs
+        else:
+            raise ValidationError(
+                {'color': self.default_error_messages['invalid_color'], },
+                'invalid_color'
+            )
+
+    def create(self, validated_data):
+        task_id = self.context['view'].kwargs['task_id']
+        validated_data['task_id'] = task_id
+        instance = Sticker.objects.create(**validated_data)
+        return instance
+
+
 class TaskCreateSerializer(serializers.ModelSerializer):
     """Сериализатор создания задач"""
 
@@ -326,6 +362,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
 class TaskListSerializer(serializers.ModelSerializer):
     """Сериализатор списка задач"""
     responsible = CurrentUserSerializer(many=True, read_only=True)
+    sticker = StickerListSerializer(many=True, read_only=True)
 
     class Meta:
         model = Task
@@ -339,6 +376,7 @@ class TaskListSerializer(serializers.ModelSerializer):
             'description',
             # 'file',
             'priority',
+            'sticker',
         )
 
 
@@ -508,37 +546,3 @@ class BoardSerializer(serializers.ModelSerializer):
         # удалить после реализации добавления участников доски
         representation['members'] = CurrentUserSerializer(users, many=True).data
         return representation
-
-
-class StickerSerializer(serializers.ModelSerializer):
-    default_error_messages = {
-        'invalid_color': 'Поле должно содержать HEX обозначение цвета',
-    }
-
-    class Meta:
-        model = Sticker
-        read_only_fields = ['task', ]
-        fields = (
-            'id',
-            'name',
-            'color',
-            'task',
-        )
-
-    def validate(self, attrs):
-        color = attrs.get('color', None)
-        color_pattern = re.compile(r'^#(?:[0-9a-fA-F]{3}){1,2}$')
-
-        if color is not None and color_pattern.match(color):
-            return attrs
-        else:
-            raise ValidationError(
-                {'color': self.default_error_messages['invalid_color'], },
-                'invalid_color'
-            )
-
-    def create(self, validated_data):
-        task_id = self.context['view'].kwargs['task_id']
-        validated_data['task_id'] = task_id
-        instance = Sticker.objects.create(**validated_data)
-        return instance

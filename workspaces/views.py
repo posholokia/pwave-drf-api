@@ -245,8 +245,7 @@ class BoardViewSet(viewsets.ModelViewSet):
             return Response(data={'detail': 'Возможно создать не более 10 Досок'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class BoardCreateWithoutWorkSpace(mixins.DefaultWorkSpaceMixin,
-                                  generics.CreateAPIView):
+class BoardCreateWithoutWorkSpace(generics.CreateAPIView):
     """Создание доски вне РП"""
     serializer_class = serializers.CreateBoardNoWorkSpaceSerializer
     queryset = Board.objects.all()
@@ -336,7 +335,7 @@ def index_columns(request):
 
 
 class StickerViewSet(viewsets.ModelViewSet):
-    serializer_class = serializers.StickerSerializer
+    serializer_class = serializers.StickerCreateSerializer
     queryset = Sticker.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]
 

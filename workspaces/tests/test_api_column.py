@@ -24,7 +24,9 @@ class ColumnTestCase(APITestCase):
         self.ws = WorkSpace.objects.create(owner=self.user, name='WorkSpace1')
         self.ws.users.add(self.user)
         self.board = Board.objects.create(work_space=self.ws, name='Board1')
-        self.column = Column.objects.create(name='Column1', board=self.board, index=0)
+        self.col1 = Column.objects.get(board=self.board, index=0)
+        self.col2 = Column.objects.get(board=self.board, index=1)
+        self.col3 = Column.objects.get(board=self.board, index=2)
 
         self.client = APIClient()
         self.client.credentials(HTTP_AUTHORIZATION=f'JWT {user_token}')
@@ -38,17 +40,19 @@ class ColumnTestCase(APITestCase):
         self.ws2 = WorkSpace.objects.create(owner=self.user, name='WorkSpace2')
         self.ws2.users.add(self.user2)
         self.board2 = Board.objects.create(work_space=self.ws2, name='Board1 WS2')
-        self.column2 = Column.objects.create(name='Column1 Board2', board=self.board2, index=0)
+        self.col11 = Column.objects.get(board=self.board2, index=0)
+        self.col22 = Column.objects.get(board=self.board2, index=1)
+        self.col33 = Column.objects.get(board=self.board2, index=2)
 
     def test_column_create(self):
         data = {'name': 'My Column'}
         response = self.client.post(reverse('column-list', kwargs={'board_id': self.board.id}), data)
         self.assertEquals(status.HTTP_201_CREATED, response.status_code)
-        self.assertEquals(2, len(Board.objects.get(pk=self.board.id).column_board.all()))
+        self.assertEquals(4, len(Board.objects.get(pk=self.board.id).column_board.all()))
 
     def test_create_index_column(self):
         expected_indexes = [(0,), (1,), (2,), (3,), (4,), (5,), (6,), (7,), (8,), (9,), (10,)]
-        for i in range(10):
+        for i in range(8):
             data = {'name': 'My Column'}
             self.client.post(reverse('column-list', kwargs={'board_id': self.board.id}), data)
 
@@ -58,7 +62,7 @@ class ColumnTestCase(APITestCase):
     def test_get_column_list(self):
         response = self.client.get(reverse('column-list', kwargs={'board_id': self.board.id}))
         self.assertEquals(status.HTTP_200_OK, response.status_code)
-        self.assertEquals(1, len(response.data))
+        self.assertEquals(3, len(response.data))
 
     def test_get_column_list_else_board(self):
         response = self.client.get(reverse('column-list', kwargs={'board_id': self.board2.id}))
@@ -70,13 +74,13 @@ class ColumnTestCase(APITestCase):
 
     def test_get_column(self):
         response = self.client.get(
-            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.column.id})
+            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.col1.id})
         )
         self.assertEquals(status.HTTP_200_OK, response.status_code)
 
     def test_get_else_column(self):
         response = self.client.get(
-            reverse('column-detail', kwargs={'board_id': self.board2.id, 'pk': self.column2.id})
+            reverse('column-detail', kwargs={'board_id': self.board2.id, 'pk': self.col11.id})
         )
         self.assertEquals(status.HTTP_403_FORBIDDEN, response.status_code)
 
@@ -89,69 +93,60 @@ class ColumnTestCase(APITestCase):
     def test_patch_column(self):
         data = {'name': 'Changed name'}
         response = self.client.patch(
-            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.column.id}),
+            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.col1.id}),
             data
         )
         self.assertEquals(status.HTTP_200_OK, response.status_code)
-        self.column.refresh_from_db()
-        self.assertEquals('Changed name', self.column.name)
+        self.col1.refresh_from_db()
+        self.assertEquals('Changed name', self.col1.name)
 
     def test_patch_column_shift_right(self):
-        col2 = Column.objects.create(name='Column2', board=self.board, index=1)
-        col3 = Column.objects.create(name='Column3', board=self.board, index=2)
-        col4 = Column.objects.create(name='Column4', board=self.board, index=3)
-        data = {'index': '2'}
+        data = {'index': '1'}
+
         self.client.patch(
-            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.column.id}),
+            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.col1.id}),
             data
         )
-        self.column.refresh_from_db()
-        col2.refresh_from_db()
-        col3.refresh_from_db()
-        col4.refresh_from_db()
+        self.col1.refresh_from_db()
+        self.col2.refresh_from_db()
+        self.col3.refresh_from_db()
 
-        self.assertEquals(2, self.column.index)
-        self.assertEquals(0, col2.index)
-        self.assertEquals(1, col3.index)
-        self.assertEquals(3, col4.index)
+        self.assertEquals(1, self.col1.index)
+        self.assertEquals(0, self.col2.index)
+        self.assertEquals(2, self.col3.index)
 
     def test_patch_column_shift_left(self):
-        col2 = Column.objects.create(name='Column2', board=self.board, index=1)
-        col3 = Column.objects.create(name='Column3', board=self.board, index=2)
-        col4 = Column.objects.create(name='Column4', board=self.board, index=3)
         data = {'index': '0'}
         self.client.patch(
-            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': col4.id}),
+            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.col3.id}),
             data
         )
-        self.column.refresh_from_db()
-        col2.refresh_from_db()
-        col3.refresh_from_db()
-        col4.refresh_from_db()
+        self.col1.refresh_from_db()
+        self.col2.refresh_from_db()
+        self.col3.refresh_from_db()
 
-        self.assertEquals(1, self.column.index)
-        self.assertEquals(2, col2.index)
-        self.assertEquals(3, col3.index)
-        self.assertEquals(0, col4.index)
+        self.assertEquals(1, self.col1.index)
+        self.assertEquals(2, self.col2.index)
+        self.assertEquals(0, self.col3.index)
 
     def test_patch_column_invalid_index(self):
         data = {'index': -256}
         response = self.client.patch(
-            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.column.id}),
+            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.col1.id}),
             data
         )
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
 
-        data = {'index': 2}
+        data = {'index': 3}
         response = self.client.patch(
-            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.column.id}),
+            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.col1.id}),
             data
         )
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
 
         data = {'index': 'A'}
         response = self.client.patch(
-            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.column.id}),
+            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.col1.id}),
             data
         )
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
@@ -159,7 +154,7 @@ class ColumnTestCase(APITestCase):
     def test_patch_else_column(self):
         data = {'name': 'Changed name'}
         response = self.client.patch(
-            reverse('column-detail', kwargs={'board_id': self.board2.id, 'pk': self.column2.id}),
+            reverse('column-detail', kwargs={'board_id': self.board2.id, 'pk': self.col11.id}),
             data
         )
         self.assertEquals(status.HTTP_403_FORBIDDEN, response.status_code)
@@ -173,49 +168,41 @@ class ColumnTestCase(APITestCase):
         self.assertEquals(status.HTTP_404_NOT_FOUND, response.status_code)
 
     def test_put_column(self):
-        col = Column.objects.create(name='Column2', board=self.board, index=1)
         data = {
             'name': 'Changed name',
             'index': 1,
         }
         response = self.client.put(
-            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.column.id}),
+            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.col1.id}),
             data
         )
         self.assertEquals(status.HTTP_200_OK, response.status_code)
-        self.column.refresh_from_db()
-        col.refresh_from_db()
-        self.assertEquals('Changed name', self.column.name)
-        self.assertEquals(1, self.column.index)
-        self.assertEquals(0, col.index)
+        self.col1.refresh_from_db()
+        self.col2.refresh_from_db()
+        self.assertEquals('Changed name', self.col1.name)
+        self.assertEquals(1, self.col1.index)
+        self.assertEquals(0, self.col2.index)
 
     def test_delete_column(self):
-        col2 = Column.objects.create(name='Column2', board=self.board, index=1)
-        col3 = Column.objects.create(name='Column3', board=self.board, index=2)
-
         response = self.client.delete(
-            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.column.id}),
+            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.col1.id}),
         )
-        col2.refresh_from_db()
-        col3.refresh_from_db()
+        self.col2.refresh_from_db()
+        self.col3.refresh_from_db()
 
         self.assertEquals(status.HTTP_204_NO_CONTENT, response.status_code)
         self.assertEquals(2, len(Board.objects.get(pk=self.board.id).column_board.all()))
-        self.assertEquals(0, col2.index)
-        self.assertEquals(1, col3.index)
+        self.assertEquals(0, self.col2.index)
+        self.assertEquals(1, self.col3.index)
 
     def test_after_delete_indexes(self):
         board2 = Board.objects.create(work_space=self.ws, name='Board2')
-        Column.objects.create(name='col2', index=1, board=self.board)
-        Column.objects.create(name='col3', index=2, board=self.board)
-        Column.objects.create(name='col4', index=0, board=board2)
-        Column.objects.create(name='col5', index=1, board=board2)
 
         self.client.delete(
-            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.column.id}),
+            reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.col1.id}),
         )
-        col1_indexes = [(0, ), (1, ), ]
-        col2_indexes = [(0, ), (1, ), ]
+        col1_indexes = [(0, ), (1, )]
+        col2_indexes = [(0, ), (1, ), (2, )]
 
         board1_col_indexes = Column.objects.filter(board=self.board).order_by('index').values_list('index')
         board2_col_indexes = Column.objects.filter(board=board2).order_by('index').values_list('index')

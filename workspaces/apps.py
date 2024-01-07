@@ -7,3 +7,4 @@ class WorkspacesConfig(AppConfig):
 
     def ready(self):
         import workspaces.schema
+        from . import signals
