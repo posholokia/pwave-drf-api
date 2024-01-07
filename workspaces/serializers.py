@@ -414,7 +414,7 @@ class TaskSerializer(
             if users is not None:
                 instance.responsible.set(users)
             if new_index is not None:
-                instance = index_recalculation.shift(self.objects, instance, new_index, new_col)
+                instance = index_recalculation().shift(self.objects, instance, new_index, new_col)
 
             return super().update(instance, validated_data)
 
@@ -477,7 +477,7 @@ class ColumnSerializer(
 
         with transaction.atomic():
             if new_index is not None:
-                instance = index_recalculation.shift(self.objects, instance, new_index)
+                instance = index_recalculation().shift(self.objects, instance, new_index)
 
             return super().update(instance, validated_data)
 

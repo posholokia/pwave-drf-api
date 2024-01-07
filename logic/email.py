@@ -1,6 +1,6 @@
 from templated_mail.mail import BaseEmailMessage
 from pulsewave import settings
-from taskmanager.token import token_generator
+from logic.token import token_generator
 
 
 class ChangeEmail(BaseEmailMessage):

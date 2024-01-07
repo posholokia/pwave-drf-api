@@ -113,4 +113,4 @@ class ShiftObjects:
             return False
 
 
-index_recalculation = ShiftObjects()
+index_recalculation = ShiftObjects

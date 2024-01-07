@@ -1,15 +1,13 @@
-from typing import Optional, Union
+from typing import Optional
 
 from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
 from django.contrib.auth.models import AnonymousUser
-from django.db import transaction
-from django.db.models import F, Q
 
 from rest_framework.exceptions import ValidationError
 
-from taskmanager.email import InviteUserEmail
-from .models import WorkSpace, InvitedUsers, Board, Column, Task
+from logic.email import InviteUserEmail
+from .models import WorkSpace, InvitedUsers, Board, Column
 
 User = get_user_model()
 

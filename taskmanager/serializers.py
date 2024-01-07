@@ -15,8 +15,8 @@ from djoser.serializers import (SendEmailResetSerializer,
 from djoser.conf import settings as djoser_settings
 
 from workspaces.models import InvitedUsers
-from .token import token_generator
-from logic.file_upload import avatar_upload_image
+from logic.token import token_generator
+from logic.file_upload import AvatarUpload
 
 User = get_user_model()
 
@@ -49,7 +49,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
         avatar = attrs.get('avatar')
 
         if avatar:
-            file = avatar_upload_image.get_resized_img(avatar)
+            file = AvatarUpload().get_resized_img(avatar)
             attrs['avatar'] = file
 
         return attrs

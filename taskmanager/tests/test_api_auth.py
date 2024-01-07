@@ -4,7 +4,7 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from taskmanager.token import token_generator
+from logic.token import token_generator
 from taskmanager.serializers import CurrentUserSerializer
 User = get_user_model()
 

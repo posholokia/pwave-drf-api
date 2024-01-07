@@ -62,7 +62,6 @@ class Fix3(OpenApiViewExtension):
                             ),
                             partial_update=extend_schema(
                                 description='Частично обновить задачу.\n\n'
-                                            'Перемещение между колонками возможно только PUT запросом'
                             ),
                             destroy=extend_schema(description='Удалить задачу'),
                             )

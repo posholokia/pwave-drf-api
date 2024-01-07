@@ -83,7 +83,9 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         wp = self.get_object()
         email = serializer.validated_data['email']
 
-        workspace, user = ws_users.invite_user(wp, email)
+        ws_handler = ws_users(wp, email=email)
+        workspace, user = ws_handler.invite()
+
         self.get_or_create_invitation(user, workspace)
 
         return Response(data=self.serializer_class(workspace).data, status=status.HTTP_200_OK)
@@ -274,7 +276,7 @@ class ColumnViewSet(viewsets.ModelViewSet):
         При удалении колонки перезаписывает порядковые номера оставшихся колонок
         """
         instance = self.get_object()
-        index_recalculation.delete_shift_index(instance)
+        index_recalculation().delete_shift_index(instance)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -307,23 +309,23 @@ class TaskViewSet(viewsets.ModelViewSet):
         При удалении задачи перезаписывает порядковые номера оставшихся задач
         """
         instance = self.get_object()
-        index_recalculation.delete_shift_index(instance)
+        index_recalculation().delete_shift_index(instance)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def update(self, request, *args, **kwargs):
-        """Обновление задач"""
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        if getattr(instance, '_prefetched_objects_cache', None):
-            instance._prefetched_objects_cache = {}
-
-        return Response(serializer.data)
+    # def update(self, request, *args, **kwargs):
+    #     """Обновление задач"""
+    #     partial = kwargs.pop('partial', False)
+    #     instance = self.get_object()
+    #
+    #     serializer = self.get_serializer(instance, data=request.data, partial=partial)
+    #     serializer.is_valid(raise_exception=True)
+    #     self.perform_update(serializer)
+    #
+    #     if getattr(instance, '_prefetched_objects_cache', None):
+    #         instance._prefetched_objects_cache = {}
+    #
+    #     return Response(serializer.data)
 
 
 @api_view(['POST'])

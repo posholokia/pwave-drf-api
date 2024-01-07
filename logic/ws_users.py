@@ -1,17 +1,24 @@
+from typing import Optional
+
 from workspaces.exeptions import InvalidAction
 from django.contrib.auth import get_user_model
+
+from workspaces.models import WorkSpace
 
 User = get_user_model()
 
 
 class WorkSpaceUserHandler:
-    workspace = None
-    user = None
-    errors = {}
-
-    def invite_user(self, workspace, user_email):
-        self.user = self.get_or_create_user(user_email)
+    def __init__(self, workspace: WorkSpace,
+                 email: Optional[str] = None,
+                 user: Optional[User] = None):
         self.workspace = workspace
+        self.email = email
+        self.user = user
+        self.errors = {}
+
+    def invite(self):
+        self.user = self.get_or_create_user()
         self.checking_possibility_invitation()
         self.add_user_in_workspace()
         return self.workspace, self.user
@@ -38,12 +45,12 @@ class WorkSpaceUserHandler:
                 'code': {'already_invited'},
             })
 
-    def get_or_create_user(self, email: str) -> User:
+    def get_or_create_user(self) -> User:
         """При добавлении пользователя в РП находит указанного пользователя или создает нового"""
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email=self.email)
         except User.DoesNotExist:
-            user_data = {'email': email, 'password': None, 'is_active': False, }
+            user_data = {'email': self.email, 'password': None, 'is_active': False, }
             user = User.objects.create_user(**user_data)
 
         return user
@@ -61,4 +68,4 @@ class WorkSpaceUserHandler:
         return False
 
 
-ws_users = WorkSpaceUserHandler()
+ws_users = WorkSpaceUserHandler

@@ -13,7 +13,7 @@ from djoser.serializers import UidAndTokenSerializer
 
 from drf_spectacular.utils import extend_schema
 
-from taskmanager.email import ChangeEmail
+from logic.email import ChangeEmail
 from taskmanager.serializers import (ChangeEmailSerializer,
                                      ChangeEmailConfirmSerializer,
                                      PasswordResetSerializer,
