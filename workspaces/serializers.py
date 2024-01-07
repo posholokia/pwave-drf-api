@@ -329,13 +329,15 @@ class TaskListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Task
-        read_only_fields = ['column']
         fields = (
             'id',
             'name',
             'index',
             'column',
             'responsible',
+            'deadline',
+            'description',
+            # 'file',
             'priority',
         )
 

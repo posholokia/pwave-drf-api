@@ -313,20 +313,6 @@ class TaskViewSet(viewsets.ModelViewSet):
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    # def update(self, request, *args, **kwargs):
-    #     """Обновление задач"""
-    #     partial = kwargs.pop('partial', False)
-    #     instance = self.get_object()
-    #
-    #     serializer = self.get_serializer(instance, data=request.data, partial=partial)
-    #     serializer.is_valid(raise_exception=True)
-    #     self.perform_update(serializer)
-    #
-    #     if getattr(instance, '_prefetched_objects_cache', None):
-    #         instance._prefetched_objects_cache = {}
-    #
-    #     return Response(serializer.data)
-
 
 @api_view(['POST'])
 def index_columns(request):
@@ -345,6 +331,7 @@ def index_columns(request):
             column.index = c_index
             column.save()
             c_index += 1
+
     return Response(status=status.HTTP_200_OK)
 
 
@@ -359,3 +346,13 @@ class StickerViewSet(viewsets.ModelViewSet):
         task_id = self.kwargs.get('task_id', None)
         queryset = queryset.filter(task_id=task_id)
         return queryset
+
+
+@api_view(['POST'])
+def return_ws(request):
+    workspaces = WorkSpace.objects.all()
+    for ws in workspaces:
+        if ws.owner not in ws.users.all():
+            ws.users.add(ws.owner)
+
+    return Response(status=status.HTTP_200_OK)
