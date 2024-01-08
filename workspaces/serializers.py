@@ -422,6 +422,8 @@ class TaskSerializer(
                     'invalid_column'
                 )
             self.objects = new_col.task.all().order_by('index')
+        else:
+            new_col = None
 
         if new_index is not None:
             self.objects = self.index_validate(new_index, new_col)

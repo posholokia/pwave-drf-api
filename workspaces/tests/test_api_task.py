@@ -154,7 +154,14 @@ class TaskTestCase(APITestCase):
         )
         self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
 
-        data = {'index': 2}
+        data = {'index': 1}
+        response = self.client.patch(
+            reverse('task-detail', kwargs={'column_id': self.column1.id, 'pk': self.task1.id}),
+            data
+        )
+        self.assertEquals(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        data = {'index': 1, 'column': self.column1.id}
         response = self.client.patch(
             reverse('task-detail', kwargs={'column_id': self.column1.id, 'pk': self.task1.id}),
             data

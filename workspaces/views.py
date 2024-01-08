@@ -15,6 +15,8 @@ from . import serializers, mixins
 from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks, UserHasAccessStickers
 from logic.ws_users import ws_users
 from logic.indexing import index_recalculation
+from sse.decorators import sse_create
+
 User = get_user_model()
 
 
@@ -222,7 +224,8 @@ class BoardViewSet(viewsets.ModelViewSet):
                     .prefetch_related('column_board')
                     .prefetch_related('column_board__task')
                     )
-
+        # setattr(self, 'qs', queryset)
+        # print('\nQUERYSET\n')
         return queryset.order_by('id')
 
     def get_serializer_class(self):
@@ -231,8 +234,10 @@ class BoardViewSet(viewsets.ModelViewSet):
 
         return super().get_serializer_class()
 
+    # @sse_create
     def create(self, request, *args, **kwargs):
         """ Создание доски с ограничением в 10 шт"""
+        # print('\nCREATE\n')
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
