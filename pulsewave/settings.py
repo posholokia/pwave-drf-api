@@ -251,9 +251,3 @@ WORKSAPCES = {
 
 APPEND_SLASH = False
 
-# SSE
-EVENTSTREAM_STORAGE_CLASS = 'django_eventstream.storage.DjangoModelStorage'
-
-EVENTSTREAM_ALLOW_ORIGIN = 'https://front.pwave.pnpl.tech'
-EVENTSTREAM_ALLOW_CREDENTIALS = True
-EVENTSTREAM_ALLOW_HEADERS = 'Authorization'

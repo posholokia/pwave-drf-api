@@ -290,11 +290,18 @@ class ColumnViewSet(viewsets.ModelViewSet):
 
     @sse_send
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        super().create(request, *args, **kwargs)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+            status=status.HTTP_201_CREATED,
+        )
 
     @sse_send
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+        super().update(request, *args, **kwargs)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+        )
 
     def get_queryset(self):
         """Колонки отфилрованы по доске"""
@@ -303,6 +310,7 @@ class ColumnViewSet(viewsets.ModelViewSet):
         queryset = queryset.filter(board_id=board_id)
         return queryset.order_by('index')
 
+    @sse_send
     def destroy(self, request, *args, **kwargs):
         """
         При удалении колонки перезаписывает порядковые номера оставшихся колонок
@@ -310,7 +318,9 @@ class ColumnViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         index_recalculation().delete_shift_index(instance)
         self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+        )
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -338,12 +348,19 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     @sse_send
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        super().create(request, *args, **kwargs)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+            status=status.HTTP_201_CREATED,
+        )
 
     @sse_send
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
-
+        super().update(request, *args, **kwargs)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+        )
+    @sse_send
     def destroy(self, request, *args, **kwargs):
         """
         При удалении задачи перезаписывает порядковые номера оставшихся задач
@@ -351,7 +368,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         index_recalculation().delete_shift_index(instance)
         self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+        )
 
 
 @api_view(['POST'])
