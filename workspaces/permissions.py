@@ -10,7 +10,6 @@ class UserInWorkSpaceUsers(BasePermission):
         workspace_id = int(view.kwargs.get('workspace_id', None))
         if (workspace_id,) in request.user.joined_workspaces.all().only('id').values_list('id'):
             return True
-
         return False
 
 
@@ -30,7 +29,6 @@ class UserIsBoardMember(BasePermission):
                 return True
         except Board.DoesNotExist:
             return False
-
         return False
 
 

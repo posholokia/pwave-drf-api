@@ -15,7 +15,7 @@ from . import serializers, mixins
 from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks, UserHasAccessStickers
 from logic.ws_users import ws_users
 from logic.indexing import index_recalculation
-from sse.decorators import sse_create
+from sse.decorators import sse_send
 
 User = get_user_model()
 
@@ -211,21 +211,24 @@ class TestSSEUser(generics.CreateAPIView):
 class BoardViewSet(viewsets.ModelViewSet):
     """Представление досок"""
     serializer_class = serializers.BoardSerializer
-    queryset = Board.objects.all().prefetch_related('column_board', 'members')
+    queryset = Board.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserInWorkSpaceUsers]
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        user = self.request.user
         workspace = self.kwargs.get('workspace_id')
-        queryset = (queryset
-                    .filter(work_space__users=user)
-                    .filter(work_space_id=workspace)
-                    .prefetch_related('column_board')
-                    .prefetch_related('column_board__task')
-                    )
-        # setattr(self, 'qs', queryset)
-        # print('\nQUERYSET\n')
+        queryset = queryset.filter(work_space_id=workspace)
+
+        if self.action == 'retrieve':
+            queryset = (queryset
+                        .prefetch_related('work_space__users')
+                        .prefetch_related('members')
+                        .prefetch_related('column_board')
+                        .prefetch_related('column_board__task')
+                        .prefetch_related('column_board__task__responsible')
+                        .prefetch_related('column_board__task__sticker')
+                        )
+
         return queryset.order_by('id')
 
     def get_serializer_class(self):
@@ -234,10 +237,9 @@ class BoardViewSet(viewsets.ModelViewSet):
 
         return super().get_serializer_class()
 
-    # @sse_create
+    @sse_send
     def create(self, request, *args, **kwargs):
         """ Создание доски с ограничением в 10 шт"""
-        # print('\nCREATE\n')
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -245,9 +247,27 @@ class BoardViewSet(viewsets.ModelViewSet):
         if Board.objects.filter(work_space_id=workspace).count() < 10:
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            return Response(
+                data=self.serializer_class(self.get_queryset(), many=True).data,
+                status=status.HTTP_201_CREATED,
+                headers=headers
+            )
         else:
             return Response(data={'detail': 'Возможно создать не более 10 Досок'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @sse_send
+    def update(self, request, *args, **kwargs):
+        super().update(request, *args, **kwargs)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+        )
+
+    @sse_send
+    def destroy(self, request, *args, **kwargs):
+        super().destroy(request, *args, **kwargs)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+        )
 
 
 class BoardCreateWithoutWorkSpace(generics.CreateAPIView):
@@ -268,6 +288,21 @@ class ColumnViewSet(viewsets.ModelViewSet):
 
         return super().get_serializer_class()
 
+    @sse_send
+    def create(self, request, *args, **kwargs):
+        super().create(request, *args, **kwargs)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @sse_send
+    def update(self, request, *args, **kwargs):
+        super().update(request, *args, **kwargs)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+        )
+
     def get_queryset(self):
         """Колонки отфилрованы по доске"""
         queryset = super().get_queryset()
@@ -275,6 +310,7 @@ class ColumnViewSet(viewsets.ModelViewSet):
         queryset = queryset.filter(board_id=board_id)
         return queryset.order_by('index')
 
+    @sse_send
     def destroy(self, request, *args, **kwargs):
         """
         При удалении колонки перезаписывает порядковые номера оставшихся колонок
@@ -282,7 +318,9 @@ class ColumnViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         index_recalculation().delete_shift_index(instance)
         self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+        )
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -308,6 +346,21 @@ class TaskViewSet(viewsets.ModelViewSet):
         setattr(self, 'queryset', queryset)
         return queryset.order_by('index')
 
+    @sse_send
+    def create(self, request, *args, **kwargs):
+        super().create(request, *args, **kwargs)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @sse_send
+    def update(self, request, *args, **kwargs):
+        super().update(request, *args, **kwargs)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+        )
+    @sse_send
     def destroy(self, request, *args, **kwargs):
         """
         При удалении задачи перезаписывает порядковые номера оставшихся задач
@@ -315,7 +368,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         index_recalculation().delete_shift_index(instance)
         self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            data=self.serializer_class(self.get_queryset(), many=True).data,
+        )
 
 
 @api_view(['POST'])
@@ -351,12 +406,19 @@ class StickerViewSet(viewsets.ModelViewSet):
         queryset = queryset.filter(task_id=task_id)
         return queryset
 
+    @sse_send
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
 
-@api_view(['POST'])
-def return_ws(request):
-    workspaces = WorkSpace.objects.all()
-    for ws in workspaces:
-        if ws.owner not in ws.users.all():
-            ws.users.add(ws.owner)
+    @sse_send
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
 
-    return Response(status=status.HTTP_200_OK)
+# @api_view(['POST'])
+# def return_ws(request):
+#     workspaces = WorkSpace.objects.all()
+#     for ws in workspaces:
+#         if ws.owner not in ws.users.all():
+#             ws.users.add(ws.owner)
+#
+#     return Response(status=status.HTTP_200_OK)

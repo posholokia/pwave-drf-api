@@ -8,5 +8,6 @@ User = get_user_model()
 
 
 @receiver(post_save, sender=User)
-def delete_user_task(sender, instance, **kwargs):
-    delete_inactive_user.apply_async((instance.id,), countdown=24*60*60)
+def delete_user_task(sender, instance, created, **kwargs):
+    if created:
+        delete_inactive_user.apply_async((instance.id,), countdown=24*60*60)

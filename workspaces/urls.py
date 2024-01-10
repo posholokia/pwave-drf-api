@@ -16,7 +16,7 @@ urlpatterns = [
     path('sse_random_string/', TestSSEMessage.as_view()),
     path('sse_user/', TestSSEUser.as_view()),
     path('index_fixed/', index_columns),
-    path('ws/', return_ws),
+    # path('ws/', return_ws),
 ]
 
 urlpatterns += router.urls

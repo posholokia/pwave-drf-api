@@ -21,6 +21,13 @@ application = ProtocolTypeRouter({
         path('events/', AuthMiddlewareStack(
             URLRouter(django_eventstream.routing.urlpatterns)
         ), {'channels': ['test', ], }),
+        path('events/workspace/',
+             URLRouter(django_eventstream.routing.urlpatterns)
+             , {'channels': ['workspace', ], }),
+        path('events/board/',
+             URLRouter(django_eventstream.routing.urlpatterns)
+             , {'channels': ['boards', 'column', 'task', ], }),
+        # , {'format-channels': ['workspace-{ws_id}', ], }),
         re_path(r'', get_asgi_application()),
     ]),
 })
