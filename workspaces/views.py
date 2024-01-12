@@ -247,27 +247,30 @@ class BoardViewSet(viewsets.ModelViewSet):
         if Board.objects.filter(work_space_id=workspace).count() < 10:
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
-            return Response(
-                data=self.serializer_class(self.get_queryset(), many=True).data,
-                status=status.HTTP_201_CREATED,
-                headers=headers
-            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # return Response(
+            #     data=self.serializer_class(self.get_queryset(), many=True).data,
+            #     status=status.HTTP_201_CREATED,
+            #     headers=headers
+            # )
         else:
             return Response(data={'detail': 'Возможно создать не более 10 Досок'}, status=status.HTTP_400_BAD_REQUEST)
 
     @sse_send
     def update(self, request, *args, **kwargs):
-        super().update(request, *args, **kwargs)
-        return Response(
-            data=self.serializer_class(self.get_queryset(), many=True).data,
-        )
+        return super().update(request, *args, **kwargs)
+        # super().update(request, *args, **kwargs)
+        # return Response(
+        #     data=self.serializer_class(self.get_queryset(), many=True).data,
+        # )
 
     @sse_send
     def destroy(self, request, *args, **kwargs):
-        super().destroy(request, *args, **kwargs)
-        return Response(
-            data=self.serializer_class(self.get_queryset(), many=True).data,
-        )
+        return super().destroy(request, *args, **kwargs)
+        # super().destroy(request, *args, **kwargs)
+        # return Response(
+        #     data=self.serializer_class(self.get_queryset(), many=True).data,
+        # )
 
 
 class BoardCreateWithoutWorkSpace(generics.CreateAPIView):
@@ -290,18 +293,20 @@ class ColumnViewSet(viewsets.ModelViewSet):
 
     @sse_send
     def create(self, request, *args, **kwargs):
-        super().create(request, *args, **kwargs)
-        return Response(
-            data=self.serializer_class(self.get_queryset(), many=True).data,
-            status=status.HTTP_201_CREATED,
-        )
+        return super().create(request, *args, **kwargs)
+        # super().create(request, *args, **kwargs)
+        # return Response(
+        #     data=self.serializer_class(self.get_queryset(), many=True).data,
+        #     status=status.HTTP_201_CREATED,
+        # )
 
     @sse_send
     def update(self, request, *args, **kwargs):
-        super().update(request, *args, **kwargs)
-        return Response(
-            data=self.serializer_class(self.get_queryset(), many=True).data,
-        )
+        return super().update(request, *args, **kwargs)
+        # super().update(request, *args, **kwargs)
+        # return Response(
+        #     data=self.serializer_class(self.get_queryset(), many=True).data,
+        # )
 
     def get_queryset(self):
         """Колонки отфилрованы по доске"""
@@ -318,9 +323,10 @@ class ColumnViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         index_recalculation().delete_shift_index(instance)
         self.perform_destroy(instance)
-        return Response(
-            data=self.serializer_class(self.get_queryset(), many=True).data,
-        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+        # return Response(
+        #     data=self.serializer_class(self.get_queryset(), many=True).data,
+        # )
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -348,18 +354,21 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     @sse_send
     def create(self, request, *args, **kwargs):
-        super().create(request, *args, **kwargs)
-        return Response(
-            data=self.serializer_class(self.get_queryset(), many=True).data,
-            status=status.HTTP_201_CREATED,
-        )
+        return super().create(request, *args, **kwargs)
+        # super().create(request, *args, **kwargs)
+        # return Response(
+        #     data=self.serializer_class(self.get_queryset(), many=True).data,
+        #     status=status.HTTP_201_CREATED,
+        # )
 
     @sse_send
     def update(self, request, *args, **kwargs):
-        super().update(request, *args, **kwargs)
-        return Response(
-            data=self.serializer_class(self.get_queryset(), many=True).data,
-        )
+        return super().update(request, *args, **kwargs)
+        # super().update(request, *args, **kwargs)
+        # return Response(
+        #     data=self.serializer_class(self.get_queryset(), many=True).data,
+        # )
+
     @sse_send
     def destroy(self, request, *args, **kwargs):
         """
@@ -368,9 +377,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         index_recalculation().delete_shift_index(instance)
         self.perform_destroy(instance)
-        return Response(
-            data=self.serializer_class(self.get_queryset(), many=True).data,
-        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+        # return Response(
+        #     data=self.serializer_class(self.get_queryset(), many=True).data,
+        # )
 
 
 @api_view(['POST'])
