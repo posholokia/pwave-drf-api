@@ -203,9 +203,8 @@ class BoardViewSet(viewsets.ModelViewSet):
         workspace = self.kwargs.get('workspace_id')
         queryset = queryset.filter(work_space_id=workspace)
 
-        if self.action == 'retrieve':
+        if self.action == 'retrieve' or self.action == 'list':
             queryset = (queryset
-                        .prefetch_related('work_space__users')
                         .prefetch_related('members')
                         .prefetch_related('column_board')
                         .prefetch_related('column_board__task')
@@ -269,6 +268,19 @@ class ColumnViewSet(viewsets.ModelViewSet):
     queryset = Column.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserIsBoardMember]
 
+    def get_queryset(self):
+        """Колонки отфилрованы по доске"""
+        queryset = super().get_queryset()
+        board_id = self.kwargs.get('board_id', None)
+        queryset = (queryset
+                    .filter(board_id=board_id)
+                    .prefetch_related('task')
+                    .prefetch_related('task__responsible')
+                    .prefetch_related('task__sticker')
+                    )
+
+        return queryset.order_by('index')
+
     def get_serializer_class(self):
         if self.action == 'create':
             return serializers.CreateColumnSerializer
@@ -292,12 +304,6 @@ class ColumnViewSet(viewsets.ModelViewSet):
         #     data=self.serializer_class(self.get_queryset(), many=True).data,
         # )
 
-    def get_queryset(self):
-        """Колонки отфилрованы по доске"""
-        queryset = super().get_queryset()
-        board_id = self.kwargs.get('board_id', None)
-        queryset = queryset.filter(board_id=board_id)
-        return queryset.order_by('index')
 
     @sse_send
     def destroy(self, request, *args, **kwargs):
@@ -321,6 +327,8 @@ class TaskViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return serializers.TaskCreateSerializer
+        elif self.action == 'list' or self.action == 'retrieve':
+            return serializers.TaskListSerializer
 
         return super().get_serializer_class()
 
@@ -330,10 +338,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         column_id = self.kwargs.get('column_id', None)
         queryset = (queryset
                     .filter(column_id=column_id)
-                    .select_related('column')
-                    .select_related('column__board')
+                    .prefetch_related('responsible')
                     )
-        setattr(self, 'queryset', queryset)
+        # setattr(self, 'queryset', queryset)
         return queryset.order_by('index')
 
     @sse_send
