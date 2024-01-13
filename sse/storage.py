@@ -10,7 +10,11 @@ EVENT_TIMEOUT = 60 * 24
 
 class RedisStorage(StorageBase):
     def __init__(self):
-        self.redis_conn = redis.StrictRedis(host=f'{os.getenv("REDIS_HOST")}', port=6379, db=1)
+        self.redis_conn = redis.StrictRedis(
+            host=f'{os.getenv("REDIS_HOST")}',
+            port=6379,
+            db=1
+        )
 
     def append_event(self, channel, event_type, data):
         current_id = self.get_current_id(channel)

@@ -9,12 +9,15 @@ from django.contrib.auth import get_user_model
 
 from django_eventstream import send_event
 
-from taskmanager.serializers import CurrentUserSerializer
 from .models import *
 from . import serializers, mixins
 from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks, UserHasAccessStickers
+
+from taskmanager.serializers import CurrentUserSerializer
+
 from logic.ws_users import ws_users
 from logic.indexing import index_recalculation
+
 from sse.decorators import sse_send
 
 User = get_user_model()
@@ -79,16 +82,16 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         Пользователь сперва добавляется в список приглашенных: invited.
         Затем отправляется ссылка на почту с приглашением.
         """
+
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        wp = self.get_object()
+        ws = self.get_object()
         email = serializer.validated_data['email']
 
-        ws_handler = ws_users(wp, email=email)
-        workspace, user = ws_handler.invite()
-
-        self.get_or_create_invitation(user, workspace)
+        ws_handler = ws_users(ws, email=email)
+        workspace = ws_handler.invite(request)
 
         return Response(data=self.serializer_class(workspace).data, status=status.HTTP_200_OK)
 
@@ -100,43 +103,31 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        self.user = serializer.invitation.user
-        self.workspace = serializer.invitation.workspace
+        user = serializer.invitation.user
+        workspace = serializer.invitation.workspace
 
-        if not self.check_auth_user(self.user):
+        # если по ссылке перешел другой залогиненый пользователь
+        # необходимо вернуть 403 ответ, чтобы пользователь перелогинился
+        if not self.check_auth_user(user):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        # если пользователь уже добавлен в РП, но не закончил регистрацию, нужно вернуть ответ,
-        # по которому его направят на установку пароля
-        data = serializers.InviteUserSerializer(serializer.invitation).data
-        if not self.user.has_usable_password() and self.user_is_added_to_workspace():
-            return Response(data=data, status=status.HTTP_200_OK)
-
-        self.workspace.invited.remove(self.user)
-        self.workspace.users.add(self.user)
-
-        if self.user.has_usable_password():
-            serializer.invitation.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        return Response(data=data, status=status.HTTP_200_OK)
+        ws_handler = ws_users(workspace, user=user)
+        response = ws_handler.confirm_invite(serializer.invitation)
+        return response
 
     @action(['post'], detail=True, url_name='kick_user')
     def kick_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user_id = serializer.data['user_id']
+        # если РП не существует, запрос не будет выполнен на уровне permissions
+        # можно безболезненно использовать get()
+        workspace = self.get_object()
 
-        self.workspace = WorkSpace.objects.get(pk=kwargs['pk'])
+        ws_handler = ws_users(workspace, user=serializer.user)
+        ws_handler.kick_user()
 
-        if user_id == self.workspace.owner_id:
-            return Response(data={'detail': 'Нельзя удалить владельца РП'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        self.kick_from_workspace(user_id)
-
-        workspace_data = self.serializer_class(self.workspace).data
+        workspace_data = self.serializer_class(workspace).data
         return Response(data=workspace_data, status=status.HTTP_200_OK)
 
     @action(['post'], detail=True, url_name='resend_invite')
@@ -144,22 +135,15 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.user
-        workspace = serializer.workspace
-
-        self.get_or_create_invitation(user, workspace)
+        ws_handler = ws_users(serializer.workspace, user=serializer.user)
+        ws_handler.resend_invite(request)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def kick_from_workspace(self, user_id):
-        self.workspace.users.remove(user_id)
-        self.workspace.invited.remove(user_id)
-        InvitedUsers.objects.filter(user_id=user_id).delete()
-
-    def get_object(self):
-        obj = super().get_object()
-        setattr(self, 'workspace', obj)
-        return obj
+    # def get_object(self):
+    #     obj = super().get_object()
+    #     setattr(self, 'workspace', obj)
+    #     return obj
 
 
 class UserList(generics.ListAPIView):
@@ -237,7 +221,7 @@ class BoardViewSet(viewsets.ModelViewSet):
 
         return super().get_serializer_class()
 
-    @sse_send
+    # @sse_send
     def create(self, request, *args, **kwargs):
         """ Создание доски с ограничением в 10 шт"""
         serializer = self.get_serializer(data=request.data)
@@ -256,7 +240,7 @@ class BoardViewSet(viewsets.ModelViewSet):
         else:
             return Response(data={'detail': 'Возможно создать не более 10 Досок'}, status=status.HTTP_400_BAD_REQUEST)
 
-    @sse_send
+    # @sse_send
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
         # super().update(request, *args, **kwargs)
@@ -264,7 +248,7 @@ class BoardViewSet(viewsets.ModelViewSet):
         #     data=self.serializer_class(self.get_queryset(), many=True).data,
         # )
 
-    @sse_send
+    # @sse_send
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
         # super().destroy(request, *args, **kwargs)
