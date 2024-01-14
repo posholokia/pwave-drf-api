@@ -5,8 +5,11 @@ from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
 
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_cookie, vary_on_headers
 from django.contrib.auth import get_user_model
-
+from django.core.cache import caches
 from django_eventstream import send_event
 
 from .models import *
@@ -61,6 +64,12 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
                     )
         return queryset.order_by('created_at')  # вывод РП сортируется по дате создания
 
+    # @method_decorator(cache_page(60))
+    # @method_decorator(vary_on_headers('Authorization'))
+    def list(self, request, *args, **kwargs):
+        print(f'\n{caches.__dict__=}\n')
+        return super().list(request, *args, **kwargs)
+
     def create(self, request, *args, **kwargs):
         """
         Создание рабочего пространства.
@@ -68,7 +77,6 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         self.perform_create(serializer)
         queryset = self.get_queryset()
         serialized_data = self.serializer_class(queryset, many=True).data
@@ -82,8 +90,6 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         Пользователь сперва добавляется в список приглашенных: invited.
         Затем отправляется ссылка на почту с приглашением.
         """
-
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -220,7 +226,7 @@ class BoardViewSet(viewsets.ModelViewSet):
 
         return super().get_serializer_class()
 
-    # @sse_send
+    @sse_send
     def create(self, request, *args, **kwargs):
         """ Создание доски с ограничением в 10 шт"""
         serializer = self.get_serializer(data=request.data)
@@ -239,7 +245,7 @@ class BoardViewSet(viewsets.ModelViewSet):
         else:
             return Response(data={'detail': 'Возможно создать не более 10 Досок'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # @sse_send
+    @sse_send
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
         # super().update(request, *args, **kwargs)
@@ -247,7 +253,7 @@ class BoardViewSet(viewsets.ModelViewSet):
         #     data=self.serializer_class(self.get_queryset(), many=True).data,
         # )
 
-    # @sse_send
+    @sse_send
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
         # super().destroy(request, *args, **kwargs)
