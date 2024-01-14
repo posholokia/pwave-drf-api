@@ -5,16 +5,22 @@ from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
 
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_cookie, vary_on_headers
 from django.contrib.auth import get_user_model
-
+from django.core.cache import caches
 from django_eventstream import send_event
 
-from taskmanager.serializers import CurrentUserSerializer
 from .models import *
 from . import serializers, mixins
 from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks, UserHasAccessStickers
+
+from taskmanager.serializers import CurrentUserSerializer
+
 from logic.ws_users import ws_users
 from logic.indexing import index_recalculation
+
 from sse.decorators import sse_send
 
 User = get_user_model()
@@ -58,6 +64,12 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
                     )
         return queryset.order_by('created_at')  # вывод РП сортируется по дате создания
 
+    # @method_decorator(cache_page(60))
+    # @method_decorator(vary_on_headers('Authorization'))
+    def list(self, request, *args, **kwargs):
+        print(f'\n{caches.__dict__=}\n')
+        return super().list(request, *args, **kwargs)
+
     def create(self, request, *args, **kwargs):
         """
         Создание рабочего пространства.
@@ -65,7 +77,6 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         self.perform_create(serializer)
         queryset = self.get_queryset()
         serialized_data = self.serializer_class(queryset, many=True).data
@@ -82,13 +93,11 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        wp = self.get_object()
+        ws = self.get_object()
         email = serializer.validated_data['email']
 
-        ws_handler = ws_users(wp, email=email)
-        workspace, user = ws_handler.invite()
-
-        self.get_or_create_invitation(user, workspace)
+        ws_handler = ws_users(ws, email=email)
+        workspace = ws_handler.invite(request)
 
         return Response(data=self.serializer_class(workspace).data, status=status.HTTP_200_OK)
 
@@ -100,43 +109,31 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        self.user = serializer.invitation.user
-        self.workspace = serializer.invitation.workspace
+        user = serializer.invitation.user
+        workspace = serializer.invitation.workspace
 
-        if not self.check_auth_user(self.user):
+        # если по ссылке перешел другой залогиненый пользователь
+        # необходимо вернуть 403 ответ, чтобы пользователь перелогинился
+        if not self.check_auth_user(user):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        # если пользователь уже добавлен в РП, но не закончил регистрацию, нужно вернуть ответ,
-        # по которому его направят на установку пароля
-        data = serializers.InviteUserSerializer(serializer.invitation).data
-        if not self.user.has_usable_password() and self.user_is_added_to_workspace():
-            return Response(data=data, status=status.HTTP_200_OK)
-
-        self.workspace.invited.remove(self.user)
-        self.workspace.users.add(self.user)
-
-        if self.user.has_usable_password():
-            serializer.invitation.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        return Response(data=data, status=status.HTTP_200_OK)
+        ws_handler = ws_users(workspace, user=user)
+        response = ws_handler.confirm_invite(serializer.invitation)
+        return response
 
     @action(['post'], detail=True, url_name='kick_user')
     def kick_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user_id = serializer.data['user_id']
+        # если РП не существует, запрос не будет выполнен на уровне permissions
+        # можно безболезненно использовать get()
+        workspace = self.get_object()
 
-        self.workspace = WorkSpace.objects.get(pk=kwargs['pk'])
+        ws_handler = ws_users(workspace, user=serializer.user)
+        ws_handler.kick_user()
 
-        if user_id == self.workspace.owner_id:
-            return Response(data={'detail': 'Нельзя удалить владельца РП'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        self.kick_from_workspace(user_id)
-
-        workspace_data = self.serializer_class(self.workspace).data
+        workspace_data = self.serializer_class(workspace).data
         return Response(data=workspace_data, status=status.HTTP_200_OK)
 
     @action(['post'], detail=True, url_name='resend_invite')
@@ -144,22 +141,15 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.user
-        workspace = serializer.workspace
-
-        self.get_or_create_invitation(user, workspace)
+        ws_handler = ws_users(serializer.workspace, user=serializer.user)
+        ws_handler.resend_invite(request)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def kick_from_workspace(self, user_id):
-        self.workspace.users.remove(user_id)
-        self.workspace.invited.remove(user_id)
-        InvitedUsers.objects.filter(user_id=user_id).delete()
-
-    def get_object(self):
-        obj = super().get_object()
-        setattr(self, 'workspace', obj)
-        return obj
+    # def get_object(self):
+    #     obj = super().get_object()
+    #     setattr(self, 'workspace', obj)
+    #     return obj
 
 
 class UserList(generics.ListAPIView):
@@ -219,9 +209,8 @@ class BoardViewSet(viewsets.ModelViewSet):
         workspace = self.kwargs.get('workspace_id')
         queryset = queryset.filter(work_space_id=workspace)
 
-        if self.action == 'retrieve':
+        if self.action == 'retrieve' or self.action == 'list':
             queryset = (queryset
-                        .prefetch_related('work_space__users')
                         .prefetch_related('members')
                         .prefetch_related('column_board')
                         .prefetch_related('column_board__task')
@@ -285,6 +274,19 @@ class ColumnViewSet(viewsets.ModelViewSet):
     queryset = Column.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserIsBoardMember]
 
+    def get_queryset(self):
+        """Колонки отфилрованы по доске"""
+        queryset = super().get_queryset()
+        board_id = self.kwargs.get('board_id', None)
+        queryset = (queryset
+                    .filter(board_id=board_id)
+                    .prefetch_related('task')
+                    .prefetch_related('task__responsible')
+                    .prefetch_related('task__sticker')
+                    )
+
+        return queryset.order_by('index')
+
     def get_serializer_class(self):
         if self.action == 'create':
             return serializers.CreateColumnSerializer
@@ -308,12 +310,6 @@ class ColumnViewSet(viewsets.ModelViewSet):
         #     data=self.serializer_class(self.get_queryset(), many=True).data,
         # )
 
-    def get_queryset(self):
-        """Колонки отфилрованы по доске"""
-        queryset = super().get_queryset()
-        board_id = self.kwargs.get('board_id', None)
-        queryset = queryset.filter(board_id=board_id)
-        return queryset.order_by('index')
 
     @sse_send
     def destroy(self, request, *args, **kwargs):
@@ -337,6 +333,8 @@ class TaskViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return serializers.TaskCreateSerializer
+        elif self.action == 'list' or self.action == 'retrieve':
+            return serializers.TaskListSerializer
 
         return super().get_serializer_class()
 
@@ -346,10 +344,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         column_id = self.kwargs.get('column_id', None)
         queryset = (queryset
                     .filter(column_id=column_id)
-                    .select_related('column')
-                    .select_related('column__board')
+                    .prefetch_related('responsible')
                     )
-        setattr(self, 'queryset', queryset)
+        # setattr(self, 'queryset', queryset)
         return queryset.order_by('index')
 
     @sse_send

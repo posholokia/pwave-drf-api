@@ -462,7 +462,6 @@ class CreateColumnSerializer(serializers.ModelSerializer):
 
         validated_data['index'] = number_of_columns
         validated_data['board_id'] = board_pk
-
         instance = Column.objects.create(**validated_data)
         return instance
 
