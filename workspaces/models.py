@@ -55,3 +55,10 @@ class Sticker(models.Model):
     name = models.CharField('Название стикера', max_length=32)
     color = models.CharField('Цвет', max_length=7, validators=[validate_sticker_color, ])
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='sticker')
+
+
+class Comment(models.Model):
+    comment_task = models.ForeignKey(Task, related_name='comment_task', on_delete=models.CASCADE)
+    comment_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='comment_user', on_delete=models.CASCADE)
+    comment = models.CharField('Комментарий', max_length=2048, blank=True)
+    created_data = models.DateTimeField('Время создания комментария', auto_now_add=True)
