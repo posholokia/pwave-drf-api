@@ -539,6 +539,11 @@ class CommentSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Comment
-        field = '__all__'
+        fields = (
+            'comment_task',
+            'comment_user',
+            'comment',
+            'created_data'
+        )
 
 
