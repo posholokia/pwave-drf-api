@@ -18,7 +18,7 @@ from .models import (WorkSpace,
                      InvitedUsers,
                      Task,
                      Column,
-                     Sticker)
+                     Sticker, Comment)
 
 User = get_user_model()
 
@@ -531,3 +531,14 @@ class BoardSerializer(serializers.ModelSerializer):
         # удалить после реализации добавления участников доски
         representation['members'] = CurrentUserSerializer(users, many=True).data
         return representation
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор комментариев
+    """
+    class Meta:
+        model = Comment
+        field = '__all__'
+
+

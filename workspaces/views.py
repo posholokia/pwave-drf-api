@@ -380,6 +380,12 @@ class TaskViewSet(viewsets.ModelViewSet):
         # )
 
 
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = serializers.CommentSerializer
+    queryset = Comment.objects.all()
+
+
+
 @api_view(['POST'])
 def index_columns(request):
     boards = Board.objects.all()
