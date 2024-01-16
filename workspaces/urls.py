@@ -8,7 +8,7 @@ router.register(r'workspace/(?P<workspace_id>\d+)/boards', BoardViewSet, basenam
 router.register(r'boards/(?P<board_id>\d+)/column', ColumnViewSet, basename='column')
 router.register(r'column/(?P<column_id>\d+)/task', TaskViewSet, basename='task')
 router.register(r'task/(?P<task_id>\d+)/sticker', StickerViewSet, basename='sticker')
-router.register(r'task/(?P<task_id>\d+)/comment', CommentViewSet, basename='comment')
+router.register(r'task/(?P<task_id>\d+)/comment', CommentListCreateViewSet, basename='comment')
 
 
 

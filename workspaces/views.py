@@ -11,6 +11,7 @@ from django.views.decorators.vary import vary_on_cookie, vary_on_headers
 from django.contrib.auth import get_user_model
 from django.core.cache import caches
 from django_eventstream import send_event
+from rest_framework.viewsets import GenericViewSet
 
 from .models import *
 from . import serializers, mixins
@@ -380,9 +381,26 @@ class TaskViewSet(viewsets.ModelViewSet):
         # )
 
 
-class CommentViewSet(viewsets.ModelViewSet):
+class CommentDeleteViewSet(viewsets.mixins.DestroyModelMixin, GenericViewSet):
     serializer_class = serializers.CommentSerializer
     queryset = Comment.objects.all()
+    """
+    Удаление комментария после проверки на авторство.
+    """
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CommentListCreateViewSet(viewsets.mixins.ListModelMixin, viewsets.mixins.CreateModelMixin, GenericViewSet):
+    serializer_class = serializers.CommentSerializer
+    queryset = Comment.objects.all()
+    permission_classes = UserIsBoardMember
+
+
+
 
 
 
