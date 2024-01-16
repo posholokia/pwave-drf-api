@@ -8,7 +8,10 @@ class UserInWorkSpaceUsers(BasePermission):
 
     def has_permission(self, request, view):
         workspace_id = int(view.kwargs.get('workspace_id', None))
-        if (workspace_id,) in request.user.joined_workspaces.all().only('id').values_list('id'):
+        if (workspace_id,) in (request.user.joined_workspaces.all()
+                               .only('id')
+                               .values_list('id')
+                               ):
             print(f'\nEND PERM\n')
             return True
         print(f'\nEND PERM\n')

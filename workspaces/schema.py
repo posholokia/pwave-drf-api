@@ -15,10 +15,11 @@ class Fix1(OpenApiViewExtension):
     def view_replacement(self):
         class Fixed(self.target_class):
             """Список всех пользователей для поиска.\n\n
-               Поиск ведется по почте, начало передается через query параметр users.\n\n
-               Например: /api/user_list/?users=foobar\n\n
-               Можно передать дополнительный параметр workspace для исклчения юзеров, уже
-               приглашенных/присутствующих в этом РП: /api/user_list/?users=foo&workspace=17"""
+            Поиск ведется по почте, начало передается через query параметр users.\n\n
+            Например: /api/user_list/?users=foobar\n\n
+            Для вывода флага приглашен/добавлен необходимо передать параметр\n\n
+            workspace, например: /api/user_list/?users=foobar&workspace=1"""
+
             @extend_schema(parameters=[
                 OpenApiParameter("users", OpenApiTypes.STR),
                 OpenApiParameter("workspace", OpenApiTypes.INT),
@@ -200,5 +201,26 @@ class Fix9(OpenApiViewExtension):
                             )
         class Fixed(self.target_class):
             pass
+
+        return Fixed
+
+
+class Fix10(OpenApiViewExtension):
+    target_class = 'workspaces.views.BoardUserList'
+
+    def view_replacement(self):
+        class Fixed(self.target_class):
+            """
+            Список всех пользователей доски для назначения ответственных.\n\n
+            Поиск ведется по id РП, query параметр workspace.\n\n
+            Например: /api/user_list/?workspace=1
+            """
+
+            @extend_schema(parameters=[
+                # OpenApiParameter("users", OpenApiTypes.STR),
+                OpenApiParameter("workspace", OpenApiTypes.INT),
+            ])
+            def get(self, request, *args, **kwargs):
+                return super().get(request, *args, **kwargs)
 
         return Fixed
