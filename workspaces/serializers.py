@@ -2,6 +2,7 @@ import re
 
 from datetime import timedelta
 
+from cacheops import cached_as
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -193,16 +194,44 @@ class UserListSerializer(serializers.ModelSerializer):
         return obj.representation_name()
 
     def get_added(self, obj):
+        """
+        РП с пользователями кэшируется, чтобы не спамить запросы
+        к БД при проверке является пользователь участником,
+        подгружаем РП из БД, оно поместится в кэш и сверяем данные с кешем
+        """
         workspace_id = self.context.get('view').request.query_params.get('workspace')
-        if obj.joined_workspaces.filter(id=workspace_id).exists():
+        ws_users = (WorkSpace.objects
+                    .cache()
+                    .filter(id=workspace_id)
+                    .prefetch_related('users')
+                    .values_list('users__id')
+                    )
+        if (obj.id, ) in ws_users:
             return True
         return False
+        # это плохо, на каждого найденного юзера идет запрос к БД
+        # if obj.joined_workspaces.filter(id=workspace_id).exists():
+        #     return True
+        # return False
 
     def get_invited(self, obj):
+        """
+        Аналогично с get_added().
+        """
         workspace_id = self.context.get('view').request.query_params.get('workspace')
-        if obj.invited_to_workspaces.filter(id=workspace_id).exists():
+        ws_users = (WorkSpace.objects
+                    .cache()
+                    .filter(id=workspace_id)
+                    .prefetch_related('invited')
+                    .values_list('invited__id')
+                    )
+        if (obj.id,) in ws_users:
             return True
         return False
+        # это плохо, на каждого найденного юзера идет запрос к БД
+        # if obj.invited_to_workspaces.filter(id=workspace_id).exists():
+        #     return True
+        # return False
 
 
 class UserIDSerializer(serializers.Serializer):
@@ -316,6 +345,7 @@ class StickerCreateSerializer(StickerListSerializer):
 
 class TaskCreateSerializer(serializers.ModelSerializer):
     """Сериализатор создания задач"""
+    sticker = StickerListSerializer(many=True, read_only=True)
 
     class Meta:
         model = Task
@@ -330,6 +360,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             'description',
             # 'file',
             'priority',
+            'sticker',
         )
 
     def create(self, validated_data):
@@ -531,3 +562,23 @@ class BoardSerializer(serializers.ModelSerializer):
         # удалить после реализации добавления участников доски
         representation['members'] = CurrentUserSerializer(users, many=True).data
         return representation
+
+
+class BoardUserListSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор списка пользователей при поиске.
+    """
+
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'name',
+            'email',
+            'avatar',
+        )
+
+    def get_name(self, obj):
+        return obj.representation_name()

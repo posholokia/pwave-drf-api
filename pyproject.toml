@@ -26,6 +26,7 @@ redis = "^5.0.1"
 uvicorn = "^0.24.0.post1"
 python-dotenv = "^1.0.0"
 urllib3 = "1.26.18"
+django-cacheops = "^7.0.2"
 
 
 [build-system]
