@@ -201,7 +201,6 @@ class UserListSerializer(serializers.ModelSerializer):
         """
         workspace_id = self.context.get('view').request.query_params.get('workspace')
         ws_users = (WorkSpace.objects
-                    .cache()
                     .filter(id=workspace_id)
                     .prefetch_related('users')
                     .values_list('users__id')
@@ -220,7 +219,6 @@ class UserListSerializer(serializers.ModelSerializer):
         """
         workspace_id = self.context.get('view').request.query_params.get('workspace')
         ws_users = (WorkSpace.objects
-                    .cache()
                     .filter(id=workspace_id)
                     .prefetch_related('invited')
                     .values_list('invited__id')

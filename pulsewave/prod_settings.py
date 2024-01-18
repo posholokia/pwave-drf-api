@@ -111,7 +111,7 @@ EVENTSTREAM_ALLOW_HEADERS = 'Authorization'
 
 # cache
 CACHEOPS_DEFAULTS = {
-    'timeout': 60*60
+    'timeout': 60*60,
 }
 
 CACHEOPS_REDIS = f"redis://{REDIS_HOST}:6379/2"

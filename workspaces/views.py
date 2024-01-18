@@ -269,12 +269,29 @@ class ColumnViewSet(viewsets.ModelViewSet):
     queryset = Column.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserIsBoardMember]
 
+    # def get_queryset(self):
+    #     """Колонки отфилрованы по доске"""
+    #     queryset = super().get_queryset()
+    #     board_id = self.kwargs.get('board_id', None)
+    #     queryset = (queryset
+    #                 .filter(board_id=board_id)
+    #                 .prefetch_related('task')
+    #                 .prefetch_related('task__responsible')
+    #                 .prefetch_related('task__sticker')
+    #                 )
+    #
+    #     return queryset.order_by('index')
+
     def get_queryset(self):
         """Колонки отфилрованы по доске"""
         queryset = super().get_queryset()
         board_id = self.kwargs.get('board_id', None)
+        queryset = queryset.filter(board_id=board_id)
+        if (self.action == 'partial_update'
+                or self.action == 'update'):
+            return queryset.order_by('index')
+
         queryset = (queryset
-                    .filter(board_id=board_id)
                     .prefetch_related('task')
                     .prefetch_related('task__responsible')
                     .prefetch_related('task__sticker')
@@ -336,9 +353,14 @@ class TaskViewSet(viewsets.ModelViewSet):
         """Задачи фильтруются по колонкам"""
         queryset = super().get_queryset()
         column_id = self.kwargs.get('column_id', None)
+        queryset = queryset.filter(column_id=column_id)
+        if (self.action == 'partial_update'
+                or self.action == 'update'):
+            return queryset.order_by('index')
+
         queryset = (queryset
-                    .filter(column_id=column_id)
                     .prefetch_related('responsible')
+                    .prefetch_related('sticker')
                     )
         # setattr(self, 'queryset', queryset)
         return queryset.order_by('index')
