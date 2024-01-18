@@ -52,9 +52,9 @@ INSTALLED_APPS = [
     'cacheops',
     #apps
     'taskmanager.apps.TaskmanagerConfig',
-    #telebot
     'telebot',
     'workspaces.apps.WorkspacesConfig',
+    'notification.apps.NotificationConfig'
 ]
 
 SITE_ID = 1

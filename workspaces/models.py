@@ -1,5 +1,5 @@
 from django.db import models
-from pulsewave import settings
+from django.conf import settings
 from pulsewave.validators import validate_sticker_color
 
 
