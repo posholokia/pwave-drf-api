@@ -12,6 +12,8 @@ class NotificationListSerializer(serializers.ModelSerializer):
             'text',
             'created_at',
             'read',
+            'workspace',
+            'board',
         )
 
 
