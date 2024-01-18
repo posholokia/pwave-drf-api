@@ -1,17 +1,15 @@
 import string
 import random
 
+from django.db.models import Prefetch
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
 
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
-from django.views.decorators.vary import vary_on_cookie, vary_on_headers
+from logic.cache import api_cache
 from django.contrib.auth import get_user_model
-from django.core.cache import caches
 from django_eventstream import send_event
-
+from cacheops import cached_as
 from .models import *
 from . import serializers, mixins
 from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks, UserHasAccessStickers
@@ -64,11 +62,9 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
                     )
         return queryset.order_by('created_at')  # вывод РП сортируется по дате создания
 
-    # @method_decorator(cache_page(60))
-    # @method_decorator(vary_on_headers('Authorization'))
-    def list(self, request, *args, **kwargs):
-        print(f'\n{caches.__dict__=}\n')
-        return super().list(request, *args, **kwargs)
+    # @api_cache(timeout=60)
+    # def list(self, request, *args, **kwargs):
+    #     return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         """
@@ -169,7 +165,6 @@ class UserList(generics.ListAPIView):
                         .filter(email__istartswith=filter_email, is_active=True)
                         .exclude(pk=self.request.user.id)
                         )
-
             return queryset
         return None
 
@@ -274,12 +269,29 @@ class ColumnViewSet(viewsets.ModelViewSet):
     queryset = Column.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserIsBoardMember]
 
+    # def get_queryset(self):
+    #     """Колонки отфилрованы по доске"""
+    #     queryset = super().get_queryset()
+    #     board_id = self.kwargs.get('board_id', None)
+    #     queryset = (queryset
+    #                 .filter(board_id=board_id)
+    #                 .prefetch_related('task')
+    #                 .prefetch_related('task__responsible')
+    #                 .prefetch_related('task__sticker')
+    #                 )
+    #
+    #     return queryset.order_by('index')
+
     def get_queryset(self):
         """Колонки отфилрованы по доске"""
         queryset = super().get_queryset()
         board_id = self.kwargs.get('board_id', None)
+        queryset = queryset.filter(board_id=board_id)
+        if (self.action == 'partial_update'
+                or self.action == 'update'):
+            return queryset.order_by('index')
+
         queryset = (queryset
-                    .filter(board_id=board_id)
                     .prefetch_related('task')
                     .prefetch_related('task__responsible')
                     .prefetch_related('task__sticker')
@@ -309,7 +321,6 @@ class ColumnViewSet(viewsets.ModelViewSet):
         # return Response(
         #     data=self.serializer_class(self.get_queryset(), many=True).data,
         # )
-
 
     @sse_send
     def destroy(self, request, *args, **kwargs):
@@ -342,9 +353,14 @@ class TaskViewSet(viewsets.ModelViewSet):
         """Задачи фильтруются по колонкам"""
         queryset = super().get_queryset()
         column_id = self.kwargs.get('column_id', None)
+        queryset = queryset.filter(column_id=column_id)
+        if (self.action == 'partial_update'
+                or self.action == 'update'):
+            return queryset.order_by('index')
+
         queryset = (queryset
-                    .filter(column_id=column_id)
                     .prefetch_related('responsible')
+                    .prefetch_related('sticker')
                     )
         # setattr(self, 'queryset', queryset)
         return queryset.order_by('index')
@@ -421,6 +437,7 @@ class StickerViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
+
 # @api_view(['POST'])
 # def return_ws(request):
 #     workspaces = WorkSpace.objects.all()
@@ -429,3 +446,26 @@ class StickerViewSet(viewsets.ModelViewSet):
 #             ws.users.add(ws.owner)
 #
 #     return Response(status=status.HTTP_200_OK)
+
+
+class BoardUserList(generics.ListAPIView):
+    """
+    Вывод списка всех пользователей доски.
+    Для назначения ответственных за задачи.
+    """
+    serializer_class = serializers.BoardUserListSerializer
+    queryset = User.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    @cached_as(User, timeout=120)
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        ws_filter = self.request.query_params.get('workspace')
+
+        if ws_filter:
+            queryset = (
+                queryset
+                .filter(joined_workspaces__id=ws_filter)
+            )
+            return list(queryset)
+        return None

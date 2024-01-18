@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'django_eventstream',
     'channels',
     'storages',
-
+    'cacheops',
     #apps
     'taskmanager.apps.TaskmanagerConfig',
     #telebot

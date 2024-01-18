@@ -95,13 +95,37 @@ LOGGING = {
     }
 }
 
+# для доступа к админке
 CSRF_TRUSTED_ORIGINS = ["https://api.pwave.pnpl.tech"]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
-# # SSE
+# SSE
 EVENTSTREAM_STORAGE_CLASS = 'sse.storage.RedisStorage'
-
 EVENTSTREAM_ALLOW_ORIGIN = 'https://front.pwave.pnpl.tech'
 EVENTSTREAM_ALLOW_CREDENTIALS = True
 EVENTSTREAM_ALLOW_HEADERS = 'Authorization'
+
+# PUSHPIN = os.getenv("PUSHPIN_HOST")
+# GRIP_URL = f'http://{PUSHPIN}:5561'
+
+# cache
+CACHEOPS_DEFAULTS = {
+    'timeout': 60*60,
+}
+
+CACHEOPS_REDIS = f"redis://{REDIS_HOST}:6379/2"
+
+CACHEOPS = {
+    'taskmanager.user': {'ops': ('get', 'fetch'), },
+    'taskmanager.user_set': {'ops': ('get', 'fetch'), },
+    'workspaces.workspace': {'ops': ('get', 'fetch'), },
+    'workspaces.workspace_set': {'ops': ('get', 'fetch'), },
+    'workspaces.board': {'ops': ('get', 'fetch'), },
+    'workspaces.column': {'ops': ('get', 'fetch'), },
+    'workspaces.column_set': {'ops': ('get', 'fetch'), },
+    'workspaces.task': {'ops': ('get', 'fetch'), },
+    'workspaces.task_set': {'ops': ('get', 'fetch'), },
+    'workspaces.sticker': {'ops': ('get', 'fetch'), },
+    'workspaces.sticker_set': {'ops': ('get', 'fetch'), },
+}
