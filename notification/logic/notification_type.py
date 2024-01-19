@@ -8,5 +8,5 @@ NOTIFICATION_TYPE = {
     'end_deadline': 'Срок у карточки "<a href="{link}">{task}</a>" истек',
     'move_task': '{user} переместил(а) карточку "<a href="{link}">{task}</a>" '
                  'из колонки "{old_col}" в колонку "{new_col}"',
-    'delete_task': '{user} удалил(а) карточку "<a href="{link}">{task}</a>" из колонки "{col}"'
+    'delete_task': '{user} удалил(а) карточку {task}" из колонки "{col}"'
 }

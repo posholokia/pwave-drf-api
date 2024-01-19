@@ -6,7 +6,6 @@ from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
 
-from logic.cache import api_cache
 from django.contrib.auth import get_user_model
 from django_eventstream import send_event
 from cacheops import cached_as
@@ -18,7 +17,7 @@ from taskmanager.serializers import CurrentUserSerializer
 
 from logic.ws_users import ws_users
 from logic.indexing import index_recalculation
-
+from notification.logic.create_notification import task_change_notify
 from sse.decorators import sse_send
 
 User = get_user_model()
@@ -374,6 +373,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         #     status=status.HTTP_201_CREATED,
         # )
 
+    @task_change_notify
     @sse_send
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
