@@ -58,7 +58,7 @@ class Sticker(models.Model):
 
 
 class Comment(models.Model):
-    comment_task = models.ForeignKey(Task, related_name='comment_task', on_delete=models.CASCADE)
-    comment_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='comment_user', on_delete=models.CASCADE)
-    comment = models.CharField('Комментарий', max_length=2048, blank=True)
+    task = models.ForeignKey(Task, related_name='task', on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='author', on_delete=models.CASCADE)
+    comment = models.CharField('Комментарий', max_length=2048)
     created_data = models.DateTimeField('Время создания комментария', auto_now_add=True)

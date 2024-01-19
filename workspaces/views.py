@@ -390,14 +390,24 @@ class CommentDeleteViewSet(viewsets.mixins.DestroyModelMixin, GenericViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        if request.user == instance.author:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
 
 class CommentListCreateViewSet(viewsets.mixins.ListModelMixin, viewsets.mixins.CreateModelMixin, GenericViewSet):
     serializer_class = serializers.CommentSerializer
     queryset = Comment.objects.all()
     permission_classes = UserIsBoardMember
+
+    def get_queryset(self):
+        """Комменты фильтруются по задачам"""
+        queryset = super().get_queryset()
+        task_id = self.kwargs.get('task_id', None)
+        queryset = queryset.filter(comment_task_id=task_id)
+        return queryset
 
 
 
@@ -431,7 +441,7 @@ class StickerViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]
 
     def get_queryset(self):
-        """Задачи фильтруются по колонкам"""
+        """Стикеры фильтруются по задачам"""
         queryset = super().get_queryset()
         task_id = self.kwargs.get('task_id', None)
         queryset = queryset.filter(task_id=task_id)

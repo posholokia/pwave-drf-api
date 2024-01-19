@@ -50,11 +50,11 @@ class TaskTestCase(APITestCase):
 
     def test_comment_create(self):
         data = {
-            'comment_task': self.task1.id,
-            'comment_user': self.user,
+            'task': self.task1.id,
+            'author': self.user,
             'comment': 'Комментарий 2 для task1 пользователя user',
         }
-        response = self.client.post(reverse('comment-list', kwargs={'task_id': self.task1.id, 'user_id': self.user},), data)
+        response = self.client.post(reverse('comment-list', kwargs={'task_id': self.task1.id},), data)
         self.assertEquals(status.HTTP_201_CREATED, response.status_code)
         self.assertEquals(2, len(Sticker.objects.filter(task=self.task1.id)))
 
