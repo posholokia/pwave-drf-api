@@ -1,9 +1,8 @@
 from django.contrib.auth import get_user_model
-from django.db.models.signals import post_save, pre_save, m2m_changed
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from notification.logic.create_notification import notification_workspace_users
-from workspaces.models import Board, Column, Task, Sticker, WorkSpace
+from workspaces.models import Board, Column, Task, Sticker
 
 User = get_user_model()
 
@@ -23,22 +22,3 @@ def create_board(sender, instance, created, **kwargs):
         )
 
         Sticker.objects.create(name='Стикер', color='#7033ff', task=task)
-
-
-# @receiver(m2m_changed, sender=WorkSpace.invited.through)
-# def notification_ws_users(sender, instance, pk_set, action, **kwargs):
-#
-#     if action == 'post_add':
-#         notification_workspace_users(instance, pk_set, notify_type='added_in_ws')
-#
-#
-# @receiver(m2m_changed, sender=WorkSpace.users.through)
-# def notification_kick(sender, instance, pk_set, action, **kwargs):
-#     if action == 'post_remove':
-#         notification_workspace_users(instance, pk_set, notify_type='del_from_ws')
-#
-#
-# @receiver(m2m_changed, sender=Task.responsible.through)
-# def notification_kick(sender, instance, pk_set, action, **kwargs):
-#     if action == 'post_add':
-#         notification_workspace_users(instance, pk_set, notify_type='added_in_task')

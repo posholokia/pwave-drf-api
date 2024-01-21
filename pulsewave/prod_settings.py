@@ -95,6 +95,10 @@ LOGGING = {
     }
 }
 
+
+# ссылка на фронт, для формирования ссылок
+DOMAIN = 'https://front.pwave.pnpl.tech'
+
 # для доступа к админке
 CSRF_TRUSTED_ORIGINS = ["https://api.pwave.pnpl.tech"]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

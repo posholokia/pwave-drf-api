@@ -10,11 +10,17 @@ class WorkSpace(models.Model):
     name = models.CharField('Рабочее пространство', max_length=50)
     created_at = models.DateTimeField('Время создания', auto_now_add=True)
 
+    def __repr__(self):
+        return f'{self.name}'
+
 
 class Board(models.Model):
     work_space = models.ForeignKey(WorkSpace, related_name='board', on_delete=models.CASCADE)
     name = models.CharField('Доска', max_length=50)
     members = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='joined_boards')
+
+    def __repr__(self):
+        return f'{self.name}'
 
 
 class InvitedUsers(models.Model):
@@ -30,7 +36,7 @@ class Column(models.Model):
     index = models.PositiveIntegerField('Порядковый номер')
 
     def __repr__(self):
-        return f'Column {self.name}, index: {self.index}'
+        return f'{self.name}'
 
 
 class Task(models.Model):

@@ -1,7 +1,6 @@
 import string
 import random
 
-from django.db.models import Prefetch
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
@@ -11,13 +10,13 @@ from django_eventstream import send_event
 from cacheops import cached_as
 from .models import *
 from . import serializers, mixins
-from .permissions import UserInWorkSpaceUsers, UserIsBoardMember, UserHasAccessTasks, UserHasAccessStickers
+from .permissions import *
 
 from taskmanager.serializers import CurrentUserSerializer
 
 from logic.ws_users import ws_users
 from logic.indexing import index_recalculation
-from notification.logic.create_notification import task_change_notify
+from notification.create_notify.decorators import task_change_notify, ws_users_notify
 from sse.decorators import sse_send
 
 User = get_user_model()
@@ -78,6 +77,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         return Response(data=serialized_data, status=status.HTTP_201_CREATED)
 
     @action(methods=['post'], detail=True, url_name='invite_user')
+    @ws_users_notify
     def invite_user(self, request, *args, **kwargs):
         """
         Представление для приглашения пользователей в РП.
@@ -116,7 +116,9 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         response = ws_handler.confirm_invite(serializer.invitation)
         return response
 
+    # @ws_users_notify
     @action(['post'], detail=True, url_name='kick_user')
+    @ws_users_notify
     def kick_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -382,6 +384,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         #     data=self.serializer_class(self.get_queryset(), many=True).data,
         # )
 
+    @task_change_notify
     @sse_send
     def destroy(self, request, *args, **kwargs):
         """

@@ -3,8 +3,31 @@ from rest_framework import serializers
 from notification.models import Notification
 from rest_framework.exceptions import ValidationError
 
+from workspaces.models import WorkSpace, Board
+
+
+class WorkSpaceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkSpace
+        fields = (
+            'id',
+            'name',
+        )
+
+
+class BoardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Board
+        fields = (
+            'id',
+            'name',
+        )
+
 
 class NotificationListSerializer(serializers.ModelSerializer):
+    workspace = WorkSpaceSerializer(read_only=True)
+    board = BoardSerializer(read_only=True)
+
     class Meta:
         model = Notification
         fields = (

@@ -236,9 +236,6 @@ CORS_ALLOWED_ORIGINS = [
     'https://front.pwave.pnpl.tech',
 ]
 
-# ссылка на фронт, которая будет формироваться в письмах
-DOMAIN = 'https://front.pwave.pnpl.tech'
-
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
 # MEDIA_URL = '/media/images/'
 
