@@ -5,14 +5,18 @@ from datetime import datetime
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from workspaces.models import Task, Column, WorkSpace
+from workspaces.models import Task, Column, WorkSpace, Board
 
 locale.setlocale(locale.LC_ALL, 'ru_RU.utf8')
 
 User = get_user_model()
 
 
-def get_task_data(*args, **kwargs):
+def get_task_data(*args, **kwargs) -> dict[str:dict]:
+    """
+    Формировоание данных для создания уведомления
+    и контекста для текста уведомления.
+    """
     request = args[1]
     obj_id = kwargs.get('pk')
     task = Task.objects.get(pk=obj_id)
@@ -29,13 +33,15 @@ def get_task_data(*args, **kwargs):
             'board': board.id,
         },
     }
-
+    # формируем контекст для сообщения и добавляем его в
+    # данные для создания уведомления
     notify_context = get_task_notify_context(request, task)
     data.update(**notify_context)
     return data
 
 
-def generate_task_link(board, task):
+def generate_task_link(board: Board, task: Task) -> str:
+    """Формирование ссылки на задачу (Task)"""
     link = (f'{settings.DOMAIN}/'
             f'workspace/{board.work_space_id}/'
             f'board/{board.id}/'
@@ -43,7 +49,12 @@ def generate_task_link(board, task):
     return link
 
 
-def get_task_notify_context(request, task):
+def get_task_notify_context(request, task: Task) -> dict[str:dict]:
+    """
+    Формировоание контекста для текста уведомления по каждому событию
+    для отправик уведомлений. События для отправки уведомлений и
+    их текст смотри в notification_type.py
+    """
     data = request.data
     user_id = request.user.id
     data_keys = list(data.keys())
@@ -120,7 +131,11 @@ def get_task_notify_context(request, task):
     return context
 
 
-def get_ws_data(*args, **kwargs):
+def get_ws_data(*args, **kwargs) -> dict[str:dict]:
+    """
+    Формировоание данных для создания уведомления
+    и контекста для текста уведомления.
+    """
     request = args[1]
     obj_id = kwargs.get('pk')
 
@@ -137,7 +152,12 @@ def get_ws_data(*args, **kwargs):
     return data
 
 
-def get_ws_notify_context(request, workspace):
+def get_ws_notify_context(request, workspace: WorkSpace) -> dict[str:dict]:
+    """
+    Формировоание контекста для текста уведомления по каждому событию
+    для отправик уведомлений. События для отправки уведомлений и
+    их текст смотри в notification_type.py
+    """
     data = request.data
     data_keys = list(data.keys())
     context = {}

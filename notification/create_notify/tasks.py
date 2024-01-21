@@ -7,12 +7,18 @@ User = get_user_model()
 
 
 @shared_task
-def create_notification(data: dict):
-    # print(f'\nTASK\n')
+def create_notification(data: dict[str:dict]) -> None:
+    """
+    Функция создания уведомлений. Принимает словарь, где ключи - это события,
+    по которым создаются уведомления (список событий и сообщений для этого
+    события в NOTIFICATION_TYPE), а значения ключей - контекст для текста сообщения.
+    Обязательно должен быть ключ "common", в котором содержится РП и Доска,
+    с которым связано уведомление (а также можно разместить контекст текста уведомления)
+    """
+    assert 'common' in data.keys(), ('В data отсутсвует ключ "common" c '
+                                     'рабочим пространством и/или доской')
     data = data.copy()
     common = data.pop('common')
-    # print(f'\n{data=}\n')
-    # print(f'\n{common=}\n')
 
     for event, context in data.items():
         text = MESSAGE[event].format(**context, **common)
