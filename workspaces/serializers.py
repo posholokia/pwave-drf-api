@@ -533,17 +533,28 @@ class BoardSerializer(serializers.ModelSerializer):
         return representation
 
 
-class CommentSerializer(serializers.ModelSerializer):
+class CommentListSerializer(serializers.ModelSerializer):
     """
     Сериализатор комментариев
     """
+
     class Meta:
         model = Comment
+        read_only_fields = ['task', ]
         fields = (
+            'id',
             'task',
             'author',
             'comment',
             'created_data'
         )
+
+
+class CommentCreateSerializer(CommentListSerializer):
+    def create(self, validated_data):
+        task_id = self.context['view'].kwargs['task_id']
+        validated_data['task_id'] = task_id
+        instance = Comment.objects.create(**validated_data)
+        return instance
 
 

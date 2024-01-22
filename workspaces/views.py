@@ -382,7 +382,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
 
 class CommentDeleteViewSet(viewsets.mixins.DestroyModelMixin, GenericViewSet):
-    serializer_class = serializers.CommentSerializer
+    serializer_class = serializers.CommentListSerializer
     queryset = Comment.objects.all()
     """
     Удаление комментария после проверки на авторство.
@@ -398,9 +398,9 @@ class CommentDeleteViewSet(viewsets.mixins.DestroyModelMixin, GenericViewSet):
 
 
 class CommentListCreateViewSet(viewsets.mixins.ListModelMixin, viewsets.mixins.CreateModelMixin, GenericViewSet):
-    serializer_class = serializers.CommentSerializer
+    serializer_class = serializers.CommentCreateSerializer
     queryset = Comment.objects.all()
-    permission_classes = UserIsBoardMember
+    permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]
 
     def get_queryset(self):
         """Комменты фильтруются по задачам"""
