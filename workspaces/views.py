@@ -406,7 +406,7 @@ class CommentListCreateViewSet(viewsets.mixins.ListModelMixin, viewsets.mixins.C
         """Комменты фильтруются по задачам"""
         queryset = super().get_queryset()
         task_id = self.kwargs.get('task_id', None)
-        queryset = queryset.filter(comment_task_id=task_id)
+        queryset = queryset.filter(task_id=task_id)
         return queryset
 
 
