@@ -37,6 +37,8 @@ django-storages==1.14.2
 django-templated-mail==1.1.1
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.1
+django-cacheops==7.0.2
+django-celery-beat==2.5.0
 djoser==2.2.2
 drf-spectacular==0.26.5
 dulwich==0.21.7
@@ -122,4 +124,3 @@ Werkzeug==3.0.1
 yarl==1.9.4
 zipp==3.17.0
 zope.interface==6.1
-django-cacheops==7.0.2

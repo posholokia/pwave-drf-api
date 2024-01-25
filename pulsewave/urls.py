@@ -26,6 +26,7 @@ urlpatterns = [
 
     path('auth/', include('taskmanager.urls')),
     path('api/', include('workspaces.urls')),
+    path('api/notification/', include('notification.urls')),
 
     # api doc urls:
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

@@ -50,11 +50,12 @@ INSTALLED_APPS = [
     'channels',
     'storages',
     'cacheops',
+    'django_celery_beat',
     #apps
     'taskmanager.apps.TaskmanagerConfig',
-    #telebot
     'telebot',
     'workspaces.apps.WorkspacesConfig',
+    'notification.apps.NotificationConfig'
 ]
 
 SITE_ID = 1
@@ -236,9 +237,6 @@ CORS_ALLOWED_ORIGINS = [
     'https://front.pwave.pnpl.tech',
 ]
 
-# ссылка на фронт, которая будет формироваться в письмах
-DOMAIN = 'https://front.pwave.pnpl.tech'
-
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
 # MEDIA_URL = '/media/images/'
 
@@ -250,4 +248,3 @@ WORKSAPCES = {
 }
 
 APPEND_SLASH = False
-
