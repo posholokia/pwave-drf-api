@@ -12,7 +12,7 @@ class NotificationList(generics.ListAPIView):
         queryset = super().get_queryset()
         user = self.request.user
         queryset = queryset.filter(recipients=user)
-        return queryset.order_by('created_at')
+        return queryset.order_by('created_at')[:25]
 
 
 class NotificationUpdate(generics.UpdateAPIView):

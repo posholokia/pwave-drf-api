@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from logic.email import InviteUserEmail
-from workspaces.models import WorkSpace, InvitedUsers
+from workspaces.models import WorkSpace, InvitedUsers, Task
 from workspaces.serializers import InviteUserSerializer
 from workspaces.exeptions import InvalidAction
 
@@ -73,6 +73,14 @@ class WorkSpaceUserHandler:
             )
         self.workspace.users.remove(self.user)
         self.workspace.invited.remove(self.user)
+
+        # удаление пользователя из ответсвенных за задачи в РП
+        tasks = Task.objects.filter(
+            column__board__work_space_id=self.workspace.id
+        )
+        for task in tasks:
+            task.responsible.remove(self.user)
+
         InvitedUsers.objects.filter(user=self.user).delete()
 
     def _can_kick_user(self):
