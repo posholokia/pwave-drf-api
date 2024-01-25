@@ -9,6 +9,7 @@ from django_celery_beat.models import PeriodicTask, CrontabSchedule
 
 from notification.models import Notification
 from notification.create_notify.notification_type import NOTIFICATION_TYPE as MESSAGE
+from sse.senders import sse_send_notifications
 from workspaces.models import Task
 
 User = get_user_model()
@@ -45,6 +46,7 @@ def create_notification(data: dict[str:dict], context: dict[str:dict]) -> None:
                 board_id=board,
             )
             notification.recipients.set(recipients)
+            sse_send_notifications(notification, recipients)
 
 
 def end_deadline_notify(task: Task):
