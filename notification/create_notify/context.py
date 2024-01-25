@@ -119,6 +119,29 @@ class NotifyContext:
                     'recipients': [self.request['data']['user_id']],
                 }
             })
+        if 'name' in data_keys:
+            if self.obj.name != self.old['name']:
+                context.update({
+                    'change_name': {
+                        'old_name': self.old['name'],
+                        'recipients': list(recipients),
+                    },
+                })
+
+        if 'priority' in data_keys:
+            if self.obj.priority is None:
+                priority = 'Отсутствует'
+            else:
+                priority = self.obj.get_priority_display()
+
+            if self.obj.priority != self.old['priority']:
+                context.update({
+                    'change_priority': {
+                        'priority': priority,
+                        'recipients': list(recipients),
+                    },
+                })
+
         return context
 
     def get_empty_data(self):

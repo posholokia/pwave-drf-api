@@ -5,7 +5,8 @@ from django.contrib.auth import get_user_model
 from celery import shared_task
 
 from notification.create_notify.context import NotifyContext
-from notification.create_notify.utils import generate_task_link, create_notification
+from notification.create_notify.utils import (generate_task_link,
+                                              create_notification)
 from workspaces.models import Task, WorkSpace
 
 User = get_user_model()
