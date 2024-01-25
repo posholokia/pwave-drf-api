@@ -1,180 +1,100 @@
-import locale
-
-from datetime import datetime
+import json
+import zoneinfo
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 
-from workspaces.models import Task, Column, WorkSpace, Board
+from django_celery_beat.models import PeriodicTask, CrontabSchedule
 
-locale.setlocale(locale.LC_ALL, 'ru_RU.utf8')
+from notification.models import Notification
+from notification.create_notify.notification_type import NOTIFICATION_TYPE as MESSAGE
+from workspaces.models import Task
 
 User = get_user_model()
 
 
-def get_task_data(*args, **kwargs) -> dict[str:dict]:
-    """
-    Формировоание данных для создания уведомления
-    и контекста для текста уведомления.
-    """
-    request = args[1]
-    obj_id = kwargs.get('pk')
-    task = Task.objects.get(pk=obj_id)
-
-    board = task.column.board
-    link = generate_task_link(board, task)
-
-    data = {
-        'common': {
-            'user': request.user.representation_name(),
-            'link': link,
-            'task': task.name,
-            'workspace': board.work_space_id,
-            'board': board.id,
-        },
-    }
-    # формируем контекст для сообщения и добавляем его в
-    # данные для создания уведомления
-    notify_context = get_task_notify_context(request, task)
-    data.update(**notify_context)
-    return data
-
-
-def generate_task_link(board: Board, task: Task) -> str:
+def generate_task_link(workspace: int, board: int, task: int) -> str:
     """Формирование ссылки на задачу (Task)"""
     link = (f'{settings.DOMAIN}/'
-            f'workspace/{board.work_space_id}/'
-            f'board/{board.id}/'
-            f'task/{task.id}')
+            f'workspace/{workspace}/'
+            f'board/{board}/'
+            f'task/{task}')
     return link
 
 
-def get_task_notify_context(request, task: Task) -> dict[str:dict]:
+def create_notification(data: dict[str:dict], context: dict[str:dict]) -> None:
     """
-    Формировоание контекста для текста уведомления по каждому событию
-    для отправик уведомлений. События для отправки уведомлений и
-    их текст смотри в notification_type.py
+    Функция создания уведомлений. Принимает словарь, где ключи - это события,
+    по которым создаются уведомления (список событий и сообщений для этого
+    события в NOTIFICATION_TYPE), а значения ключей - контекст для текста сообщения.
+    Обязательно должен быть ключ "common", в котором содержится РП и Доска,
+    с которым связано уведомление (а также можно разместить контекст текста уведомления)
     """
-    data = request.data
-    user_id = request.user.id
-    data_keys = list(data.keys())
-    context = {}
 
-    recipients = set(task.responsible.exclude(pk=user_id).values_list('id', flat=True))
+    for event, context in context.items():
+        text = MESSAGE[event].format(**context, **data)
+        workspace = data['workspace']
+        board = data['board']
+        recipients = context['recipients']
 
-    if request.method == 'DELETE':
-        context.update({
-            'delete_task': {
-                'col': task.column.name,
-                'recipients': list(recipients),
-            }
-        })
-        return context
+        if recipients:
+            notification = Notification.objects.create(
+                text=text,
+                workspace_id=workspace,
+                board_id=board,
+            )
+            notification.recipients.set(recipients)
 
-    if 'responsible' in data_keys:
-        new_users = set(data['responsible'])
-        old_users, recipients = recipients, new_users
 
-        added = new_users.difference(old_users, {user_id})
-        deleted = old_users.difference(new_users, {user_id})
+def end_deadline_notify(task: Task):
+    if task.deadline is None:
+        p = PeriodicTask.objects.filter(name=f'end_deadline_{task.id}').first()
+        if p:
+            p.delete()
 
-        if added:
-            context.update({
-                'added_in_task': {
-                    'recipients': list(added)
-                },
-            })
-        if deleted:
-            context.update({
-                'delete_from_task': {
-                    'recipients': list(deleted)
-                }
-            })
+    month = str(task.deadline.month)
+    day = str(task.deadline.day)
+    hour = str(task.deadline.hour)
+    minute = str(task.deadline.minute)
 
-    if 'column' in data_keys:
-        old_col = task.column
-        new_col = Column.objects.get(pk=data['column'])
-
-        if old_col is not None and old_col != new_col:
-            context.update({
-                'move_task': {
-                    'old_col': old_col.name,
-                    'new_col': new_col.name,
-                    'recipients': list(recipients),
-                }
-            })
-
-    if 'deadline' in data_keys and data['deadline']:
-        old_deadline = task.deadline
-        deadline_str = data['deadline']
-        new_deadline = (
-            datetime
-            .strptime(deadline_str, '%Y-%m-%d')
-            .date()
+    schedule, _ = CrontabSchedule.objects.get_or_create(
+        minute=minute,
+        hour=hour,
+        day_of_week='*',
+        day_of_month=day,
+        month_of_year=month,
+        timezone=zoneinfo.ZoneInfo('UTC')
+    )
+    try:
+        PeriodicTask.objects.create(
+            crontab=schedule,
+            name=f'end_deadline_{task.id}',
+            task='notification.create_notify.tasks.end_deadline',
+            args=json.dumps([task.id])
         )
-
-        if old_deadline is None:
-            context.update({
-                'deadline_task': {
-                    'date': datetime.strftime(new_deadline, '%d %B %Y'),
-                    'recipients': list(recipients),
-                }
-            })
-        elif old_deadline != new_deadline:
-            context.update({
-                'change_deadline': {
-                    'date': datetime.strftime(new_deadline, '%d %B %Y'),
-                    'recipients': list(recipients),
-                }
-            })
-
-    return context
+    except ValidationError:
+        p_task = PeriodicTask.objects.get(name=f'end_deadline_{task.id}')
+        p_task.crontab = schedule
+        p_task.save()
 
 
-def get_ws_data(*args, **kwargs) -> dict[str:dict]:
-    """
-    Формировоание данных для создания уведомления
-    и контекста для текста уведомления.
-    """
-    request = args[1]
-    obj_id = kwargs.get('pk')
-
-    workspace = WorkSpace.objects.get(pk=obj_id)
-
+def get_current_task(pk):
+    task = Task.objects.get(pk=pk)
     data = {
-        'common': {
-            'workspace': workspace.id,
-            'board': None,
-        }
+        'id': pk,
+        'name': task.name,
+        'column': task.column_id,
+        'responsible': list(task.responsible.values_list('id', flat=True)),
+        'deadline': task.deadline,
+        'priority': task.priority,
     }
-    notify_context = get_ws_notify_context(request, workspace)
-    data.update(**notify_context)
     return data
 
 
-def get_ws_notify_context(request, workspace: WorkSpace) -> dict[str:dict]:
-    """
-    Формировоание контекста для текста уведомления по каждому событию
-    для отправик уведомлений. События для отправки уведомлений и
-    их текст смотри в notification_type.py
-    """
-    data = request.data
-    data_keys = list(data.keys())
-    context = {}
-
-    if 'email' in data_keys:
-        context.update({
-            'added_in_ws': {
-                'ws': workspace.name,
-                'recipients': [User.objects.values_list('id', flat=True).get(email=data['email'])],
-            }
-        })
-
-    if 'user_id' in data_keys:
-        context.update({
-            'del_from_ws': {
-                'ws': workspace.name,
-                'recipients': [data['user_id']],
-            }
-        })
-    return context
+def get_user_data(user):
+    user_data = {
+        'id': user.id,
+        'name': user.representation_name(),
+    }
+    return user_data

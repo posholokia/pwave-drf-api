@@ -1,35 +1,46 @@
-from notification.create_notify.notification_type import NOTIFICATION_TYPE as MESSAGE
-from notification.models import Notification
+from django_celery_beat.models import PeriodicTask
+
 from django.contrib.auth import get_user_model
+
 from celery import shared_task
+
+from notification.create_notify.context import NotifyContext
+from notification.create_notify.utils import generate_task_link, create_notification
+from workspaces.models import Task, WorkSpace
 
 User = get_user_model()
 
 
 @shared_task
-def create_notification(data: dict[str:dict]) -> None:
-    """
-    Функция создания уведомлений. Принимает словарь, где ключи - это события,
-    по которым создаются уведомления (список событий и сообщений для этого
-    события в NOTIFICATION_TYPE), а значения ключей - контекст для текста сообщения.
-    Обязательно должен быть ключ "common", в котором содержится РП и Доска,
-    с которым связано уведомление (а также можно разместить контекст текста уведомления)
-    """
-    assert 'common' in data.keys(), ('В data отсутсвует ключ "common" c '
-                                     'рабочим пространством и/или доской')
-    data = data.copy()
-    common = data.pop('common')
+def end_deadline(pk):
+    task = Task.objects.get(pk=pk)
+    board = task.column.board
+    workspace = board.work_space_id
+    recipients = task.responsible.values_list('id', flat=True)
+    link = generate_task_link(workspace, board, task.id)
 
-    for event, context in data.items():
-        text = MESSAGE[event].format(**context, **common)
-        workspace = common['workspace']
-        board = common['board']
-        recipients = context['recipients']
+    data = {
+        'link': link,
+        'task': task,
+        'workspace': workspace,
+        'board': board.id,
+    }
+    context = {
+        'end_deadline': {
+            'recipients': list(recipients)
+        }
+    }
+    create_notification(data, context)
+    PeriodicTask.objects.get(name=f'end_deadline_{pk}').delete()
 
-        if recipients:
-            notification = Notification.objects.create(
-                text=text,
-                workspace_id=workspace,
-                board_id=board,
-            )
-            notification.recipients.set(recipients)
+
+@shared_task
+def run_task_notification(old, user, request):
+    task = Task.objects.get(pk=old['id'])
+    NotifyContext(request, task, user, old).handler()
+
+
+@shared_task
+def run_ws_notification(user, request, pk):
+    ws = WorkSpace.objects.get(pk=pk)
+    NotifyContext(request, ws, user).handler()

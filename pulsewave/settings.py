@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'channels',
     'storages',
     'cacheops',
+    'django_celery_beat',
     #apps
     'taskmanager.apps.TaskmanagerConfig',
     'telebot',
@@ -247,4 +248,3 @@ WORKSAPCES = {
 }
 
 APPEND_SLASH = False
-

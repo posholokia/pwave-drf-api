@@ -46,7 +46,7 @@ def worker_shutdown(**_):
 app = Celery('pulsewave')
 app.steps["worker"].add(LivenessProbe)
 
-app.config_from_object('django.conf:settings', namespace='CELERY')
+app.config_from_object('pulsewave.celeryconfig')
 
 app.autodiscover_tasks()
 

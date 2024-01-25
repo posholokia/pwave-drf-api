@@ -16,7 +16,7 @@ from taskmanager.serializers import CurrentUserSerializer
 
 from logic.ws_users import ws_users
 from logic.indexing import index_recalculation
-from notification.create_notify.decorators import task_change_notify, ws_users_notify
+from notification.create_notify.decorators import send_notify
 from sse.decorators import sse_send
 
 User = get_user_model()
@@ -60,10 +60,6 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
                     )
         return queryset.order_by('created_at')  # вывод РП сортируется по дате создания
 
-    # @api_cache(timeout=60)
-    # def list(self, request, *args, **kwargs):
-    #     return super().list(request, *args, **kwargs)
-
     def create(self, request, *args, **kwargs):
         """
         Создание рабочего пространства.
@@ -77,7 +73,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         return Response(data=serialized_data, status=status.HTTP_201_CREATED)
 
     @action(methods=['post'], detail=True, url_name='invite_user')
-    @ws_users_notify
+    @send_notify
     def invite_user(self, request, *args, **kwargs):
         """
         Представление для приглашения пользователей в РП.
@@ -118,7 +114,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
 
     # @ws_users_notify
     @action(['post'], detail=True, url_name='kick_user')
-    @ws_users_notify
+    @send_notify
     def kick_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -142,11 +138,6 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         ws_handler.resend_invite(request)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-    # def get_object(self):
-    #     obj = super().get_object()
-    #     setattr(self, 'workspace', obj)
-    #     return obj
 
 
 class UserList(generics.ListAPIView):
@@ -375,7 +366,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         #     status=status.HTTP_201_CREATED,
         # )
 
-    @task_change_notify
+    @send_notify
     @sse_send
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
@@ -384,7 +375,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         #     data=self.serializer_class(self.get_queryset(), many=True).data,
         # )
 
-    @task_change_notify
+    @send_notify
     @sse_send
     def destroy(self, request, *args, **kwargs):
         """

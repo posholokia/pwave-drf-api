@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+
 from pulsewave.validators import validate_sticker_color
 
 
@@ -50,7 +51,7 @@ class Task(models.Model):
     index = models.PositiveIntegerField('Порядковый номер')
     column = models.ForeignKey(Column, related_name='task', on_delete=models.CASCADE)
     responsible = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='responsible_for_task')
-    deadline = models.DateField('Срок выполнения', null=True)
+    deadline = models.DateTimeField('Срок выполнения', null=True)
     description = models.CharField('Описание', max_length=2048, blank=True)
     file = models.FileField(upload_to='task_attach/', null=True)
     priority = models.IntegerField('Флаг приоритета', choices=PRIORITY, null=True)
