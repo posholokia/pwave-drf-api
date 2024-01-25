@@ -16,5 +16,5 @@ RUN set -ex &&\
     python3 -m pip install --no-cache-dir --no-warn-script-location --user -r requirements.txt
 
 ENTRYPOINT [ "python3" ]
-CMD [ "-m", "gunicorn", "-b", "0.0.0.0:8080", "--workers", "2", "--access-logfile", "-",  "pulsewave.asgi", "--reload", "-k", "uvicorn.workers.UvicornWorker" ]
+CMD [ "-m", "gunicorn", "-b", "0.0.0.0:8080", "--workers", "1", "--access-logfile", "-",  "pulsewave.asgi", "--reload", "-k", "uvicorn.workers.UvicornWorker" ]
 #ENTRYPOINT [ "python3", "manage.py", "runserver", "0.0.0.0:8080" ]

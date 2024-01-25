@@ -30,13 +30,20 @@ def send_notify(func):
                 'method': request.method,
             }
             # отправляем в celery создавать уведомления
+            # пока нет прокси сервера через celery не будет работать
             if path_obj == 'column':  # для задач
-                run_task_notification.apply_async(
-                    (until_change_obj, user, req)
+                # run_task_notification.apply_async(
+                #     (until_change_obj, user, req)
+                # )
+                run_task_notification(
+                    until_change_obj, user, req
                 )
             elif path_obj == 'workspace':  # для РП
-                run_ws_notification.apply_async(
-                    (user, req, kwargs['pk'])
+                # run_ws_notification.apply_async(
+                #     (user, req, kwargs['pk'])
+                # )
+                run_ws_notification(
+                    user, req, kwargs['pk']
                 )
         return res
 

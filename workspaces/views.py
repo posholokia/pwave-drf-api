@@ -1,9 +1,15 @@
 import string
 import random
 
+from django.http import Http404
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
+from rest_framework.mixins import (CreateModelMixin,
+                                   UpdateModelMixin,
+                                   DestroyModelMixin,
+                                   ListModelMixin,
+                                   RetrieveModelMixin)
 
 from django.contrib.auth import get_user_model
 from django_eventstream import send_event
@@ -328,7 +334,18 @@ class ColumnViewSet(viewsets.ModelViewSet):
         # )
 
 
-class TaskViewSet(viewsets.ModelViewSet):
+class RetrieveTask(RetrieveModelMixin, viewsets.GenericViewSet):
+    serializer_class = serializers.TaskSerializer
+    queryset = Task.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class TaskViewSet(CreateModelMixin,
+                  UpdateModelMixin,
+                  DestroyModelMixin,
+                  ListModelMixin,
+                  viewsets.GenericViewSet
+                  ):
     serializer_class = serializers.TaskSerializer
     queryset = Task.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserHasAccessTasks]
