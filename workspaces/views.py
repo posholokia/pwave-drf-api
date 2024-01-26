@@ -1,7 +1,6 @@
 import string
 import random
 
-from django.http import Http404
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
@@ -14,6 +13,8 @@ from rest_framework.mixins import (CreateModelMixin,
 from django.contrib.auth import get_user_model
 from django_eventstream import send_event
 from cacheops import cached_as
+from rest_framework.viewsets import GenericViewSet
+
 from .models import *
 from . import serializers, mixins
 from .permissions import *
@@ -118,7 +119,6 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         response = ws_handler.confirm_invite(serializer.invitation)
         return response
 
-    # @ws_users_notify
     @action(['post'], detail=True, url_name='kick_user')
     @send_notify
     def kick_user(self, request, *args, **kwargs):
@@ -407,6 +407,39 @@ class TaskViewSet(CreateModelMixin,
         # )
 
 
+class CommentDeleteViewSet(viewsets.mixins.DestroyModelMixin, GenericViewSet):
+    serializer_class = serializers.CommentListSerializer
+    queryset = Comment.objects.all()
+    """
+    Удаление комментария после проверки на авторство.
+    """
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user == instance.author:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+
+class CommentListCreateViewSet(viewsets.mixins.ListModelMixin, viewsets.mixins.CreateModelMixin, GenericViewSet):
+    serializer_class = serializers.CommentCreateSerializer
+    queryset = Comment.objects.all()
+    permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]
+
+    def get_queryset(self):
+        """Комменты фильтруются по задачам"""
+        queryset = super().get_queryset()
+        task_id = self.kwargs.get('task_id', None)
+        queryset = queryset.filter(task_id=task_id)
+        return queryset
+
+
+
+
+
+
 @api_view(['POST'])
 def index_columns(request):
     boards = Board.objects.all()
@@ -434,7 +467,7 @@ class StickerViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]
 
     def get_queryset(self):
-        """Задачи фильтруются по колонкам"""
+        """Стикеры фильтруются по задачам"""
         queryset = super().get_queryset()
         task_id = self.kwargs.get('task_id', None)
         queryset = queryset.filter(task_id=task_id)
