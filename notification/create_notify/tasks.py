@@ -37,7 +37,10 @@ def end_deadline(pk):
 
 @shared_task
 def run_task_notification(old, user, request):
-    task = Task.objects.get(pk=old['id'])
+    if request['method'] != 'DELETE':  # TODO сделать нормальную логику при удалении таски
+        task = Task.objects.get(pk=old['id'])
+    else:
+        task = None
     NotifyContext(request, task, user, old).handler()
 
 
