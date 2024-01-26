@@ -47,7 +47,7 @@ class NotifyContext:
 
         if 'responsible' in data_keys:
             new_users = recipients
-            old_users = {self.old['responsible']}
+            old_users = {*self.old['responsible']}
 
             added = new_users.difference(old_users, {self.user['id']})
             deleted = old_users.difference(new_users, {self.user['id']})
