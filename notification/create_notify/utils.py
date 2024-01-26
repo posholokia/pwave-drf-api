@@ -82,16 +82,20 @@ def end_deadline_notify(task: Task):
 
 
 def get_current_task(pk):
-    task = Task.objects.get(pk=pk)
-    data = {
-        'id': pk,
-        'name': task.name,
-        'column': task.column_id,
-        'responsible': list(task.responsible.values_list('id', flat=True)),
-        'deadline': task.deadline,
-        'priority': task.priority,
-    }
-    return data
+    try:
+        task = Task.objects.get(pk=pk)
+        data = {
+            'id': pk,
+            'name': task.name,
+            'column': task.column_id,
+            'responsible': list(task.responsible.values_list('id', flat=True)),
+            'deadline': task.deadline,
+            'priority': task.priority,
+        }
+        return data
+    except Task.DoesNotExist:
+        return
+
 
 
 def get_user_data(user):

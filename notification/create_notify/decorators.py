@@ -31,7 +31,7 @@ def send_notify(func):
             }
             # отправляем в celery создавать уведомления
             # пока нет прокси сервера через celery не будет работать
-            if path_obj == 'column':  # для задач
+            if path_obj == 'column' and until_change_obj is not None:  # для задач
                 # run_task_notification.apply_async(
                 #     (until_change_obj, user, req)
                 # )

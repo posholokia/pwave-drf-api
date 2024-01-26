@@ -12,9 +12,9 @@ class UserInWorkSpaceUsers(BasePermission):
                                .only('id')
                                .values_list('id')
                                ):
-            print(f'\nEND PERM\n')
+            # print(f'\nEND PERM\n')
             return True
-        print(f'\nEND PERM\n')
+        # print(f'\nEND PERM\n')
         return False
 
 
@@ -31,12 +31,12 @@ class UserIsBoardMember(BasePermission):
                      .only('work_space__users')
                      .get(pk=board_id))
             if (user,) in board.work_space.users.all().values_list('id'):
-                print(f'\nEND PERM\n')
+                # print(f'\nEND PERM\n')
                 return True
         except Board.DoesNotExist:
-            print(f'\nEND PERM\n')
+            # print(f'\nEND PERM\n')
             return False
-        print(f'\nEND PERM\n')
+        # print(f'\nEND PERM\n')
         return False
 
 
@@ -52,13 +52,13 @@ class UserHasAccessTasks(BasePermission):
                       .only('board__work_space__users')
                       .get(pk=column_id))
             if (user,) in column.board.work_space.users.all().values_list('id'):
-                print(f'\nEND PERM\n')
+                # print(f'\nEND PERM\n')
                 return True
 
         except Column.DoesNotExist:
-            print(f'\nEND PERM\n')
+            # print(f'\nEND PERM\n')
             return False
-        print(f'\nEND PERM\n')
+        # print(f'\nEND PERM\n')
         return False
 
 
@@ -74,11 +74,11 @@ class UserHasAccessStickers(BasePermission):
                     .only('column__board__work_space__users')
                     .get(pk=task_id))
             if (user,) in task.column.board.work_space.users.all().values_list('id'):
-                print(f'\nEND PERM\n')
+                # print(f'\nEND PERM\n')
                 return True
 
         except Column.DoesNotExist:
-            print(f'\nEND PERM\n')
+            # print(f'\nEND PERM\n')
             return False
-        print(f'\nEND PERM\n')
+        # print(f'\nEND PERM\n')
         return False
