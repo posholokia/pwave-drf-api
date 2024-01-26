@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 
 from notification.create_notify.utils import generate_task_link, end_deadline_notify, create_notification
 
-from workspaces.models import Task, WorkSpace, Column
+from workspaces.models import Task, WorkSpace, Column, Board
 
 User = get_user_model()
 
@@ -20,8 +20,8 @@ class NotifyContext:
             'Не передано состояние таски перед выполнением запроса'
 
     def handler(self):
-        self.get_empty_data()
-        self.fill_common_data()
+        self._get_empty_data()
+        self._fill_common_data()
         context = self.get_context()
         create_notification(self.data, context)
 
@@ -29,21 +29,21 @@ class NotifyContext:
         data_keys = list(self.request['data'].keys())
         context = {}
 
+        if self.request['method'] == 'DELETE':  # сделать нормальную логику при удалении таски
+            context.update({
+                'delete_task': {
+                    'col': Column.objects.get(pk=self.old['column']).name,
+                    'recipients': list({*self.old['responsible']}.difference({self.user['id']})),
+                }
+            })
+            return context
+
         if type(self.obj) is Task:
             recipients = set(
                 self.obj.responsible
                 .exclude(pk=self.user['id'])
                 .values_list('id', flat=True)
             )
-
-        if self.request['method'] == 'DELETE':
-            context.update({
-                'delete_task': {
-                    'col': self.obj.column.name,
-                    'recipients': list(recipients),
-                }
-            })
-            return context
 
         if 'responsible' in data_keys:
             new_users = recipients
@@ -144,15 +144,17 @@ class NotifyContext:
 
         return context
 
-    def get_empty_data(self):
+    def _get_empty_data(self):
         self.data = {
             'user': self.user['name'],
             'board': None,
             'workspace': None,
         }
 
-    def fill_common_data(self):
-        if type(self.obj) is Task:
+    def _fill_common_data(self):
+        if self.obj is None:  # сделать нормальную логику при удалении таски
+            return self._fill_for_deleted_task()
+        elif type(self.obj) is Task:
             board = self.obj.column.board
             self.data['workspace'] = board.work_space_id
             self.data['board'] = board.id
@@ -160,7 +162,18 @@ class NotifyContext:
             self.data['link'] = generate_task_link(
                 board.work_space_id,
                 board.id,
-                self.obj.id
+                self.old['id']
             )
         elif type(self.obj) is WorkSpace:
             self.data['workspace'] = self.obj.id
+
+    def _fill_for_deleted_task(self):
+        board = Board.objects.get(column_board=self.old['column'])
+        self.data['workspace'] = board.work_space_id
+        self.data['board'] = board.id
+        self.data['task'] = self.old['name']
+        self.data['link'] = generate_task_link(
+            board.work_space_id,
+            board.id,
+            self.old['id']
+        )
