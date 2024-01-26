@@ -48,15 +48,31 @@ class TaskTestCase(APITestCase):
         self.task2 = Task.objects.create(name='task2', index=0, column=self.column3)
         self.task3 = Task.objects.create(name='task3', index=1, column=self.column3)
 
+    # тестов не хватает
     def test_comment_create(self):
         data = {
-            'task': self.task1.id,
-            'author': self.user,
+            'task': self.task1.id,  # у тебя таска сама подставляется в комментарий, смысл ее передавать
+            'author': self.user,  # не нужно его передавать прямо, ведь мы знаем юзера из запроса
             'comment': 'Комментарий 2 для task1 пользователя user',
         }
         response = self.client.post(reverse('comment-list', kwargs={'task_id': self.task1.id},), data)
         self.assertEquals(status.HTTP_201_CREATED, response.status_code)
         self.assertEquals(2, len(Comment.objects.filter(task=self.task1.id)))
+
+    def test_fail_comment_create(self):
+        pass
+
+    def test_list_comments(self):
+        pass
+
+    def test_get_else_comments(self):
+        pass
+
+    def test_delete_comment(self):
+        pass
+
+    def test_fail_delete_else_comment(self):
+        pass
 
 
 

@@ -407,13 +407,16 @@ class TaskViewSet(CreateModelMixin,
         # )
 
 
-class CommentDeleteViewSet(viewsets.mixins.DestroyModelMixin, GenericViewSet):
+class CommentDeleteViewSet(viewsets.mixins.DestroyModelMixin,
+                           GenericViewSet):
     serializer_class = serializers.CommentListSerializer
     queryset = Comment.objects.all()
     """
     Удаление комментария после проверки на авторство.
     """
-
+    # зачем для удаления отдельное вью и url конфигурация?
+    # помести этот метод в CommentListCreateViewSet и используй
+    # get_serializer_class, чтобы разделить сериализоторы для разных методов
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if request.user == instance.author:
@@ -423,7 +426,9 @@ class CommentDeleteViewSet(viewsets.mixins.DestroyModelMixin, GenericViewSet):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
 
-class CommentListCreateViewSet(viewsets.mixins.ListModelMixin, viewsets.mixins.CreateModelMixin, GenericViewSet):
+class CommentListCreateViewSet(viewsets.mixins.ListModelMixin,
+                               viewsets.mixins.CreateModelMixin,
+                               GenericViewSet):
     serializer_class = serializers.CommentCreateSerializer
     queryset = Comment.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]
@@ -434,10 +439,6 @@ class CommentListCreateViewSet(viewsets.mixins.ListModelMixin, viewsets.mixins.C
         task_id = self.kwargs.get('task_id', None)
         queryset = queryset.filter(task_id=task_id)
         return queryset
-
-
-
-
 
 
 @api_view(['POST'])

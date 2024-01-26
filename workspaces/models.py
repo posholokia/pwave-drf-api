@@ -65,7 +65,15 @@ class Sticker(models.Model):
 
 
 class Comment(models.Model):
-    task = models.ForeignKey(Task, related_name='task', on_delete=models.CASCADE)
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='author', on_delete=models.CASCADE)
-    comment = models.CharField('Комментарий', max_length=2048)
+    # related_name - это имя объекта при обратном обращении к нему.
+    # Например, получить задачу из комментария - Comment.task - прямое обращение по названиям полей модели.
+    # Но если из задачи нужно получить комментарии, используется related_name:
+    # Task.task - не очевидно что это комментарии к задаче, как и User.author - не понятно, что это список комментариев.
+    # Давай названия related_name, как если бы это поле не в этой модели, а в связанной.
+    # Например, Task.comments или User.task_comments гораздо понятнее, что это комментарии
+    # задачи и пользователя соответственно, чем Task.task и User.author.
+    # А message переименовал чтобы не было конфликта имен
+    task = models.ForeignKey(Task, related_name='comments', on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='task_comments', on_delete=models.CASCADE)
+    message = models.CharField('Комментарий', max_length=2048)
     created_data = models.DateTimeField('Время создания комментария', auto_now_add=True)

@@ -14,13 +14,7 @@ from pulsewave.settings import WORKSAPCES
 from taskmanager.serializers import CurrentUserSerializer
 from . import mixins
 from logic.indexing import index_recalculation
-from .models import (WorkSpace,
-                     Board,
-                     InvitedUsers,
-                     Task,
-                     Column,
-                     Sticker,
-                     Comment)
+from .models import *
 
 User = get_user_model()
 
@@ -539,7 +533,6 @@ class BoardUserListSerializer(serializers.ModelSerializer):
     """
     Сериализатор списка пользователей при поиске.
     """
-
     name = serializers.SerializerMethodField()
 
     class Meta:
@@ -567,11 +560,17 @@ class CommentListSerializer(serializers.ModelSerializer):
             'id',
             'task',
             'author',
-            'comment',
+            'message',
             'created_data'
         )
 
 
+# 1. ты не подставляешь юзера как автора комментария
+# 2. не стоит наследоваться от CommentListSerializer,
+# при создании комментария достаточно только текста,
+# и только его стоит сериализовать.
+# 3. Таску хорошо подставил в комментарий, хотя в тестах
+# зачем-то ее передаешь в запросе
 class CommentCreateSerializer(CommentListSerializer):
     def create(self, validated_data):
         task_id = self.context['view'].kwargs['task_id']
