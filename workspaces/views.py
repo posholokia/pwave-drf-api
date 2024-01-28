@@ -407,11 +407,11 @@ class TaskViewSet(CreateModelMixin,
         # )
 
 
-class CommentViewSet(viewsets.mixins.ListModelMixin,
-                     viewsets.mixins.CreateModelMixin,
-                     viewsets.mixins.DestroyModelMixin,
-                     GenericViewSet):
-    serializer_class = serializers.CommentCreateSerializer
+class CommentViewSet(ListModelMixin,
+                     CreateModelMixin,
+                     DestroyModelMixin,
+                     viewsets.GenericViewSet):
+    serializer_class = serializers.CommentListSerializer
     queryset = Comment.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]
 
@@ -428,11 +428,11 @@ class CommentViewSet(viewsets.mixins.ListModelMixin,
             self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+            return Response(data={'detail': 'Вы не являетесь автором комментария.'}, status=status.HTTP_403_FORBIDDEN)
 
     def get_serializer_class(self):
-        if self.action == 'destroy':
-            return serializers.CommentListSerializer
+        if self.action == 'create':
+            return serializers.CommentCreateSerializer
 
         return super().get_serializer_class()
 

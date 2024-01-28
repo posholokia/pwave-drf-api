@@ -552,30 +552,39 @@ class CommentListSerializer(serializers.ModelSerializer):
     """
     Сериализатор комментариев
     """
-
+    is_author = serializers.SerializerMethodField()
     class Meta:
         model = Comment
-        read_only_fields = ['task', ]
+        read_only_fields = ['task', 'created_data']
         fields = (
             'id',
             'task',
             'author',
             'message',
-            'created_data'
+            'created_data',
+            'is_author'
         )
 
+    def get_is_author(self, obj):
+        return obj.author == self.context['request'].user
 
-# 1. ты не подставляешь юзера как автора комментария
-# 2. не стоит наследоваться от CommentListSerializer,
-# при создании комментария достаточно только текста,
-# и только его стоит сериализовать.
-# 3. Таску хорошо подставил в комментарий, хотя в тестах
-# зачем-то ее передаешь в запросе
-class CommentCreateSerializer(CommentListSerializer):
+
+class CommentCreateSerializer(serializers.ModelSerializer):
+
+    author = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = Comment
+        fields = (
+            'message',
+            'author',
+        )
+
     def create(self, validated_data):
         task_id = self.context['view'].kwargs['task_id']
         validated_data['task_id'] = task_id
         instance = Comment.objects.create(**validated_data)
         return instance
+
 
 
