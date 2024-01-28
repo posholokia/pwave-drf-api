@@ -407,28 +407,10 @@ class TaskViewSet(CreateModelMixin,
         # )
 
 
-class CommentDeleteViewSet(viewsets.mixins.DestroyModelMixin,
-                           GenericViewSet):
-    serializer_class = serializers.CommentListSerializer
-    queryset = Comment.objects.all()
-    """
-    Удаление комментария после проверки на авторство.
-    """
-    # зачем для удаления отдельное вью и url конфигурация?
-    # помести этот метод в CommentListCreateViewSet и используй
-    # get_serializer_class, чтобы разделить сериализоторы для разных методов
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if request.user == instance.author:
-            self.perform_destroy(instance)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
-
-class CommentListCreateViewSet(viewsets.mixins.ListModelMixin,
-                               viewsets.mixins.CreateModelMixin,
-                               GenericViewSet):
+class CommentListCreateDeleteViewSet(viewsets.mixins.ListModelMixin,
+                                     viewsets.mixins.CreateModelMixin,
+                                     viewsets.mixins.DestroyModelMixin,
+                                     GenericViewSet):
     serializer_class = serializers.CommentCreateSerializer
     queryset = Comment.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]
@@ -439,6 +421,20 @@ class CommentListCreateViewSet(viewsets.mixins.ListModelMixin,
         task_id = self.kwargs.get('task_id', None)
         queryset = queryset.filter(task_id=task_id)
         return queryset
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user == instance.author:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+    def get_serializer_class(self):
+        if self.action == 'destroy':
+            return serializers.CommentListSerializer
+
+        return super().get_serializer_class()
 
 
 @api_view(['POST'])
