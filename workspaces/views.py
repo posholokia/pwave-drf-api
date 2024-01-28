@@ -407,10 +407,10 @@ class TaskViewSet(CreateModelMixin,
         # )
 
 
-class CommentListCreateDeleteViewSet(viewsets.mixins.ListModelMixin,
-                                     viewsets.mixins.CreateModelMixin,
-                                     viewsets.mixins.DestroyModelMixin,
-                                     GenericViewSet):
+class CommentViewSet(viewsets.mixins.ListModelMixin,
+                     viewsets.mixins.CreateModelMixin,
+                     viewsets.mixins.DestroyModelMixin,
+                     GenericViewSet):
     serializer_class = serializers.CommentCreateSerializer
     queryset = Comment.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]

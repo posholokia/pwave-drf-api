@@ -9,7 +9,7 @@ router.register(r'boards/(?P<board_id>\d+)/column', ColumnViewSet, basename='col
 router.register(r'column/(?P<column_id>\d+)/task', TaskViewSet, basename='task')
 router.register(r'task/(?P<task_id>\d+)/sticker', StickerViewSet, basename='sticker')
 router.register(r'task', RetrieveTask, basename='task_retrieve')
-router.register(r'task/(?P<task_id>\d+)/comment', CommentListCreateDeleteViewSet, basename='comment')
+router.register(r'task/(?P<task_id>\d+)/comment', CommentViewSet, basename='comment')
 
 
 urlpatterns = [
