@@ -28,9 +28,9 @@ class TaskTestCase(APITestCase):
         self.column2 = Column.objects.create(name='Column2', board=self.board, index=1)
         self.task1 = Task.objects.create(name='task1', index=0, column=self.column1)
         self.comment1 = Comment.objects.create(
-            comment_task=self.task1,
-            comment_user=self.user,
-            comment='Комментарий 1 для task1 пользователя user')
+            task=self.task1,
+            author=self.user,
+            message='Комментарий 1 для task1 пользователя user')
 
         self.client = APIClient()
         self.client.credentials(HTTP_AUTHORIZATION=f'JWT {user_token}')
@@ -52,8 +52,8 @@ class TaskTestCase(APITestCase):
     def test_comment_create(self):
         data = {
             'task': self.task1.id,  # у тебя таска сама подставляется в комментарий, смысл ее передавать
-            'author': self.user,  # не нужно его передавать прямо, ведь мы знаем юзера из запроса
-            'comment': 'Комментарий 2 для task1 пользователя user',
+            'author': self.user.id,  # не нужно его передавать прямо, ведь мы знаем юзера из запроса
+            'message': 'Комментарий 2 для task1 пользователя user',
         }
         response = self.client.post(reverse('comment-list', kwargs={'task_id': self.task1.id},), data)
         self.assertEquals(status.HTTP_201_CREATED, response.status_code)

@@ -346,15 +346,15 @@ class TaskViewSet(CreateModelMixin,
                   ListModelMixin,
                   viewsets.GenericViewSet
                   ):
-    serializer_class = serializers.TaskListSerializer
+    serializer_class = serializers.TaskSerializer
     queryset = Task.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserHasAccessTasks]
 
     def get_serializer_class(self):
         if self.action == 'create':
             return serializers.TaskCreateSerializer
-        # elif self.action == 'list':
-        #     return serializers.TaskListSerializer
+        elif self.action == 'list':
+            return serializers.TaskListSerializer
 
         return super().get_serializer_class()
 
