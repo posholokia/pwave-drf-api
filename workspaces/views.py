@@ -1,7 +1,6 @@
 import string
 import random
 
-from django.http import Http404
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
@@ -12,12 +11,14 @@ from rest_framework.mixins import (CreateModelMixin,
                                    RetrieveModelMixin)
 
 from django.contrib.auth import get_user_model
+
 from django_eventstream import send_event
+
 from cacheops import cached_as
+
 from .models import *
 from . import serializers, mixins
 from .permissions import *
-
 from taskmanager.serializers import CurrentUserSerializer
 
 from logic.ws_users import ws_users
@@ -118,7 +119,6 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         response = ws_handler.confirm_invite(serializer.invitation)
         return response
 
-    # @ws_users_notify
     @action(['post'], detail=True, url_name='kick_user')
     @send_notify
     def kick_user(self, request, *args, **kwargs):
@@ -353,7 +353,7 @@ class TaskViewSet(CreateModelMixin,
     def get_serializer_class(self):
         if self.action == 'create':
             return serializers.TaskCreateSerializer
-        elif self.action == 'list' or self.action == 'retrieve':
+        elif self.action == 'list':
             return serializers.TaskListSerializer
 
         return super().get_serializer_class()
@@ -407,6 +407,36 @@ class TaskViewSet(CreateModelMixin,
         # )
 
 
+class CommentViewSet(ListModelMixin,
+                     CreateModelMixin,
+                     DestroyModelMixin,
+                     viewsets.GenericViewSet):
+    serializer_class = serializers.CommentListSerializer
+    queryset = Comment.objects.all()
+    permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]
+
+    def get_queryset(self):
+        """Комменты фильтруются по задачам"""
+        queryset = super().get_queryset()
+        task_id = self.kwargs.get('task_id', None)
+        queryset = queryset.filter(task_id=task_id)
+        return queryset
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user == instance.author:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(data={'detail': 'Вы не являетесь автором комментария.'}, status=status.HTTP_403_FORBIDDEN)
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return serializers.CommentCreateSerializer
+
+        return super().get_serializer_class()
+
+
 @api_view(['POST'])
 def index_columns(request):
     boards = Board.objects.all()
@@ -434,7 +464,7 @@ class StickerViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]
 
     def get_queryset(self):
-        """Задачи фильтруются по колонкам"""
+        """Стикеры фильтруются по задачам"""
         queryset = super().get_queryset()
         task_id = self.kwargs.get('task_id', None)
         queryset = queryset.filter(task_id=task_id)

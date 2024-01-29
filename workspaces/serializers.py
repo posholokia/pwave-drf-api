@@ -14,12 +14,7 @@ from pulsewave.settings import WORKSAPCES
 from taskmanager.serializers import CurrentUserSerializer
 from . import mixins
 from logic.indexing import index_recalculation
-from .models import (WorkSpace,
-                     Board,
-                     InvitedUsers,
-                     Task,
-                     Column,
-                     Sticker)
+from .models import *
 
 User = get_user_model()
 
@@ -194,42 +189,16 @@ class UserListSerializer(serializers.ModelSerializer):
         return obj.representation_name()
 
     def get_added(self, obj):
-        """
-        РП с пользователями кэшируется, чтобы не спамить запросы
-        к БД при проверке является пользователь участником,
-        подгружаем РП из БД, оно поместится в кэш и сверяем данные с кешем
-        """
         workspace_id = self.context.get('view').request.query_params.get('workspace')
-        ws_users = (WorkSpace.objects
-                    .filter(id=workspace_id)
-                    .prefetch_related('users')
-                    .values_list('users__id')
-                    )
-        if (obj.id, ) in ws_users:
+        if obj.joined_workspaces.filter(id=workspace_id).exists():
             return True
         return False
-        # это плохо, на каждого найденного юзера идет запрос к БД
-        # if obj.joined_workspaces.filter(id=workspace_id).exists():
-        #     return True
-        # return False
 
     def get_invited(self, obj):
-        """
-        Аналогично с get_added().
-        """
         workspace_id = self.context.get('view').request.query_params.get('workspace')
-        ws_users = (WorkSpace.objects
-                    .filter(id=workspace_id)
-                    .prefetch_related('invited')
-                    .values_list('invited__id')
-                    )
-        if (obj.id,) in ws_users:
+        if obj.invited_to_workspaces.filter(id=workspace_id).exists():
             return True
         return False
-        # это плохо, на каждого найденного юзера идет запрос к БД
-        # if obj.invited_to_workspaces.filter(id=workspace_id).exists():
-        #     return True
-        # return False
 
 
 class UserIDSerializer(serializers.Serializer):
@@ -343,7 +312,6 @@ class StickerCreateSerializer(StickerListSerializer):
 
 class TaskCreateSerializer(serializers.ModelSerializer):
     """Сериализатор создания задач"""
-    sticker = StickerListSerializer(many=True, read_only=True)
 
     class Meta:
         model = Task
@@ -358,7 +326,6 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             'description',
             # 'file',
             'priority',
-            'sticker',
         )
 
     def create(self, validated_data):
@@ -416,6 +383,45 @@ class TaskUsersListSerializer(serializers.ListSerializer):
         ]
 
 
+class CommentListSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор комментариев
+    """
+    is_author = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        read_only_fields = ['task', 'created_data']
+        fields = (
+            'id',
+            'task',
+            'author',
+            'message',
+            'created_data',
+            'is_author'
+        )
+
+    def get_is_author(self, obj):
+        return obj.author == self.context['request'].user
+
+
+class CommentCreateSerializer(serializers.ModelSerializer):
+    author = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = Comment
+        fields = (
+            'message',
+            'author',
+        )
+
+    def create(self, validated_data):
+        task_id = self.context['view'].kwargs['task_id']
+        validated_data['task_id'] = task_id
+        instance = Comment.objects.create(**validated_data)
+        return instance
+
+
 class TaskSerializer(
     mixins.IndexValidateMixin,
     mixins.ColumnValidateMixin,
@@ -423,6 +429,8 @@ class TaskSerializer(
 ):
     """Сериализатор задач"""
     responsible = TaskUsersListSerializer(child=serializers.IntegerField())
+    comments = CommentListSerializer(many=True, read_only=True)
+    stickers = StickerListSerializer(many=True, read_only=True, source='sticker')
 
     class Meta:
         model = Task
@@ -436,6 +444,8 @@ class TaskSerializer(
             'description',
             # 'file',
             'priority',
+            'comments',
+            'stickers',
         )
 
     def validate(self, attrs):
@@ -566,7 +576,6 @@ class BoardUserListSerializer(serializers.ModelSerializer):
     """
     Сериализатор списка пользователей при поиске.
     """
-
     name = serializers.SerializerMethodField()
 
     class Meta:
