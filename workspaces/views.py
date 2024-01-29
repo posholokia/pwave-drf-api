@@ -11,14 +11,14 @@ from rest_framework.mixins import (CreateModelMixin,
                                    RetrieveModelMixin)
 
 from django.contrib.auth import get_user_model
+
 from django_eventstream import send_event
+
 from cacheops import cached_as
-from rest_framework.viewsets import GenericViewSet
 
 from .models import *
 from . import serializers, mixins
 from .permissions import *
-
 from taskmanager.serializers import CurrentUserSerializer
 
 from logic.ws_users import ws_users
@@ -346,15 +346,15 @@ class TaskViewSet(CreateModelMixin,
                   ListModelMixin,
                   viewsets.GenericViewSet
                   ):
-    serializer_class = serializers.TaskSerializer
+    serializer_class = serializers.TaskListSerializer
     queryset = Task.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserHasAccessTasks]
 
     def get_serializer_class(self):
         if self.action == 'create':
             return serializers.TaskCreateSerializer
-        elif self.action == 'list' or self.action == 'retrieve':
-            return serializers.TaskListSerializer
+        # elif self.action == 'list':
+        #     return serializers.TaskListSerializer
 
         return super().get_serializer_class()
 

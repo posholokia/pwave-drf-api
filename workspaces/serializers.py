@@ -383,6 +383,45 @@ class TaskUsersListSerializer(serializers.ListSerializer):
         ]
 
 
+class CommentListSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор комментариев
+    """
+    is_author = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        read_only_fields = ['task', 'created_data']
+        fields = (
+            'id',
+            'task',
+            'author',
+            'message',
+            'created_data',
+            'is_author'
+        )
+
+    def get_is_author(self, obj):
+        return obj.author == self.context['request'].user
+
+
+class CommentCreateSerializer(serializers.ModelSerializer):
+    author = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        model = Comment
+        fields = (
+            'message',
+            'author',
+        )
+
+    def create(self, validated_data):
+        task_id = self.context['view'].kwargs['task_id']
+        validated_data['task_id'] = task_id
+        instance = Comment.objects.create(**validated_data)
+        return instance
+
+
 class TaskSerializer(
     mixins.IndexValidateMixin,
     mixins.ColumnValidateMixin,
@@ -390,6 +429,8 @@ class TaskSerializer(
 ):
     """Сериализатор задач"""
     responsible = TaskUsersListSerializer(child=serializers.IntegerField())
+    comments = CommentListSerializer(many=True, read_only=True)
+    stickers = StickerListSerializer(many=True, read_only=True, source='sticker')
 
     class Meta:
         model = Task
@@ -403,6 +444,8 @@ class TaskSerializer(
             'description',
             # 'file',
             'priority',
+            'comments',
+            'stickers',
         )
 
     def validate(self, attrs):
@@ -546,45 +589,3 @@ class BoardUserListSerializer(serializers.ModelSerializer):
 
     def get_name(self, obj):
         return obj.representation_name()
-
-
-class CommentListSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор комментариев
-    """
-    is_author = serializers.SerializerMethodField()
-    class Meta:
-        model = Comment
-        read_only_fields = ['task', 'created_data']
-        fields = (
-            'id',
-            'task',
-            'author',
-            'message',
-            'created_data',
-            'is_author'
-        )
-
-    def get_is_author(self, obj):
-        return obj.author == self.context['request'].user
-
-
-class CommentCreateSerializer(serializers.ModelSerializer):
-
-    author = serializers.HiddenField(default=serializers.CurrentUserDefault())
-
-    class Meta:
-        model = Comment
-        fields = (
-            'message',
-            'author',
-        )
-
-    def create(self, validated_data):
-        task_id = self.context['view'].kwargs['task_id']
-        validated_data['task_id'] = task_id
-        instance = Comment.objects.create(**validated_data)
-        return instance
-
-
-
