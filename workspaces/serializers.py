@@ -388,17 +388,18 @@ class CommentListSerializer(serializers.ModelSerializer):
     Сериализатор комментариев
     """
     is_author = serializers.SerializerMethodField()
+    author = CurrentUserSerializer()
 
     class Meta:
         model = Comment
-        read_only_fields = ['task', 'created_data']
+        read_only_fields = ['task', 'created_data', 'author']
         fields = (
             'id',
             'task',
             'author',
             'message',
             'created_data',
-            'is_author'
+            'is_author',
         )
 
     def get_is_author(self, obj):
