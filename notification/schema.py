@@ -14,8 +14,8 @@ class Fix1(OpenApiViewExtension):
             """
             Список уведомлений текущего пользователя.\n\n
             Получение через SSE:\n\n
-            Канал: 'events/user/<user_id>/
-            Событие: "notification"
+            Канал: "/events/user/<user_id>/"\n\n
+            Событие: "notification"\n\n
             Уведомления через SSE приходят по одному
             """
             pass

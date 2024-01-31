@@ -47,7 +47,7 @@ class Task(models.Model):
         (2, 'Нормальный'),
         (3, 'Низкий'),
     )
-    name = models.CharField('Название задачи', max_length=50)
+    name = models.CharField('Название задачи', max_length=200)
     index = models.PositiveIntegerField('Порядковый номер')
     column = models.ForeignKey(Column, related_name='task', on_delete=models.CASCADE)
     responsible = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='responsible_for_task')
