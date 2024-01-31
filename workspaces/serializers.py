@@ -1,8 +1,5 @@
-import re
-
 from datetime import timedelta
 
-from cacheops import cached_as
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -383,16 +380,13 @@ class TaskUsersListSerializer(serializers.ListSerializer):
         ]
 
 
-class CommentListSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор комментариев
-    """
+class CommentSerializer(serializers.ModelSerializer):
+    author = CurrentUserSerializer(read_only=True)
     is_author = serializers.SerializerMethodField()
-    author = CurrentUserSerializer()
 
     class Meta:
         model = Comment
-        read_only_fields = ['task', 'created_data', 'author']
+        read_only_fields = ['task', 'created_data']
         fields = (
             'id',
             'task',
@@ -403,31 +397,14 @@ class CommentListSerializer(serializers.ModelSerializer):
         )
 
     def get_is_author(self, obj):
-        return obj.author == self.context['request'].user
-
-
-class CommentCreateSerializer(serializers.ModelSerializer):
-    author = CurrentUserSerializer(default=serializers.CurrentUserDefault())
-    is_author = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Comment
-        read_only_fields = ['task', 'created_data', 'author']
-        fields = (
-            'id',
-            'task',
-            'author',
-            'message',
-            'created_data',
-            'is_author',
-        )
-
-    def get_is_author(self, obj):
-        return obj.author == self.context['request'].user
+        user = self.context['request'].user
+        return obj.author == user
 
     def create(self, validated_data):
         task_id = self.context['view'].kwargs['task_id']
+        user = self.context['request'].user
         validated_data['task_id'] = task_id
+        validated_data['author'] = user
         instance = Comment.objects.create(**validated_data)
         return instance
 
@@ -439,7 +416,7 @@ class TaskSerializer(
 ):
     """Сериализатор задач"""
     responsible = TaskUsersListSerializer(child=serializers.IntegerField())
-    comments = CommentListSerializer(many=True, read_only=True)
+    comments = CommentSerializer(many=True, read_only=True)
     stickers = StickerListSerializer(many=True, read_only=True, source='sticker')
 
     class Meta:

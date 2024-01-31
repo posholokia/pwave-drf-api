@@ -411,8 +411,8 @@ class CommentViewSet(ListModelMixin,
                      CreateModelMixin,
                      DestroyModelMixin,
                      viewsets.GenericViewSet):
-    serializer_class = serializers.CommentListSerializer
     queryset = Comment.objects.all()
+    serializer_class = serializers.CommentSerializer
     permission_classes = [permissions.IsAuthenticated, UserHasAccessStickers, ]
 
     def get_queryset(self):
@@ -429,12 +429,6 @@ class CommentViewSet(ListModelMixin,
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(data={'detail': 'Вы не являетесь автором комментария.'}, status=status.HTTP_403_FORBIDDEN)
-
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return serializers.CommentCreateSerializer
-
-        return super().get_serializer_class()
 
 
 @api_view(['POST'])
