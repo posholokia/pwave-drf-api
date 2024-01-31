@@ -407,14 +407,23 @@ class CommentListSerializer(serializers.ModelSerializer):
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
-    author = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    author = CurrentUserSerializer(default=serializers.CurrentUserDefault())
+    is_author = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
+        read_only_fields = ['task', 'created_data', 'author']
         fields = (
-            'message',
+            'id',
+            'task',
             'author',
+            'message',
+            'created_data',
+            'is_author',
         )
+
+    def get_is_author(self, obj):
+        return obj.author == self.context['request'].user
 
     def create(self, validated_data):
         task_id = self.context['view'].kwargs['task_id']
