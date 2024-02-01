@@ -4,10 +4,12 @@ from aiogram.types import Message
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 from aiogram.types import CallbackQuery
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+
 from telebot.keyboards.main_menu import create_menu_keyboard
 from telebot.lexicon.lexicon import LEXICON_RU
 from telebot.models import TeleBotID
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+
 import time
 
 from aiogram import F
@@ -22,9 +24,8 @@ router = Router()
 @router.message(CommandStart(deep_link=True))
 async def process_start_command(message: Message):
     """
-    Этот хэндлер срабатывает на команду /start в диплинк ссылке и если префикс
-    on - включает уведомления
-    off - выключает уведомления.
+    Этот хэндлер срабатывает на команду /start в диплинк ссылке
+    сохраняет данные юзера либо выводит ошибки.
     """
     if await _token_true(message):
         if await _telegram_in_table(message):
@@ -35,13 +36,6 @@ async def process_start_command(message: Message):
             else:
                 await _save_telegram_id(message)
                 await message.answer(text=LEXICON_RU['mail_changed'])
-
-        # if message.text.split('_')[0] == '/start off':
-        #     if not await _telegram_in_table(message):
-        #         await message.answer(text=LEXICON_RU['user_not_in_table'])
-        #     else:
-        #         await _delete_telegram_id(message)
-        #         await message.answer(text=LEXICON_RU['mail_delete'])
     else:
         await message.answer(text=LEXICON_RU['token_error'])
 
@@ -52,33 +46,6 @@ async def process_start_command(message: Message):
     Этот хэндлер срабатывает на команду /start.
     """
     await message.answer(text=f"Отлично, {message.from_user.first_name}!!!\n{LEXICON_RU['/start']}")
-
-
-# @router.message(Command(commands='on')) # не работает нужно переделать
-# async def process_email_add_command(message: Message):
-#     """
-#     Этот хэндлер срабатывает на команду /on
-#     проверяет наличие юзера с такой почтой и при наличии
-#     добавляет user_id и telegram_id  в табличку TeleBotID.
-#     """
-#     try:
-#         if await _email_true(message.text.split()[1]):
-#             if not await _user_in_table(message):
-#                 print('Почта ок')
-#                 if not await _telegram_in_table(message):
-#                     print('токена нет')
-#                     await message.answer(text=LEXICON_RU['mail_changed'])
-#                     await _save_telegram_id(message)
-#                     print('Сохранение прошло')
-#                     await message.answer(text=LEXICON_RU['mail_changed'])
-#                 else:
-#                     await message.answer(text=LEXICON_RU['user_in_table'])
-#             else:
-#                 await message.answer(text=LEXICON_RU['user_in_table'])
-#         else:
-#             await message.answer(text=LEXICON_RU['mail_not'])
-#     except IndexError:
-#         await message.answer(text=LEXICON_RU['mail_empty'])
 
 
 @router.message(Command(commands='off'))
@@ -120,21 +87,15 @@ async def process_email_delete_command(message: Message):
     await message.answer(text=LEXICON_RU['menu'], reply_markup=create_menu_keyboard())
 
 
-# @sync_to_async
-# def _email_true(email):
-#     """
-#     Проверка наличия указанной в сообщении почты среди почт наших пользователей.
-#     """
-#     if email in User.objects.all().values_list('email', flat=True):
-#         return True
-
 @sync_to_async
 def _token_true(message):
     """
     Проверка наличия указанного токена в списке токенов.
     """
-    if message.text.split(' ')[1] in OutstandingToken.objects.all().values_list('token', flat=True):
-        return True
+    for token in OutstandingToken.objects.all().values_list('token', flat=True):
+        print(token, message.text)
+        if token.startswith(message.text.split()[1]):
+            return True
 
 
 @sync_to_async
@@ -142,7 +103,7 @@ def _user_in_table(message):
     """
     Проверка наличия пользователя в таблице.
     """
-    if User.objects.get(pk=OutstandingToken.objects.get(token=message.text.split(' ')[1]).user_id) \
+    if User.objects.get(pk=OutstandingToken.objects.get(token__startswith=message.text.split(' ')[1]).user_id) \
             in TeleBotID.objects.all().values_list('user_id', flat=True):
         return True
 
@@ -162,31 +123,18 @@ def _save_telegram_id(message):
     Сохраненяет user_id и telegram_id  в табличку TeleBotID.
     """
     telebotuser = TeleBotID(
-        user=User.objects.get(pk=OutstandingToken.objects.get(token=message.text.split(' ')[1]).user_id),
+        user=User.objects.get(pk=OutstandingToken.objects.get(token__startswith=message.text.split(' ')[1]).user_id),
         telegram_id=message.from_user.id,
-        telegram_name=message.from_user.username
+        first_name=message.from_user.first_name,
+        last_name=message.from_user.last_name,
     )
     telebotuser.save()
-
-
-# @sync_to_async
-# def _delete_telegram_id(message):
-#     """
-#     Сохраненяет user_id и telegram_id в табличку TeleBotID для диплинк ссылки.
-#     """
-#     telebotuser = TeleBotID.objects.filter(
-#         user=User.objects.get(
-#             pk=OutstandingToken.objects.get(
-#                 token=message.text.split('_')[1]).user_id
-#         )
-#     )
-#     telebotuser.delete()
 
 
 @sync_to_async
 def _delete_telegram_id_off(message):
     """
-    Сохраненяет user_id и telegram_id  в табличку TeleBotID.
+    Удаляет user_id и telegram_id  в табличку TeleBotID.
     """
     telebotuser = TeleBotID.objects.filter(telegram_id=message.from_user.id)
     telebotuser.delete()
