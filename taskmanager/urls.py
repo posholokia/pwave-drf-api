@@ -11,6 +11,7 @@ urlpatterns = [
     path('', include('djoser.urls.jwt')),
     path('change_email/', ChangeEmailView.as_view(), name='change_email'),
     path('change_email_confirm/', ChangeEmailConfirmView.as_view(), name='change_email_confirm'),
+    path('delete_telegram/', DeleteTelegramView.as_view())
     # path('super/', CreateSuperuser.as_view())
 ]
 
