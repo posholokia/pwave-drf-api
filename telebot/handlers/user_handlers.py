@@ -93,8 +93,7 @@ def _token_true(message):
     Проверка наличия указанного токена в списке токенов.
     """
     for token in OutstandingToken.objects.all().values_list('token', flat=True):
-        print(token, message.text)
-        if token.startswith(message.text.split()[1]):
+        if token.endswith(message.text.split()[1]):
             return True
 
 
@@ -103,7 +102,7 @@ def _user_in_table(message):
     """
     Проверка наличия пользователя в таблице.
     """
-    if User.objects.get(pk=OutstandingToken.objects.get(token__startswith=message.text.split(' ')[1]).user_id) \
+    if User.objects.get(pk=OutstandingToken.objects.get(token__endswith=message.text.split(' ')[1]).user_id) \
             in TeleBotID.objects.all().values_list('user_id', flat=True):
         return True
 
@@ -123,7 +122,7 @@ def _save_telegram_id(message):
     Сохраненяет user_id и telegram_id  в табличку TeleBotID.
     """
     telebotuser = TeleBotID(
-        user=User.objects.get(pk=OutstandingToken.objects.get(token__startswith=message.text.split(' ')[1]).user_id),
+        user=User.objects.get(pk=OutstandingToken.objects.get(token__endswith=message.text.split(' ')[1]).user_id),
         telegram_id=message.from_user.id,
         first_name=message.from_user.first_name,
         last_name=message.from_user.last_name,
