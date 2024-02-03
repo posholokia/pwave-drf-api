@@ -14,11 +14,24 @@ from djoser.serializers import (SendEmailResetSerializer,
                                 CurrentPasswordSerializer)
 from djoser.conf import settings as djoser_settings
 
+from telebot.models import TeleBotID
 from workspaces.models import InvitedUsers
 from logic.token import token_generator
 from logic.file_upload import AvatarUpload
 
 User = get_user_model()
+
+
+class TelegramUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeleBotID
+        read_only_fields = ['telegram_id', 'first_name', 'last_name']
+        fields = (
+            'id',
+            'telegram_id',
+            'first_name',
+            'last_name',
+        )
 
 
 class CurrentUserSerializer(serializers.ModelSerializer):
@@ -27,16 +40,18 @@ class CurrentUserSerializer(serializers.ModelSerializer):
     Сериализует данные авторизованного пользователя в его профиле.
     """
     represent_name = serializers.SerializerMethodField()
+    telegram = TelegramUserSerializer(read_only=True, source='telebotid')
 
     class Meta:
         model = User
-        read_only_fields = ['email']
+        read_only_fields = ['email', 'telegram']
         fields = (
             'id',
             'email',
             'name',
             'represent_name',
             'avatar',
+            'telegram',
         )
 
     def get_represent_name(self, obj):
