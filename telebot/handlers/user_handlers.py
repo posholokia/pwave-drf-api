@@ -28,17 +28,20 @@ async def process_start_command(message: Message, command: CommandObject):
     Этот хэндлер срабатывает на команду /start в диплинк ссылке
     сохраняет данные юзера либо выводит ошибки.
     """
-    args = command.args
-    user_id = decode_payload(args)
+    try:
+        args = command.args
+        user_id = decode_payload(args)
 
-    if await _telegram_in_table(message):
-        await message.answer(text=LEXICON_RU['user_in_table'])
-    else:
-        if await _user_in_table(user_id):
+        if await _telegram_in_table(message):
             await message.answer(text=LEXICON_RU['user_in_table'])
         else:
-            await _save_telegram_id(message, user_id)
-            await message.answer(text=LEXICON_RU['mail_changed'])
+            if await _user_in_table(user_id):
+                await message.answer(text=LEXICON_RU['user_in_table'])
+            else:
+                await _save_telegram_id(message, user_id)
+                await message.answer(text=LEXICON_RU['mail_changed'])
+    except:
+        await message.answer(text=LEXICON_RU['token_error'])
     await message.delete()
 
 
