@@ -8,10 +8,8 @@ class UserInWorkSpaceUsers(BasePermission):
 
     def has_permission(self, request, view):
         workspace_id = int(view.kwargs.get('workspace_id', None))
-        if (workspace_id,) in (request.user.joined_workspaces.all()
-                               .only('id')
-                               .values_list('id')
-                               ):
+
+        if request.user.joined_workspaces.filter(id=workspace_id).exists():
             # print(f'\nEND PERM\n')
             return True
         # print(f'\nEND PERM\n')
@@ -23,14 +21,10 @@ class UserIsBoardMember(BasePermission):
 
     def has_permission(self, request, view):
         board_id = int(view.kwargs.get('board_id', None))
-        user = request.user.id
 
         try:
-            board = (Board.objects
-                     .select_related('work_space')
-                     .only('work_space__users')
-                     .get(pk=board_id))
-            if (user,) in board.work_space.users.all().values_list('id'):
+            board = Board.objects.only('work_space_id').get(pk=board_id)
+            if request.user.joined_workspaces.filter(id=board.work_space_id).exists():
                 # print(f'\nEND PERM\n')
                 return True
         except Board.DoesNotExist:
@@ -45,13 +39,15 @@ class UserHasAccessTasks(BasePermission):
 
     def has_permission(self, request, view):
         column_id = int(view.kwargs.get('column_id', None))
-        user = request.user.id
 
         try:
-            column = (Column.objects.select_related('board__work_space')
-                      .only('board__work_space__users')
-                      .get(pk=column_id))
-            if (user,) in column.board.work_space.users.all().values_list('id'):
+            ws = (Column.objects
+                  .select_related('board')
+                  .only('board__work_space_id')
+                  .get(pk=column_id)
+                  .board.work_space_id)
+
+            if request.user.joined_workspaces.filter(id=ws).exists():
                 # print(f'\nEND PERM\n')
                 return True
 
