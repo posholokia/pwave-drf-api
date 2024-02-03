@@ -1,3 +1,5 @@
+import asyncio
+
 from jwt import DecodeError, ExpiredSignatureError
 from rest_framework import serializers
 from rest_framework import exceptions
@@ -18,19 +20,31 @@ from telebot.models import TeleBotID
 from workspaces.models import InvitedUsers
 from logic.token import token_generator
 from logic.file_upload import AvatarUpload
+from aiogram.utils.deep_linking import create_start_link
+from aiogram import Bot
+from telebot.config_data.config import Config, load_config
 
 User = get_user_model()
 
 
 class TelegramUserSerializer(serializers.ModelSerializer):
+    link = serializers.SerializerMethodField()
+
     class Meta:
         model = TeleBotID
-        read_only_fields = ['name']
+        read_only_fields = ['name', 'link']
         fields = (
             'name',
+            'link',
         )
 
-
+    def get_link(self, obj):
+        config: Config = load_config()
+        bot = Bot(token=config.tg_bot.token)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        link = loop.run_until_complete(create_start_link(bot, f'{obj.user_id}', encode=True))
+        return link
 
 
 class CurrentUserSerializer(serializers.ModelSerializer):

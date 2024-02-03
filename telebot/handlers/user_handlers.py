@@ -1,5 +1,5 @@
 from aiogram import Router
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import Command, CommandStart, CommandObject
 from aiogram.types import Message
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
@@ -9,6 +9,7 @@ from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from telebot.keyboards.main_menu import create_menu_keyboard
 from telebot.lexicon.lexicon import LEXICON_RU
 from telebot.models import TeleBotID
+from aiogram.utils.deep_linking import decode_payload
 
 import time
 
@@ -22,22 +23,22 @@ router = Router()
 
 
 @router.message(CommandStart(deep_link=True))
-async def process_start_command(message: Message):
+async def process_start_command(message: Message, command: CommandObject):
     """
     Этот хэндлер срабатывает на команду /start в диплинк ссылке
     сохраняет данные юзера либо выводит ошибки.
     """
-    if await _token_true(message):
-        if await _telegram_in_table(message):
+    args = command.args
+    user_id = decode_payload(args)
+
+    if await _telegram_in_table(message):
+        await message.answer(text=LEXICON_RU['user_in_table'])
+    else:
+        if await _user_in_table(user_id):
             await message.answer(text=LEXICON_RU['user_in_table'])
         else:
-            if await _user_in_table(message):
-                await message.answer(text=LEXICON_RU['user_in_table'])
-            else:
-                await _save_telegram_id(message)
-                await message.answer(text=LEXICON_RU['mail_changed'])
-    else:
-        await message.answer(text=LEXICON_RU['token_error'])
+            await _save_telegram_id(message, user_id)
+            await message.answer(text=LEXICON_RU['mail_changed'])
     await message.delete()
 
 
@@ -101,11 +102,11 @@ def _token_true(message):
 
 
 @sync_to_async
-def _user_in_table(message):
+def _user_in_table(user_id):
     """
     Проверка наличия пользователя в таблице.
     """
-    if User.objects.get(pk=OutstandingToken.objects.get(token__endswith=message.text.split(' ')[1]).user_id) \
+    if User.objects.get(pk=OutstandingToken.objects.get(user_id=user_id).user_id) \
             in TeleBotID.objects.all().values_list('user_id', flat=True):
         return True
 
@@ -120,12 +121,12 @@ def _telegram_in_table(message):
 
 
 @sync_to_async
-def _save_telegram_id(message):
+def _save_telegram_id(message, user_id):
     """
     Сохраненяет user_id и telegram_id  в табличку TeleBotID.
     """
     telebotuser = TeleBotID(
-        user=User.objects.get(pk=OutstandingToken.objects.get(token__endswith=message.text.split(' ')[1]).user_id),
+        user=User.objects.get(pk=OutstandingToken.objects.get(user_id=user_id).user_id),
         telegram_id=message.from_user.id,
         name=message.from_user.first_name,
     )
