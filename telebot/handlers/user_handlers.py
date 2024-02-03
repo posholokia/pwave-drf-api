@@ -31,16 +31,19 @@ async def process_start_command(message: Message, command: CommandObject):
     try:
         args = command.args
         user_id = decode_payload(args)
-
+        print(f'\n{user_id=}')
         if await _telegram_in_table(message):
+            print(f'\nPoint1')
             await message.answer(text=LEXICON_RU['user_in_table'])
         else:
+            print(f'\nPoint2')
             if await _user_in_table(user_id):
                 await message.answer(text=LEXICON_RU['user_in_table'])
             else:
                 await _save_telegram_id(message, user_id)
                 await message.answer(text=LEXICON_RU['mail_changed'])
     except:
+        print(f'\nEXCEPT ERROR')
         await message.answer(text=LEXICON_RU['token_error'])
     await message.delete()
 
@@ -94,14 +97,14 @@ async def process_email_delete_command(message: Message):
     await message.delete()
 
 
-@sync_to_async
-def _token_true(message):
-    """
-    Проверка наличия указанного токена в списке токенов.
-    """
-    for token in OutstandingToken.objects.all().values_list('token', flat=True):
-        if token.endswith(message.text.split()[1]):
-            return True
+# @sync_to_async
+# def _token_true(message):
+#     """
+#     Проверка наличия указанного токена в списке токенов.
+#     """
+#     for token in OutstandingToken.objects.all().values_list('token', flat=True):
+#         if token.endswith(message.text.split()[1]):
+#             return True
 
 
 @sync_to_async
