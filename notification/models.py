@@ -5,7 +5,7 @@ from workspaces.models import WorkSpace, Board
 
 
 class Notification(models.Model):
-    text = models.CharField('Текст сообщения', max_length=256)
+    text = models.TextField('Текст сообщения')
     created_at = models.DateTimeField('Время создания',
                                       auto_now_add=True)
     read = models.BooleanField('Прочитано', default=False)

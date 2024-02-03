@@ -492,7 +492,7 @@ class BoardUserList(generics.ListAPIView):
     queryset = User.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
-    @cached_as(User, timeout=120)
+    # @cached_as(User, timeout=120)
     def get_queryset(self):
         queryset = super().get_queryset()
         ws_filter = self.request.query_params.get('workspace')
