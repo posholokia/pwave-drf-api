@@ -11,3 +11,4 @@ router = Router()
 @router.message()
 async def send_echo(message: Message):
     await message.answer(text=LEXICON_RU['no_answer'])
+    await message.delete()

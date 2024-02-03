@@ -38,6 +38,7 @@ async def process_start_command(message: Message):
                 await message.answer(text=LEXICON_RU['mail_changed'])
     else:
         await message.answer(text=LEXICON_RU['token_error'])
+    await message.delete()
 
 
 @router.message(Command(commands='start'))
@@ -46,20 +47,21 @@ async def process_start_command(message: Message):
     Этот хэндлер срабатывает на команду /start.
     """
     await message.answer(text=f"Отлично, {message.from_user.first_name}!!!\n{LEXICON_RU['/start']}")
+    await message.delete()
 
 
-@router.message(Command(commands='off'))
-async def process_email_delete_command(message: Message):
-    """
-    Этот хэндлер срабатывает на команду /off
-    проверяет наличие юзера с такой почтой и при наличии
-    удаляет user_id и telegram_id из таблицы TeleBotID.
-    """
-    if not await _telegram_in_table(message):
-        await message.answer(text=LEXICON_RU['user_not_in_table'])
-    else:
-        await _delete_telegram_id_off(message)
-        await message.answer(text=LEXICON_RU['mail_delete'])
+# @router.message(Command(commands='off'))
+# async def process_email_delete_command(message: Message):
+#     """
+#     Этот хэндлер срабатывает на команду /off
+#     проверяет наличие юзера с такой почтой и при наличии
+#     удаляет user_id и telegram_id из таблицы TeleBotID.
+#     """
+#     if not await _telegram_in_table(message):
+#         await message.answer(text=LEXICON_RU['user_not_in_table'])
+#     else:
+#         await _delete_telegram_id_off(message)
+#         await message.answer(text=LEXICON_RU['mail_delete'])
 
 
 @router.callback_query(F.data == '/off')
@@ -85,6 +87,7 @@ async def process_email_delete_command(message: Message):
     удаляет user_id и telegram_id из таблицы TeleBotID.
     """
     await message.answer(text=LEXICON_RU['menu'], reply_markup=create_menu_keyboard())
+    await message.delete()
 
 
 @sync_to_async
