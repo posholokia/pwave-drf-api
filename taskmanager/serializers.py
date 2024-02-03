@@ -25,13 +25,12 @@ User = get_user_model()
 class TelegramUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeleBotID
-        read_only_fields = ['telegram_id', 'first_name', 'last_name']
+        read_only_fields = ['name']
         fields = (
-            'id',
-            'telegram_id',
-            'first_name',
-            'last_name',
+            'name',
         )
+
+
 
 
 class CurrentUserSerializer(serializers.ModelSerializer):

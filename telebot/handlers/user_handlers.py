@@ -124,8 +124,7 @@ def _save_telegram_id(message):
     telebotuser = TeleBotID(
         user=User.objects.get(pk=OutstandingToken.objects.get(token__endswith=message.text.split(' ')[1]).user_id),
         telegram_id=message.from_user.id,
-        first_name=message.from_user.first_name,
-        last_name=message.from_user.last_name,
+        name=message.from_user.first_name,
     )
     telebotuser.save()
 
