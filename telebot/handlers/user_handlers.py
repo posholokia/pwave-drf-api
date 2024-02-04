@@ -32,6 +32,8 @@ async def process_start_command(message: Message, command: CommandObject):
         user_id = decode_payload(command.args)
         if await _user_true(user_id):  #Если такого юзера нет совсем в проекте то возвращаем неверная ссылка
             await message.answer(text=LEXICON_RU['token_error'])
+            await message.delete()
+            return
         if await _telegram_in_table(message) or await _user_in_table(user_id):  #Если у данного юзера или данного телеграмм уже есть запись.
             await message.answer(text=LEXICON_RU['user_in_table'])
         else:
