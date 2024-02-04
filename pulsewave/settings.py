@@ -177,8 +177,8 @@ DJOSER = {
     'CHANGE_EMAIL_URL_EXPIRED': {'hours': 1},  # своя настройка, не из модуля
     'SEND_ACTIVATION_EMAIL': True,
     'SERIALIZERS': {
-        'current_user': 'taskmanager.serializers.CurrentUserSerializer',
-        'user': 'taskmanager.serializers.CurrentUserSerializer',
+        'current_user': 'taskmanager.serializers.ProfileUserSerializer',
+        'user': 'taskmanager.serializers.ProfileUserSerializer',
         'set_password_retype': 'taskmanager.serializers.SetPasswordSerializer',
     },
     'TOKEN_MODEL': None,

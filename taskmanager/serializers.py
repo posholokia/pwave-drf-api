@@ -1,3 +1,5 @@
+import asyncio
+
 from jwt import DecodeError, ExpiredSignatureError
 from rest_framework import serializers
 from rest_framework import exceptions
@@ -14,19 +16,37 @@ from djoser.serializers import (SendEmailResetSerializer,
                                 CurrentPasswordSerializer)
 from djoser.conf import settings as djoser_settings
 
+from telebot.models import TeleBotID
 from workspaces.models import InvitedUsers
 from logic.token import token_generator
 from logic.file_upload import AvatarUpload
+from aiogram.utils.deep_linking import create_start_link
+from aiogram import Bot
+from telebot.config_data.config import Config, load_config
 
 User = get_user_model()
 
 
-class CurrentUserSerializer(serializers.ModelSerializer):
+class TelegramUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = TeleBotID
+        read_only_fields = ['name']
+        fields = (
+            'name',
+        )
+
+
+
+
+class ProfileUserSerializer(serializers.ModelSerializer):
     """
     Сериализатор пользователя, используется вместо стандартного Djoser current_user сериализатора.
     Сериализует данные авторизованного пользователя в его профиле.
     """
     represent_name = serializers.SerializerMethodField()
+    telegram = TelegramUserSerializer(read_only=True, source='telebotid')
+    link = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -37,14 +57,26 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             'name',
             'represent_name',
             'avatar',
+            'telegram',
+            'link',
         )
+
+    def get_link(self, obj):
+        config: Config = load_config()
+        bot = Bot(token=config.tg_bot.token)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        link = loop.run_until_complete(
+            create_start_link(bot, f'{obj.id}', encode=True)
+        )
+        return link
 
     def get_represent_name(self, obj):
         return obj.representation_name()
 
     def validate(self, attrs):
         """
-        Валидация аватара и сохранение его с сжатым разрешением
+        Валидация аватара и сохранение его со сжатым разрешением
         """
         avatar = attrs.get('avatar')
 
@@ -63,6 +95,28 @@ class CurrentUserSerializer(serializers.ModelSerializer):
                 default_storage.delete(instance.avatar.name)
 
         return super().update(instance, validated_data)
+
+
+class CurrentUserSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор пользователя, используется вместо стандартного Djoser current_user сериализатора.
+    Сериализует данные авторизованного пользователя в его профиле.
+    """
+    represent_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        read_only_fields = ['email', 'avatar', 'name']
+        fields = (
+            'id',
+            'email',
+            'name',
+            'represent_name',
+            'avatar',
+        )
+
+    def get_represent_name(self, obj):
+        return obj.representation_name()
 
 
 class PasswordResetSerializer(SendEmailResetSerializer):

@@ -18,6 +18,7 @@ from taskmanager.serializers import (ChangeEmailSerializer,
                                      ChangeEmailConfirmSerializer,
                                      PasswordResetSerializer,
                                      InvitedPasswordSerializer)
+from telebot.models import TeleBotID
 from workspaces import mixins
 
 User = get_user_model()
@@ -175,6 +176,23 @@ class ChangeEmailConfirmView(generics.GenericAPIView):
                             data={'new_email': 'Эта электронная почта уже используется'})
         else:
             return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DeleteTelegramView(generics.GenericAPIView):
+    """
+    Удаление данных Юзера из таблицы TelegramBotID т.е. отключение телеграмм
+    """
+    @extend_schema(responses={204: None, })
+    def delete(self, request, *args, **kwargs):
+        user = request.user
+        telebot_user = TeleBotID.objects.filter(user_id=user.id)
+        if telebot_user:
+            telebot_user.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(
+                data={'detail': 'Телеграм для данного пользователя не подключен.'},
+                status=status.HTTP_403_FORBIDDEN)
 
 
 # class CreateSuperuser(generics.CreateAPIView):
