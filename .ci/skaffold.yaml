@@ -74,6 +74,7 @@ profiles:
               APP_EMAIL_HOST_USER: "{{.APP_EMAIL_HOST_USER}}"
               APP_EMAIL_HOST_PASSWORD: "{{.APP_EMAIL_HOST_PASSWORD}}"
               APP_REDIS_BROKER: *redis-release-name
+              BOT_TOKEN: "{{.APP_BOT_TOKEN}}"
             valuesFiles:
               - ".ci/env.values/app.yaml"
               - ".ci/env.values/hooks.yaml"
