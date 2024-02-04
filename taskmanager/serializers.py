@@ -63,7 +63,8 @@ class ProfileUserSerializer(serializers.ModelSerializer):
 
     def get_link(self, obj):
         config: Config = load_config()
-        bot = Bot(token=config.tg_bot.token)
+        # bot = Bot(token=config.tg_bot.token)
+        bot = Bot(token=os.getenv('BOT_TOKEN'))
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         link = loop.run_until_complete(
