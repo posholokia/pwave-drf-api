@@ -29,21 +29,15 @@ async def process_start_command(message: Message, command: CommandObject):
     сохраняет данные юзера либо выводит ошибки.
     """
     try:
-        args = command.args
-        user_id = decode_payload(args)
-        print(f'\n{user_id=}')
-        if await _telegram_in_table(message):
-            print(f'\nPoint1')
+        user_id = decode_payload(command.args)
+        if await _user_true(user_id):  #Если такого юзера нет совсем в проекте то возвращаем неверная ссылка
+            await message.answer(text=LEXICON_RU['token_error'])
+        if await _telegram_in_table(message) or await _user_in_table(user_id):  #Если у данного юзера или данного телеграмм уже есть запись.
             await message.answer(text=LEXICON_RU['user_in_table'])
         else:
-            print(f'\nPoint2')
-            if await _user_in_table(user_id):
-                await message.answer(text=LEXICON_RU['user_in_table'])
-            else:
-                await _save_telegram_id(message, user_id)
-                await message.answer(text=LEXICON_RU['mail_changed'])
-    except:
-        print(f'\nEXCEPT ERROR')
+            await _save_telegram_id(message, user_id)  #Сохраняем и отвечаем что уведомления подключены.
+            await message.answer(text=LEXICON_RU['mail_changed'])
+    except UnicodeDecodeError:  #Ошибка когда несмогли декодировать deeplink
         await message.answer(text=LEXICON_RU['token_error'])
     await message.delete()
 
@@ -97,14 +91,12 @@ async def process_email_delete_command(message: Message):
     await message.delete()
 
 
-# @sync_to_async
-# def _token_true(message):
-#     """
-#     Проверка наличия указанного токена в списке токенов.
-#     """
-#     for token in OutstandingToken.objects.all().values_list('token', flat=True):
-#         if token.endswith(message.text.split()[1]):
-#             return True
+@sync_to_async
+def _user_true(user_id):
+    """
+    Проверка наличия указанного токена в списке токенов.
+    """
+    return not User.objects.filter(id=user_id).exists()
 
 
 @sync_to_async
@@ -112,9 +104,8 @@ def _user_in_table(user_id):
     """
     Проверка наличия пользователя в таблице.
     """
-    if User.objects.get(pk=OutstandingToken.objects.get(user_id=user_id).user_id) \
-            in TeleBotID.objects.all().values_list('user_id', flat=True):
-        return True
+
+    return TeleBotID.objects.filter(user_id=user_id).exists()
 
 
 @sync_to_async
@@ -122,8 +113,7 @@ def _telegram_in_table(message):
     """
     Проверка наличия telegram_id в таблице.
     """
-    if message.from_user.id in TeleBotID.objects.all().values_list('telegram_id', flat=True):
-        return True
+    return TeleBotID.objects.filter(telegram_id=message.from_user.id).exists()
 
 
 @sync_to_async
@@ -132,7 +122,7 @@ def _save_telegram_id(message, user_id):
     Сохраненяет user_id и telegram_id  в табличку TeleBotID.
     """
     telebotuser = TeleBotID(
-        user=User.objects.get(pk=OutstandingToken.objects.get(user_id=user_id).user_id),
+        user=User.objects.get(id=user_id),
         telegram_id=message.from_user.id,
         name=message.from_user.first_name,
     )
