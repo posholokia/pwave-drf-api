@@ -165,30 +165,6 @@ class UserList(generics.ListAPIView):
         return None
 
 
-class TestSSEMessage(generics.CreateAPIView):
-    """Для тестов Server Events. Отправляет случайную строку"""
-    serializer_class = None
-    queryset = None
-
-    def post(self, request, *args, **kwargs):
-        message = ''.join(random.choice(string.ascii_letters) for _ in range(10))
-        send_event('test', 'test_message', {'message': message})
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class TestSSEUser(generics.CreateAPIView):
-    """Для тестов Server Events. Отправляет текущего юзера"""
-    serializer_class = CurrentUserSerializer
-    queryset = User.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        user = request.user
-        user = self.serializer_class(user).data
-        send_event('test', 'test_user', {'user': user})
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
 class BoardViewSet(viewsets.ModelViewSet):
     """Представление досок"""
     serializer_class = serializers.BoardSerializer

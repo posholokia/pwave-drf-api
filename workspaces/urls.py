@@ -15,8 +15,6 @@ router.register(r'task/(?P<task_id>\d+)/comment', CommentViewSet, basename='comm
 urlpatterns = [
     path('user_list/', UserList.as_view(), name='search_user'),
     path('board_create/', BoardCreateWithoutWorkSpace.as_view(), name='out_ws_create_board'),
-    path('sse_random_string/', TestSSEMessage.as_view()),
-    path('sse_user/', TestSSEUser.as_view()),
     path('index_fixed/', index_columns),
     path('board_users/', BoardUserList.as_view(), name='board_users'),
 

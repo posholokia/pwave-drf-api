@@ -55,7 +55,6 @@ class Fix3(OpenApiViewExtension):
                                             'priority: Приоритет, число от 0 до 3, где 0 - высочайший приоритет\n\n'
                                             'color_mark: Цвет метки\n\n'
                                             'name_mark: Название метки', ),
-                            retrieve=extend_schema(description='Информация о конкретной задаче'),
                             update=extend_schema(
                                 description='Обновить задачу.\n\n'
                                             'Для преремещения между колонок нужно передать column - id новой '
@@ -120,45 +119,18 @@ class Fix4(OpenApiViewExtension):
         return Fixed
 
 
-class Fix5(OpenApiViewExtension):
-    target_class = 'workspaces.views.TestSSEMessage'
-
-    def view_replacement(self):
-        class Fixed(self.target_class):
-            """
-            Создать SSE - передает случайную строку.\n\n
-            Слушать /events/\n\n
-            channel: test\n\n
-            event_type: test_message
-            """
-            pass
-
-        return Fixed
-
-
-class Fix6(OpenApiViewExtension):
-    target_class = 'workspaces.views.TestSSEUser'
-
-    def view_replacement(self):
-        class Fixed(self.target_class):
-            """
-            Создать SSE - передает текущего юзера.\n\n
-            Слушать /events/\n\n
-            channel: test\n\n
-            event_type: test_user
-            """
-            pass
-
-        return Fixed
-
-
 class Fix7(OpenApiViewExtension):
     target_class = 'workspaces.views.BoardViewSet'
 
     def view_replacement(self):
         @extend_schema_view(list=extend_schema(description='Список всех досок указанного РП.'),
                             create=extend_schema(description='Создать Доску'),
-                            retrieve=extend_schema(description='Информация о конкретной доске'),
+                            retrieve=extend_schema(
+                                description='Информация о конкретной доске\n\n'
+                                            'Получение через SSE:\n\n'
+                                            'Канал: "/events/board/<board_id>/"\n\n'
+                                            'Событие: board'
+                            ),
                             update=extend_schema(description='Обновить доску'),
                             partial_update=extend_schema(description='Частично обновить доску'),
                             destroy=extend_schema(description='Удалить доску'),
@@ -223,4 +195,18 @@ class Fix10(OpenApiViewExtension):
             def get(self, request, *args, **kwargs):
                 return super().get(request, *args, **kwargs)
 
+        return Fixed
+
+
+class Fix11(OpenApiViewExtension):
+    target_class = 'workspaces.views.RetrieveTask'
+
+    def view_replacement(self):
+        class Fixed(self.target_class):
+            """
+            Получение одной задачи.\n\n
+            Получение через SSE:\n\n
+            Канал: "/events/task/<task_id>/"\n\n
+            Событие: task
+            """
         return Fixed
