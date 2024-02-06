@@ -126,3 +126,5 @@ CACHEOPS = {
     'workspaces.sticker': {'ops': ('get', 'fetch'), },
     'workspaces.sticker_set': {'ops': ('get', 'fetch'), },
 }
+
+START_BOT_LINK = 'https://t.me/PulseWaveBot?start='

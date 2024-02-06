@@ -1,6 +1,4 @@
-import asyncio
-import os
-
+from django.conf import settings
 from jwt import DecodeError, ExpiredSignatureError
 from rest_framework import serializers
 from rest_framework import exceptions
@@ -17,13 +15,12 @@ from djoser.serializers import (SendEmailResetSerializer,
                                 CurrentPasswordSerializer)
 from djoser.conf import settings as djoser_settings
 
+from aiogram.utils.deep_linking import encode_payload
+
 from telebot.models import TeleBotID
 from workspaces.models import InvitedUsers
 from logic.token import token_generator
 from logic.file_upload import AvatarUpload
-from aiogram.utils.deep_linking import create_start_link
-from aiogram import Bot
-from telebot.config_data.config import Config, load_config
 
 User = get_user_model()
 
@@ -36,8 +33,6 @@ class TelegramUserSerializer(serializers.ModelSerializer):
         fields = (
             'name',
         )
-
-
 
 
 class ProfileUserSerializer(serializers.ModelSerializer):
@@ -62,16 +57,10 @@ class ProfileUserSerializer(serializers.ModelSerializer):
             'link',
         )
 
-    def get_link(self, obj):
-        config: Config = load_config()
-        # bot = Bot(token=config.tg_bot.token)
-        bot = Bot(token=os.getenv('BOT_TOKEN'))
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        link = loop.run_until_complete(
-            create_start_link(bot, f'{obj.id}', encode=True)
-        )
-        return link
+    def get_link(self, user):
+        start = settings.START_BOT_LINK
+        encode_id = encode_payload(f'{user.id}')
+        return start + encode_id
 
     def get_represent_name(self, obj):
         return obj.representation_name()
