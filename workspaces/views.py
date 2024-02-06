@@ -22,7 +22,7 @@ from taskmanager.serializers import CurrentUserSerializer
 from logic.ws_users import ws_users
 from logic.indexing import index_recalculation
 from notification.create_notify.decorators import send_notify
-from sse.decorators import sse_send
+from sse.decorators import sse_create
 
 User = get_user_model()
 
@@ -217,40 +217,24 @@ class BoardViewSet(viewsets.ModelViewSet):
 
         return super().get_serializer_class()
 
-    @sse_send
     def create(self, request, *args, **kwargs):
         """ Создание доски с ограничением в 10 шт"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         workspace = self.kwargs.get('workspace_id')
+
         if Board.objects.filter(work_space_id=workspace).count() < 10:
             self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-            # return Response(
-            #     data=self.serializer_class(self.get_queryset(), many=True).data,
-            #     status=status.HTTP_201_CREATED,
-            #     headers=headers
-            # )
         else:
             return Response(data={'detail': 'Возможно создать не более 10 Досок'}, status=status.HTTP_400_BAD_REQUEST)
 
-    @sse_send
+    @sse_create(event_type=['board', ])
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
-        # super().update(request, *args, **kwargs)
-        # return Response(
-        #     data=self.serializer_class(self.get_queryset(), many=True).data,
-        # )
 
-    @sse_send
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
-        # super().destroy(request, *args, **kwargs)
-        # return Response(
-        #     data=self.serializer_class(self.get_queryset(), many=True).data,
-        # )
 
 
 class BoardCreateWithoutWorkSpace(generics.CreateAPIView):
@@ -301,24 +285,15 @@ class ColumnViewSet(viewsets.ModelViewSet):
 
         return super().get_serializer_class()
 
-    @sse_send
+    @sse_create(event_type=['board', ])
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
-        # super().create(request, *args, **kwargs)
-        # return Response(
-        #     data=self.serializer_class(self.get_queryset(), many=True).data,
-        #     status=status.HTTP_201_CREATED,
-        # )
 
-    @sse_send
+    @sse_create(event_type=['board', ])
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
-        # super().update(request, *args, **kwargs)
-        # return Response(
-        #     data=self.serializer_class(self.get_queryset(), many=True).data,
-        # )
 
-    @sse_send
+    @sse_create(event_type=['board', ])
     def destroy(self, request, *args, **kwargs):
         """
         При удалении колонки перезаписывает порядковые номера оставшихся колонок
@@ -327,15 +302,24 @@ class ColumnViewSet(viewsets.ModelViewSet):
         index_recalculation().delete_shift_index(instance)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
-        # return Response(
-        #     data=self.serializer_class(self.get_queryset(), many=True).data,
-        # )
 
 
 class RetrieveTask(RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = serializers.TaskSerializer
     queryset = Task.objects.all()
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        task_id = self.kwargs.get('pk', None)
+        queryset = queryset.filter(pk=task_id)
+
+        queryset = (queryset
+                    .prefetch_related('responsible')
+                    .prefetch_related('sticker')
+                    .prefetch_related('comments')
+                    )
+        return queryset
 
 
 class TaskViewSet(CreateModelMixin,
@@ -369,29 +353,19 @@ class TaskViewSet(CreateModelMixin,
                     .prefetch_related('responsible')
                     .prefetch_related('sticker')
                     )
-        # setattr(self, 'queryset', queryset)
         return queryset.order_by('index')
 
-    @sse_send
+    @sse_create(event_type=['board', 'task', ])
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
-        # super().create(request, *args, **kwargs)
-        # return Response(
-        #     data=self.serializer_class(self.get_queryset(), many=True).data,
-        #     status=status.HTTP_201_CREATED,
-        # )
 
     @send_notify
-    @sse_send
+    @sse_create(event_type=['board', 'task', ])
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
-        # super().update(request, *args, **kwargs)
-        # return Response(
-        #     data=self.serializer_class(self.get_queryset(), many=True).data,
-        # )
 
     @send_notify
-    @sse_send
+    @sse_create(event_type=['board', ])
     def destroy(self, request, *args, **kwargs):
         """
         При удалении задачи перезаписывает порядковые номера оставшихся задач
@@ -400,9 +374,6 @@ class TaskViewSet(CreateModelMixin,
         index_recalculation().delete_shift_index(instance)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
-        # return Response(
-        #     data=self.serializer_class(self.get_queryset(), many=True).data,
-        # )
 
 
 class CommentViewSet(ListModelMixin,
@@ -420,6 +391,7 @@ class CommentViewSet(ListModelMixin,
         queryset = queryset.filter(task_id=task_id)
         return queryset
 
+    @sse_create(event_type=['board', 'task', ])
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if request.user == instance.author:
@@ -427,6 +399,10 @@ class CommentViewSet(ListModelMixin,
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(data={'detail': 'Вы не являетесь автором комментария.'}, status=status.HTTP_403_FORBIDDEN)
+
+    @sse_create(event_type=['board', 'task', ])
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
 
 
 @api_view(['POST'])
@@ -462,14 +438,17 @@ class StickerViewSet(viewsets.ModelViewSet):
         queryset = queryset.filter(task_id=task_id)
         return queryset
 
-    @sse_send
+    @sse_create(event_type=['board', 'task', ])
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
-    @sse_send
+    @sse_create(event_type=['board', 'task', ])
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
+    @sse_create(event_type=['board', 'task', ])
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
 
 # @api_view(['POST'])
 # def return_ws(request):

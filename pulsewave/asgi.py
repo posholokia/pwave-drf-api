@@ -18,21 +18,22 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pulsewave.settings')
 
 application = ProtocolTypeRouter({
     'http': URLRouter([
-        path('events/', AuthMiddlewareStack(
-            URLRouter(django_eventstream.routing.urlpatterns)
-        ), {'channels': ['test', ], }),
         path('events/workspace/', AuthMiddlewareStack(
             URLRouter(django_eventstream.routing.urlpatterns)
         ), {'channels': ['workspace', ], }),
 
-        path('events/board/', AuthMiddlewareStack(
+        path('events/board/<board_id>/', AuthMiddlewareStack(
             URLRouter(django_eventstream.routing.urlpatterns)
-        ), {'channels': ['boards', 'column', 'task', ], }),
+        ), {'format-channels': ['board-{board_id}', ], }),
 
-        # , {'format-channels': ['workspace-{ws_id}', ], }),
+        path('events/task/<task_id>/', AuthMiddlewareStack(
+            URLRouter(django_eventstream.routing.urlpatterns)
+        ), {'format-channels': ['task-{task_id}', ], }),
+
         path('events/user/<user_id>/', AuthMiddlewareStack(
             URLRouter(django_eventstream.routing.urlpatterns)
         ), {'format-channels': ['user-{user_id}', ], }),
+
         re_path(r'', get_asgi_application()),
     ]),
 })

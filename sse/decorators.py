@@ -1,35 +1,46 @@
 from django_eventstream import send_event
 
+from sse.senders import sse_send_board, sse_send_task
+from sse.utils import get_board_id, get_task_id
 
-def sse_send(func):
+
+def sse_create(event_type=None):
     """
-    Декортатор create, update и destroy методов view, создает SSE.
-    При вызове декорируемых методов создает событие с данными,
-    которые возвращает сам метод.
-    Канал отправки и тип события базируется на url из request.
-    Так как url построены по принципу parent/id/child/id,
-    при изменении child во view в качестве ответа возвращается весь массив child обьектов.
+    Декортатор для create, update и destroy методов view для отправки SSE.
+    Работает для всего содержимого доски и через SSE отправляет обновленную доску.
     """
-    def wrapper(*args, **kwargs):
-        path = args[1].path.split('/')  # получает url в котором был изменен обьект
-        obj = path[2]  # это родительский обьект (связан с измененным через FK),
-        obj_id = path[3]
-        changed_obj = path[-3]
+    assert type(event_type) is list, 'event_type должно быть списком строк'
+    assert {*event_type} <= {'workspace', 'board', 'task'}, \
+        ('Неверно указан тип события для отправки события'
+         'Допустимые события: workspace, board, task')
 
-        prefix = ''
-        if changed_obj == obj:
-            prefix = 'update_'
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            path = args[1].path
 
-        # вызов метода и в переменную res записываем Response метода
-        res = func(*args, **kwargs)
+            # вызов метода и в переменную res записываем Response метода
+            res = func(*args, **kwargs)
 
-        # достаем статус ответа и данные из Response
-        status = res.status_code
-        data = res.data
+            # достаем статус ответа и данные из Response
+            status = res.status_code
+            allow_status = [200, 201, 204]
 
-        # если метод выполнен успешно, отправляем событие всем слушателям
-        if status == 201 or status == 200:
-            send_event(f'{prefix}{obj}', f'{obj}-{obj_id}', data)
+            # если апи вернул ошибку, событие не отправляем
+            if status not in allow_status:
+                return res
 
-        return res
-    return wrapper
+            if 'board' in event_type:
+                board_id = get_board_id(path)
+
+                if board_id is not None:
+                    sse_send_board(board_id, *args)
+
+            if 'task' in event_type:
+                task_id = get_task_id(path)
+
+                if task_id is not None:
+                    sse_send_task(task_id, *args)
+
+            return res
+        return wrapper
+    return decorator
