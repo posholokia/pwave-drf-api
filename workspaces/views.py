@@ -14,8 +14,6 @@ from django.contrib.auth import get_user_model
 
 from django_eventstream import send_event
 
-from cacheops import cached_as
-
 from .models import *
 from . import serializers, mixins
 from .permissions import *
@@ -492,7 +490,6 @@ class BoardUserList(generics.ListAPIView):
     queryset = User.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
-    # @cached_as(User, timeout=120)
     def get_queryset(self):
         queryset = super().get_queryset()
         ws_filter = self.request.query_params.get('workspace')
