@@ -1,3 +1,4 @@
+from django.conf import settings
 from jwt import DecodeError, ExpiredSignatureError
 from rest_framework import serializers
 from rest_framework import exceptions
@@ -57,7 +58,7 @@ class ProfileUserSerializer(serializers.ModelSerializer):
         )
 
     def get_link(self, user):
-        start = 'https://t.me/PulseWaveBot?start='
+        start = settings.START_BOT_LINK
         encode_id = encode_payload(f'{user.id}')
         return start + encode_id
 
