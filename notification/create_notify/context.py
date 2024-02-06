@@ -9,7 +9,7 @@ from workspaces.models import Task, WorkSpace, Column, Board
 User = get_user_model()
 
 
-class NotifyContext:
+class NotifyFactory:
     def __init__(self, request, obj, user, old=None):
         self.request = request
         self.obj = obj

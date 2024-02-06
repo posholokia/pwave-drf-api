@@ -1,6 +1,8 @@
 import json
+import os
 import zoneinfo
 
+import redis
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -47,6 +49,7 @@ def create_notification(data: dict[str:dict], context: dict[str:dict]) -> None:
             )
             notification.recipients.set(recipients)
             sse_send_notifications(notification, recipients)
+            send_notification_to_redis(notification)
 
 
 def end_deadline_notify(task: Task):
@@ -97,10 +100,18 @@ def get_current_task(pk):
         return
 
 
-
 def get_user_data(user):
     user_data = {
         'id': user.id,
         'name': user.representation_name(),
     }
     return user_data
+
+
+def send_notification_to_redis(notification):
+    redis_client = redis.StrictRedis(
+        host=f'{os.getenv("REDIS_HOST")}',
+        port=6379,
+        db=4
+    )
+    redis_client.publish('telebot_message', notification.text)
