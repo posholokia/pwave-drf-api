@@ -12,14 +12,19 @@ from telebot.config_data.config import Config, load_config
 from telebot.handlers import other_handlers, user_handlers
 from telebot.handlers.other_handlers import send_notification
 from telebot.keyboards.main_menu import set_main_menu
+from django.utils.log import AdminEmailHandler
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.DEBUG)
+admin_handler = AdminEmailHandler()
+admin_handler.setLevel(logging.ERROR)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
+logger.addHandler(admin_handler)
+
 
 
 # Название класса обязательно - "Command"

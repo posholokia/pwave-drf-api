@@ -8,6 +8,7 @@ from aiogram.utils.deep_linking import decode_payload
 
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
+from django.utils.log import AdminEmailHandler
 
 from telebot.keyboards.main_menu import create_menu_keyboard
 from telebot.lexicon.lexicon import LEXICON_RU
@@ -17,9 +18,12 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.DEBUG)
+admin_handler = AdminEmailHandler()
+admin_handler.setLevel(logging.ERROR)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
+logger.addHandler(admin_handler)
 
 User = get_user_model()
 
@@ -40,10 +44,7 @@ async def process_start_command(message: Message, command: CommandObject):
         if await _user_true(user_id):  # Если такого юзера нет совсем в проекте то возвращаем неверная ссылка
             logger.debug(f'Юзер не существует, id: {user_id}')
             await message.answer(text=LEXICON_RU['token_error'])
-            await message.delete()
-            return
-        if await _telegram_in_table(message) or await _user_in_table(
-                user_id):  # Если у данного юзера или данного телеграмм уже есть запись.
+        elif await _telegram_in_table(message) or await _user_in_table(user_id):  # Если у данного юзера или данного телеграмм уже есть запись.
             logger.debug(
                 f'Этот телеграм <{message.from_user.id}> уже привязан или <user: {user_id}> подключил другой телеграм')
             await message.answer(text=LEXICON_RU['user_in_table'])
@@ -51,7 +52,7 @@ async def process_start_command(message: Message, command: CommandObject):
             logger.debug(f'<user: {user_id}> может подключиться к телеграмму <{message.from_user.id}>')
             await _save_telegram_id(message, user_id)  # Сохраняем и отвечаем что уведомления подключены.
             await message.answer(text=LEXICON_RU['mail_changed'])
-    except UnicodeDecodeError:  # Ошибка когда несмогли декодировать deeplink
+    except (UnicodeDecodeError, ):  # Ошибка когда несмогли декодировать deeplink
         logger.info(f'Ошибка при декодировании ссылки: {command.args}')
         await message.answer(text=LEXICON_RU['token_error'])
     await message.delete()
