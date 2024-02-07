@@ -116,6 +116,7 @@ profiles:
               GIT_REPO: *app-bot
               APP_DJANGO_SECRET_KEY: "{{.APP_DJANGO_SECRET_KEY}}"
               BOT_TOKEN: "{{.APP_BOT_TOKEN}}"
+              APP_REDIS_BROKER: *redis-release-name
             valuesFiles:
               - ".ci/env.values/bot.yaml"
               - ".ci/env.values/prod/bot.yaml"
