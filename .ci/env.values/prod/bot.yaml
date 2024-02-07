@@ -23,6 +23,7 @@ env:
         name: pulsewave-pgsql-creds
         key: host
   DB_PORT: 6432
+  REDIS_HOST: "{{ .Values.APP_REDIS_BROKER }}-master"
 
 imagePullSecrets:
   - name: gitlab-cr
