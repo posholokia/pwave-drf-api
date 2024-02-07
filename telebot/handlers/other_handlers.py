@@ -38,7 +38,7 @@ async def send_notification(users: list, message: str):
         link = telegram_link(title, href)  # создаем html ссылку телеграма
         message = message.replace(match.group(0), link)  # вставляем ее в сообщение
 
-    for user in chat_ids:
+    async for user in chat_ids:
         # отправка сообщений внутри контекстного менеджера,
         # для корректного закрытия соединения после отправки сообщения
         async with aiohttp.ClientSession():
