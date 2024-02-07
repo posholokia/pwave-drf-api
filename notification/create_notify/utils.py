@@ -49,7 +49,7 @@ def create_notification(data: dict[str:dict], context: dict[str:dict]) -> None:
             )
             notification.recipients.set(recipients)
             sse_send_notifications(notification, recipients)
-            send_notification_to_redis(notification)
+            send_notification_to_redis(notification, recipients)
 
 
 def end_deadline_notify(task: Task):
@@ -108,10 +108,15 @@ def get_user_data(user):
     return user_data
 
 
-def send_notification_to_redis(notification):
-    redis_client = redis.StrictRedis(
+def send_notification_to_redis(notification, users):
+    redis_client = redis.Redis(
         host=f'{os.getenv("REDIS_HOST")}',
         port=6379,
         db=4
     )
-    redis_client.publish('telebot_message', notification.text)
+    data = {
+        'message': notification.text,
+        'users': users,
+    }
+    redis_client.publish('notify', json.dumps(data))
+    print('\nMessage PUB!')
