@@ -2,12 +2,12 @@ import os
 import re
 
 import aiohttp
-from aiogram import Router, types, Bot
-from aiogram.methods import SendMessage
+from aiogram import Router, Bot
 from aiogram.types import Message
 from telebot.lexicon.lexicon import LEXICON_RU
-from aiogram.filters import Command, CommandStart, CommandObject
 from aiogram.utils.markdown import hlink as telegram_link
+
+from telebot.models import TeleBotID
 
 # Инициализируем роутер уровня модуля
 router = Router()
@@ -24,8 +24,7 @@ async def send_echo(message: Message):
 
 
 async def send_notification(users: list, message: str):
-    ids = [920101866]
-
+    chat_ids = TeleBotID.objects.filter(user_id__in=users).values_list('telegram_id', flat=True)
     pattern = r'<a\s+href="([^"]+)">([^<]+)</a>'
     match = re.search(pattern, message)
 
@@ -35,7 +34,7 @@ async def send_notification(users: list, message: str):
         link = telegram_link(title, href)
         message = message.replace(match.group(0), link)
 
-    for user_id in ids:
+    for user in chat_ids:
         async with aiohttp.ClientSession():
-            await bot.send_message(user_id, message, parse_mode="HTML")
+            await bot.send_message(user, message, parse_mode="HTML")
 
