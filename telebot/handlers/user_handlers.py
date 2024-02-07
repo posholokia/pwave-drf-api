@@ -15,11 +15,11 @@ from telebot.models import TeleBotID
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-file_handler = logging.FileHandler('telegram_bot.log')
-file_handler.setLevel(logging.DEBUG)
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
 
 User = get_user_model()
 
