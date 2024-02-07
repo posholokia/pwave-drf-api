@@ -6,10 +6,11 @@ from sse.utils import get_board_id, get_task_id
 
 def sse_create(event_type=None):
     """
-    Декортатор для create, update и destroy методов view для отправки SSE.
-    Работает для всего содержимого доски и через SSE отправляет обновленную доску.
+    Декортатор для create, update и destroy методов view
+    для отправки SSE. Работает для всего содержимого доски,
+    таски и через SSE отправляет обновленный обьект.
     """
-    assert type(event_type) is list, 'event_type должно быть списком строк'
+    assert type(event_type) is list, 'event_type должен быть списком строк'
     assert {*event_type} <= {'workspace', 'board', 'task'}, \
         ('Неверно указан тип события для отправки события'
          'Допустимые события: workspace, board, task')

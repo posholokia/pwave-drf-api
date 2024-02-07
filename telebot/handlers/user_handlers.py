@@ -1,21 +1,26 @@
-from aiogram import Router
+import logging
+import time
+
+from aiogram import Router, F
 from aiogram.filters import Command, CommandStart, CommandObject
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
+from aiogram.utils.deep_linking import decode_payload
+
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
-from aiogram.types import CallbackQuery
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
 from telebot.keyboards.main_menu import create_menu_keyboard
 from telebot.lexicon.lexicon import LEXICON_RU
 from telebot.models import TeleBotID
-from aiogram.utils.deep_linking import decode_payload
 
-import time
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+file_handler = logging.FileHandler('telegram_bot.log')
+file_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
-from aiogram import F
-
-# Импортируем юзера
 User = get_user_model()
 
 # Инициализируем роутер уровня модуля
@@ -28,18 +33,26 @@ async def process_start_command(message: Message, command: CommandObject):
     Этот хэндлер срабатывает на команду /start в диплинк ссылке
     сохраняет данные юзера либо выводит ошибки.
     """
+    logger.info(f'Пользователь перешел по deeplink ссылке, {message=} | {command=}')
     try:
         user_id = decode_payload(command.args)
-        if await _user_true(user_id):  #Если такого юзера нет совсем в проекте то возвращаем неверная ссылка
+        logger.debug(f'Получили id юзера: {user_id=}')
+        if await _user_true(user_id):  # Если такого юзера нет совсем в проекте то возвращаем неверная ссылка
+            logger.debug(f'Юзер не существует, id: {user_id}')
             await message.answer(text=LEXICON_RU['token_error'])
             await message.delete()
             return
-        if await _telegram_in_table(message) or await _user_in_table(user_id):  #Если у данного юзера или данного телеграмм уже есть запись.
+        if await _telegram_in_table(message) or await _user_in_table(
+                user_id):  # Если у данного юзера или данного телеграмм уже есть запись.
+            logger.debug(
+                f'Этот телеграм <{message.from_user.id}> уже привязан или <user: {user_id}> подключил другой телеграм')
             await message.answer(text=LEXICON_RU['user_in_table'])
         else:
-            await _save_telegram_id(message, user_id)  #Сохраняем и отвечаем что уведомления подключены.
+            logger.debug(f'<user: {user_id}> может подключиться к телеграмму <{message.from_user.id}>')
+            await _save_telegram_id(message, user_id)  # Сохраняем и отвечаем что уведомления подключены.
             await message.answer(text=LEXICON_RU['mail_changed'])
-    except UnicodeDecodeError:  #Ошибка когда несмогли декодировать deeplink
+    except UnicodeDecodeError:  # Ошибка когда несмогли декодировать deeplink
+        logger.info(f'Ошибка при декодировании ссылки: {command.args}')
         await message.answer(text=LEXICON_RU['token_error'])
     await message.delete()
 
@@ -93,51 +106,55 @@ async def process_email_delete_command(message: Message):
     await message.delete()
 
 
-@sync_to_async
-def _user_true(user_id):
+# @sync_to_async
+async def _user_true(user_id):
     """
     Проверка наличия указанного токена в списке токенов.
     """
-    return not User.objects.filter(id=user_id).exists()
+    logger.debug(f'_user_true(user_id) Проверяем, что такой юзер существует')
+    return not await User.objects.filter(id=user_id).aexists()
 
 
-@sync_to_async
-def _user_in_table(user_id):
+# @sync_to_async
+async def _user_in_table(user_id):
     """
     Проверка наличия пользователя в таблице.
     """
+    logger.debug(f'_user_in_table(user_id) Проверяем, что этот юзер еще не привязал телеграм')
+    return await TeleBotID.objects.filter(user_id=user_id).aexists()
 
-    return TeleBotID.objects.filter(user_id=user_id).exists()
 
-
-@sync_to_async
-def _telegram_in_table(message):
+# @sync_to_async
+async def _telegram_in_table(message):
     """
     Проверка наличия telegram_id в таблице.
     """
-    return TeleBotID.objects.filter(telegram_id=message.from_user.id).exists()
+    logger.debug(f'_telegram_in_table(message) Проверяем, что этот телеграм ни к кому не привязан')
+    return await TeleBotID.objects.filter(telegram_id=message.from_user.id).aexists()
 
 
-@sync_to_async
-def _save_telegram_id(message, user_id):
+# @sync_to_async
+async def _save_telegram_id(message, user_id):
     """
     Сохраненяет user_id и telegram_id  в табличку TeleBotID.
     """
-    telebotuser = TeleBotID(
-        user=User.objects.get(id=user_id),
+    logger.debug(f'Сохраняем пользователя и телеграм в БД: <user: {user_id}> <телеграм: {message.from_user.id}>')
+    user = await User.objects.aget(id=user_id)
+    telebot = await TeleBotID.objects.acreate(
+        user=user,
         telegram_id=message.from_user.id,
         name=message.from_user.first_name,
     )
-    telebotuser.save()
+    logger.debug(f'Успешно сохранен в БД: {repr(telebot)}')
 
 
-@sync_to_async
-def _delete_telegram_id_off(message):
+# @sync_to_async
+async def _delete_telegram_id_off(message):
     """
     Удаляет user_id и telegram_id  в табличку TeleBotID.
     """
     telebotuser = TeleBotID.objects.filter(telegram_id=message.from_user.id)
-    telebotuser.delete()
+    await telebotuser.adelete()
 
 
 @router.message(Command(commands='sendall'))
