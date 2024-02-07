@@ -12,19 +12,14 @@ from telebot.config_data.config import Config, load_config
 from telebot.handlers import other_handlers, user_handlers
 from telebot.handlers.other_handlers import send_notification
 from telebot.keyboards.main_menu import set_main_menu
-from django.utils.log import AdminEmailHandler
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.DEBUG)
-admin_handler = AdminEmailHandler()
-admin_handler.setLevel(logging.ERROR)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
-logger.addHandler(admin_handler)
-
 
 
 # Название класса обязательно - "Command"
@@ -53,20 +48,26 @@ class Command(BaseCommand):
             await dp.start_polling(bot)
 
         async def redis_pubsub():
+            """Подписка на PubSub Redis для отслеживания уведомлений"""
             redis = await aioredis.Redis.from_url(
                 f"redis://{os.getenv('REDIS_HOST')}:6379/4"
             )
             pub = redis.pubsub()
             await pub.subscribe('notify')
+            logger.info('Подписался на PubSub Redis')
             async for msg in pub.listen():
                 data = msg.get('data', None)
-                if type(data) is bytes:
+                if type(data) is bytes:  # при первичном подключении в data будет число
                     data_dict = json.loads(data.decode())
                     message = data_dict.get('message')
                     users = data_dict.get('users')
+                    logger.debug(f'Получено уведомление для отправки в '
+                                 f'телеграм: {message=} | {users=}')
                     await send_notification(users, message)
 
-        # loop = asyncio.get_event_loop()  # после подключения редиса раскоментировать
-        # loop.run_until_complete(asyncio.gather(main(), redis_pubsub()))
-        # loop.close()
-        asyncio.run(main())  # после подключения редиса убрать
+        loop = asyncio.get_event_loop()
+        # и бот и подписка на pubsub являются блокирующими
+        # процессами, поэтому запускаем оба через asyncio.gather
+        loop.run_until_complete(asyncio.gather(main(), redis_pubsub()))
+        loop.close()
+        # asyncio.run(main())  # после подключения редиса убрать

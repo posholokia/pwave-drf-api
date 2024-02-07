@@ -24,17 +24,23 @@ async def send_echo(message: Message):
 
 
 async def send_notification(users: list, message: str):
-    chat_ids = TeleBotID.objects.filter(user_id__in=users).values_list('telegram_id', flat=True)
+    chat_ids = (TeleBotID.objects
+                .filter(user_id__in=users)
+                .values_list('telegram_id', flat=True)
+                )  # получаем телеграм id для отправки уведомлений
+    # парсим сообщение на наличие ссылки
     pattern = r'<a\s+href="([^"]+)">([^<]+)</a>'
     match = re.search(pattern, message)
 
-    if match:
-        href = match.group(1)
-        title = match.group(2)
-        link = telegram_link(title, href)
-        message = message.replace(match.group(0), link)
+    if match:  # если ссылку спарсили
+        href = match.group(1)  # записываем саму ссылку
+        title = match.group(2)  # заголовок ссылки
+        link = telegram_link(title, href)  # создаем html ссылку телеграма
+        message = message.replace(match.group(0), link)  # вставляем ее в сообщение
 
     for user in chat_ids:
+        # отправка сообщений внутри контекстного менеджера,
+        # для корректного закрытия соединения после отправки сообщения
         async with aiohttp.ClientSession():
             await bot.send_message(user, message, parse_mode="HTML")
 
