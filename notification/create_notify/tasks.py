@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 
 from celery import shared_task
 
-from notification.create_notify.context import NotifyContext
+from notification.create_notify.context import NotifyFactory
 from notification.create_notify.utils import (generate_task_link,
                                               create_notification)
 from workspaces.models import Task, WorkSpace
@@ -41,10 +41,10 @@ def run_task_notification(old, user, request):
         task = Task.objects.get(pk=old['id'])
     else:
         task = None
-    NotifyContext(request, task, user, old).handler()
+    NotifyFactory(request, task, user, old).handler()
 
 
 @shared_task
 def run_ws_notification(user, request, pk):
     ws = WorkSpace.objects.get(pk=pk)
-    NotifyContext(request, ws, user).handler()
+    NotifyFactory(request, ws, user).handler()
