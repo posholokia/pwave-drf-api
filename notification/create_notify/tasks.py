@@ -22,7 +22,7 @@ def end_deadline(pk):
 
     data = {
         'link': link,
-        'task': task,
+        'task': task.name,
         'workspace': workspace,
         'board': board.id,
     }
