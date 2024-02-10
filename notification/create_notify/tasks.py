@@ -13,7 +13,7 @@ User = get_user_model()
 
 
 @shared_task
-def end_deadline(pk):
+def end_deadline(pk: int):
     task = Task.objects.get(pk=pk)
     board = task.column.board
     workspace = board.work_space_id

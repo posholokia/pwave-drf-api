@@ -33,7 +33,7 @@ async def get_ru_msk_date(date_str_utc: str) -> str:
     date = tz.normalize(date.astimezone(tz))
     # форматирвоание даты в строку на русском
     date_str_msk = format_datetime(
-        date, 'd MMMM y H:mm', locale='ru_RU'
+        date, 'd MMMM, H:mm', locale='ru_RU'
     )
     date_str_msk = date_str_msk + ' по МСК'
     return date_str_msk

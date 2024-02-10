@@ -12,6 +12,7 @@ from django_celery_beat.models import PeriodicTask, CrontabSchedule
 from notification.models import Notification
 from notification.create_notify.notification_type import NOTIFICATION_TYPE as MESSAGE
 from sse.senders import sse_send_notifications
+from telebot.models import TeleBotID
 from workspaces.models import Task
 
 User = get_user_model()
@@ -49,7 +50,9 @@ def create_notification(data: dict[str:dict], context: dict[str:dict]) -> None:
             )
             notification.recipients.set(recipients)
             sse_send_notifications(notification, recipients)
-            send_notification_to_redis(notification, recipients)
+
+            telegram_id_list = get_telegram_id(recipients)
+            send_notification_to_redis(notification.text, telegram_id_list)
 
 
 def end_deadline_notify(task: Task):
@@ -108,15 +111,32 @@ def get_user_data(user):
     return user_data
 
 
-def send_notification_to_redis(notification, users):
+def send_notification_to_redis(message: str, users: list[int]):
+    """
+    Функция отправляет в редис сообщение, которое публикует бот.
+    message - строка.
+    users - список из id телеграм чатов пользователей.
+    """
     redis_client = redis.Redis(
         host=f'{os.getenv("REDIS_HOST")}',
         port=6379,
         db=4
     )
     data = {
-        'message': notification.text,
+        'message': message,
         'users': users,
     }
     redis_client.publish('notify', json.dumps(data))
     print('\nMessage PUB!')
+
+
+def get_telegram_id(users: list[int]) -> list[int]:
+    """
+    Получение id телеграм чатов для
+    рассылки уведомлений по id пользователей
+    """
+    chat_ids = list(TeleBotID.objects
+                    .filter(user_id__in=users)
+                    .values_list('telegram_id', flat=True)
+                    )
+    return chat_ids
