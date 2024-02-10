@@ -145,6 +145,7 @@ class TaskNotification(NotifyFactory):
             new_deadline = self.obj.deadline
 
             if new_deadline:
+                # запуск отложенной задачи об окончании дедлайна
                 end_deadline_notify(self.obj)
 
                 if old_deadline is None:
@@ -273,3 +274,9 @@ class CommentNotification(NotifyFactory):
             })
 
         return context
+
+
+class DeadlineNotification(NotifyFactory):
+    # def __init__(self, obj_id):
+    #     self.obj_id = obj_id
+    pass
