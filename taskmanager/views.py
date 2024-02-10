@@ -14,13 +14,14 @@ from djoser.serializers import UidAndTokenSerializer
 from drf_spectacular.utils import extend_schema
 
 from logic.email import ChangeEmail
+from notification.create_notify.utils import send_notification_to_redis, get_telegram_id
 from taskmanager.serializers import (ChangeEmailSerializer,
                                      ChangeEmailConfirmSerializer,
                                      PasswordResetSerializer,
                                      InvitedPasswordSerializer)
 from telebot.models import TeleBotID
 from workspaces import mixins
-
+from telebot.lexicon.lexicon import LEXICON_RU as bot_message
 User = get_user_model()
 
 
@@ -187,7 +188,15 @@ class DeleteTelegramView(generics.GenericAPIView):
         user = request.user
         telebot_user = TeleBotID.objects.filter(user_id=user.id)
         if telebot_user:
+            # получаем id телеграм чата юзера
+            recipients = get_telegram_id([user.id, ])
+            # удаляем подписку на телеграм
             telebot_user.delete()
+            # отправляем уведомление в телеграм об удалении
+            send_notification_to_redis(
+                bot_message['mail_delete'],
+                recipients,
+            )
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(

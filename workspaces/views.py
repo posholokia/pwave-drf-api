@@ -376,6 +376,7 @@ class CommentViewSet(ListModelMixin,
         else:
             return Response(data={'detail': 'Вы не являетесь автором комментария.'}, status=status.HTTP_403_FORBIDDEN)
 
+    @send_notify
     @sse_create(event_type=['board', 'task', ])
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)

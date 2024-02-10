@@ -11,4 +11,5 @@ NOTIFICATION_TYPE = {
     'delete_task': '{user} удалил(а) карточку {task}" из колонки "{col}"',
     'change_name': '{user} изменил(а) название карточки с "{old_name}" на "<a href="{link}">{task}</a>"',
     'change_priority': '{user} изменил(а) приоритет для карточки "<a href="{link}">{task}</a>" на "{priority}"',
+    'add_comment': '{user} добавил(а) комментарий к карточке "<a href="{link}">{task}</a>"',
 }

@@ -25,25 +25,11 @@ async def send_echo(message: Message):
     await message.delete()
 
 
-async def send_notification(users: list, message: str):
-    chat_ids = (TeleBotID.objects
-                .filter(user_id__in=users)
-                .values_list('telegram_id', flat=True)
-                )  # получаем телеграм id для отправки уведомлений
+async def send_notification(users: list[int], message: str):
     # парсим дату время из сообщения
     message = await formatted_date(message)
 
-    # парсим сообщение на наличие ссылки
-    # pattern = r'<a\s+href="([^"]+)">([^<]+)</a>'
-    # match = re.search(pattern, message)
-    #
-    # if match:  # если ссылку спарсили
-    #     href = match.group(1)  # записываем саму ссылку
-    #     title = match.group(2)  # заголовок ссылки
-    #     link = telegram_link(title, href)  # создаем html ссылку телеграма
-    #     message = message.replace(match.group(0), link)  # вставляем ее в сообщение
-
-    async for user in chat_ids:
+    for user in users:
         # отправка сообщений внутри контекстного менеджера,
         # для корректного закрытия соединения после отправки сообщения
         async with aiohttp.ClientSession():
