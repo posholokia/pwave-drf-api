@@ -4,10 +4,10 @@ from django.contrib.auth import get_user_model
 
 from celery import shared_task
 
-from notification.create_notify.context import NotifyFactory
+from notification.create_notify.context import NotifyFactory, CommentNotification
 from notification.create_notify.utils import (generate_task_link,
                                               create_notification)
-from workspaces.models import Task, WorkSpace
+from workspaces.models import Task, WorkSpace, Comment
 
 User = get_user_model()
 
@@ -48,3 +48,11 @@ def run_task_notification(old, user, request):
 def run_ws_notification(user, request, pk):
     ws = WorkSpace.objects.get(pk=pk)
     NotifyFactory(request, ws, user).handler()
+
+@shared_task
+def run_comment_notification(user, request, pk):
+    task = Task.objects.get(pk=pk)
+    print('\n\nPRE GO FACTORY')
+    CommentNotification(request, task, user).handler()
+    print('\n\nGO FACTORY')
+

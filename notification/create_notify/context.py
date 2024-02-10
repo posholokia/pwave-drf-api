@@ -16,10 +16,11 @@ class NotifyFactory:
         self.user = user
         self.old = old
         self.data = None
-        assert False if type(obj) is Task and old is None else True, \
-            'Не передано состояние таски перед выполнением запроса'
+        # assert False if type(obj) is Task and old is None else True, \
+        #     'Не передано состояние обьекта Task до выполнения request'
 
     def handler(self):
+        print('\n\nNOTIFY\n\n')
         self._get_empty_data()
         self._fill_common_data()
         context = self.get_context()
@@ -142,6 +143,14 @@ class NotifyFactory:
                     },
                 })
 
+        if 'message' in data_keys:
+            print(f'\n\n{list(recipients)=}')
+            context.update({
+                'add_comment': {
+                    'recipients': list(recipients)
+                },
+            })
+
         return context
 
     def _get_empty_data(self):
@@ -177,3 +186,25 @@ class NotifyFactory:
             board.id,
             self.old['id']
         )
+
+
+class TaskNotification(NotifyFactory):
+    pass
+
+
+class WorkSpaceNotification(NotifyFactory):
+    pass
+
+
+class CommentNotification(NotifyFactory):
+    def _fill_common_data(self):
+        board = self.obj.column.board
+        self.data['workspace'] = board.work_space_id
+        self.data['board'] = board.id
+        self.data['task'] = self.obj.name
+        self.data['link'] = generate_task_link(
+            board.work_space_id,
+            board.id,
+            self.obj.id
+        )
+

@@ -1,4 +1,4 @@
-from notification.create_notify.tasks import run_task_notification, run_ws_notification
+from notification.create_notify.tasks import run_task_notification, run_ws_notification, run_comment_notification
 from .utils import get_current_task, get_user_data
 from functools import wraps
 
@@ -22,9 +22,11 @@ def send_notify(func):
 
         status = res.status_code
         allow_status = [200, 201, 204, ]
-
+        print(f"\n\n{path_obj == 'task' and request.path.split('/')[-2] == 'comment'}")
+        print(f"\n\n{request.path.split('/')[-2]}")
         # если метод выполнен успешно
         if status in allow_status:
+            print('\nALLOW STATUS\n')
             req = {
                 'data': request.data,
                 'method': request.method,
@@ -32,6 +34,7 @@ def send_notify(func):
             # отправляем в celery создавать уведомления
             # пока нет прокси сервера через celery не будет работать
             if path_obj == 'column' and until_change_obj is not None:  # для задач
+                print('\nTASK STATUS\n')
                 # run_task_notification.apply_async(
                 #     (until_change_obj, user, req)
                 # )
@@ -39,12 +42,19 @@ def send_notify(func):
                     until_change_obj, user, req
                 )
             elif path_obj == 'workspace':  # для РП
+                print('\nWS STATUS\n')
                 # run_ws_notification.apply_async(
                 #     (user, req, kwargs['pk'])
                 # )
                 run_ws_notification(
                     user, req, kwargs['pk']
                 )
+            elif path_obj == 'task' and request.path.split('/')[-2] == 'comment':
+                print('\n\nRUN CMMENT')
+                run_comment_notification(
+                    user, req, kwargs.get('task_id')
+                )
+            print('\nEND ALLOW STATUS\n')
         return res
 
     return wrapper
