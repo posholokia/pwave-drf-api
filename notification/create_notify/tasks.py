@@ -4,9 +4,12 @@ from django.contrib.auth import get_user_model
 
 from celery import shared_task
 
-from notification.create_notify.context import NotifyFactory, CommentNotification
-from notification.create_notify.utils import (generate_task_link,
-                                              create_notification)
+from notification.create_notify.creator import (NotifyFactory,
+                                                CommentNotification,
+                                                TaskNotification,
+                                                WorkSpaceNotification, DeleteTaskNotification)
+
+from notification.create_notify.utils import generate_task_link
 from workspaces.models import Task, WorkSpace, Comment
 
 User = get_user_model()
@@ -31,28 +34,30 @@ def end_deadline(pk: int):
             'recipients': list(recipients)
         }
     }
-    create_notification(data, context)
+    NotifyFactory.create_notification(data, context)
     PeriodicTask.objects.get(name=f'end_deadline_{pk}').delete()
 
 
 @shared_task
 def run_task_notification(old, user, request):
-    if request['method'] != 'DELETE':  # TODO сделать нормальную логику при удалении таски
-        task = Task.objects.get(pk=old['id'])
-    else:
-        task = None
-    NotifyFactory(request, task, user, old).handler()
+    task = Task.objects.get(pk=old['id'])
+    TaskNotification(request, task, user, old).handler()
+
+
+@shared_task
+def run_del_task_notification(old, user, request):
+    obj = None
+    DeleteTaskNotification(request, obj, user, old).handler()
 
 
 @shared_task
 def run_ws_notification(user, request, pk):
     ws = WorkSpace.objects.get(pk=pk)
-    NotifyFactory(request, ws, user).handler()
+    WorkSpaceNotification(request, ws, user).handler()
+
 
 @shared_task
 def run_comment_notification(user, request, pk):
     task = Task.objects.get(pk=pk)
-    print('\n\nPRE GO FACTORY')
     CommentNotification(request, task, user).handler()
-    print('\n\nGO FACTORY')
 
