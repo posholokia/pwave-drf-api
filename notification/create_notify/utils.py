@@ -26,6 +26,10 @@ def generate_task_link(workspace: int, board: int, task: int) -> str:
 
 
 def end_deadline_notify(task: Task):
+    """
+    Создание отложенной задачи в celery-beat на
+    создания уведомления об истечении дедлайна
+    """
     if task.deadline is None:
         p = PeriodicTask.objects.filter(name=f'end_deadline_{task.id}').first()
         if p:

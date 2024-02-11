@@ -310,6 +310,8 @@ class StickerCreateSerializer(StickerListSerializer):
 class TaskCreateSerializer(serializers.ModelSerializer):
     """Сериализатор создания задач"""
 
+    sticker = serializers.SerializerMethodField()
+
     class Meta:
         model = Task
         read_only_fields = ['column', 'index', 'responsible', ]
@@ -323,6 +325,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             'description',
             # 'file',
             'priority',
+            'sticker',
         )
 
     def create(self, validated_data):
@@ -334,6 +337,9 @@ class TaskCreateSerializer(serializers.ModelSerializer):
 
         instance = Task.objects.create(**validated_data)
         return instance
+
+    def get_sticker(self, obj):
+        return []
 
 
 class TaskListSerializer(serializers.ModelSerializer):
