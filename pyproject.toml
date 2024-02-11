@@ -29,6 +29,7 @@ urllib3 = "1.26.18"
 django-cacheops = "^7.0.2"
 django-celery-beat = "^2.5.0"
 babel = "^2.14.0"
+sentry-sdk = "^1.40.3"
 
 
 [build-system]
