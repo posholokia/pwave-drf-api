@@ -1,9 +1,8 @@
 import json
 import os
 import zoneinfo
-
 import redis
-from django.conf import settings
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
@@ -14,15 +13,6 @@ from telebot.models import TeleBotID
 from workspaces.models import Task
 
 User = get_user_model()
-
-
-def generate_task_link(workspace: int, board: int, task: int) -> str:
-    """Формирование ссылки на задачу (Task)"""
-    link = (f'{settings.DOMAIN}/'
-            f'workspace/{workspace}/'
-            f'board/{board}/'
-            f'task/{task}')
-    return link
 
 
 def end_deadline_notify(task: Task):

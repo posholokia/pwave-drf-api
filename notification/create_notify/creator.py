@@ -1,8 +1,12 @@
 from datetime import datetime
+from typing import Optional
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django_celery_beat.models import PeriodicTask
 
-from notification.create_notify.utils import generate_task_link, end_deadline_notify, sending_to_channels
+from notification.create_notify.mixin import TaskCommonDataMixin
+from notification.create_notify.utils import end_deadline_notify, sending_to_channels
 from notification.create_notify.notification_type import NOTIFICATION_TYPE as MESSAGE
 from notification.models import Notification
 
@@ -12,19 +16,23 @@ User = get_user_model()
 
 
 class NotifyFactory:
-    def __init__(self, request, obj, user):
+    def __init__(self,
+                 request: Optional[dict] = None,
+                 obj=None,
+                 user: Optional[dict] = None
+                 ):
         self.request = request
         self.obj = obj
         self.user = user
         self.data = None
 
     def handler(self):
-        self._get_empty_data()
-        self._fill_common_data()
+        self.get_empty_data()
+        self.fill_common_data()
         context = self.get_context()
         self.create_notification(self.data, context)
 
-    def _get_empty_data(self):
+    def get_empty_data(self):
         self.data = {
             'user': self.user['name'],
             'board': None,
@@ -58,7 +66,16 @@ class NotifyFactory:
                 notification.recipients.set(recipients)
                 sending_to_channels(notification, recipients)
 
-    def _fill_common_data(self):
+    @staticmethod
+    def generate_task_link(workspace: int, board: int, task: int) -> str:
+        """Формирование ссылки на задачу (Task)"""
+        link = (f'{settings.DOMAIN}/'
+                f'workspace/{workspace}/'
+                f'board/{board}/'
+                f'task/{task}')
+        return link
+
+    def fill_common_data(self):
         """
         Формирует общие данные для создания уведомлений,
         Например РП, доска, и др, в зависимости от текста сообщений.
@@ -81,21 +98,10 @@ class NotifyFactory:
         pass
 
 
-class TaskNotification(NotifyFactory):
-    def __init__(self, request, obj, user, old):
+class TaskNotification(TaskCommonDataMixin, NotifyFactory):
+    def __init__(self, request, obj, user, old: dict):
         super().__init__(request, obj, user)
         self.old = old
-
-    def _fill_common_data(self):
-        board = self.obj.column.board
-        self.data['workspace'] = board.work_space_id
-        self.data['board'] = board.id
-        self.data['task'] = self.obj.name
-        self.data['link'] = generate_task_link(
-            board.work_space_id,
-            board.id,
-            self.obj.id
-        )
 
     def get_context(self):
         data_keys = list(self.request['data'].keys())
@@ -190,7 +196,7 @@ class TaskNotification(NotifyFactory):
 
 
 class WorkSpaceNotification(NotifyFactory):
-    def _fill_common_data(self):
+    def fill_common_data(self):
         self.data['workspace'] = self.obj.id
 
     def get_context(self):
@@ -221,41 +227,32 @@ class WorkSpaceNotification(NotifyFactory):
 
 
 class DeleteTaskNotification(TaskNotification):
-    def _fill_common_data(self):
+    def fill_common_data(self):
         board = Board.objects.get(column_board=self.old['column'])
         self.data['workspace'] = board.work_space_id
         self.data['board'] = board.id
         self.data['task'] = self.old['name']
-        self.data['link'] = generate_task_link(
+        self.data['link'] = self.generate_task_link(
             board.work_space_id,
             board.id,
             self.old['id']
         )
 
     def get_context(self):
-        context = {}
-        context.update({
+        column = Column.objects.get(pk=self.old['column']).name
+        recipients = {*self.old['responsible']}.difference({self.user['id']})
+
+        context = {
             'delete_task': {
-                'col': Column.objects.get(pk=self.old['column']).name,
-                'recipients': list({*self.old['responsible']}.difference({self.user['id']})),
+                'col': column,
+                'recipients': list(recipients),
             }
-        })
+        }
 
         return context
 
 
-class CommentNotification(NotifyFactory):
-    def _fill_common_data(self):
-        board = self.obj.column.board
-        self.data['workspace'] = board.work_space_id
-        self.data['board'] = board.id
-        self.data['task'] = self.obj.name
-        self.data['link'] = generate_task_link(
-            board.work_space_id,
-            board.id,
-            self.obj.id
-        )
-
+class CommentNotification(TaskCommonDataMixin, NotifyFactory):
     def get_context(self):
         data_keys = list(self.request['data'].keys())
         context = {}
@@ -276,7 +273,27 @@ class CommentNotification(NotifyFactory):
         return context
 
 
-class DeadlineNotification(NotifyFactory):
-    # def __init__(self, obj_id):
-    #     self.obj_id = obj_id
-    pass
+class DeadlineNotification(TaskCommonDataMixin, NotifyFactory):
+    def handler(self):
+        super().handler()
+        PeriodicTask.objects.get(
+            name=f'end_deadline_{self.obj.id}'
+        ).delete()
+
+    def get_empty_data(self):
+        self.data = {
+            'board': None,
+            'workspace': None,
+        }
+
+    def get_context(self):
+        recipients = set(
+            self.obj.responsible
+            .values_list('id', flat=True)
+        )
+        context = {
+            'end_deadline': {
+                'recipients': list(recipients)
+            },
+        }
+        return context
