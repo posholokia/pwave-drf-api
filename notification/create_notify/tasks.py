@@ -60,4 +60,3 @@ def run_ws_notification(user, request, pk):
 def run_comment_notification(user, request, pk):
     task = Task.objects.get(pk=pk)
     CommentNotification(request, task, user).handler()
-

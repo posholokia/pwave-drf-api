@@ -8,7 +8,7 @@ NOTIFICATION_TYPE = {
     'end_deadline': 'Срок у карточки "<a href="{link}">{task}</a>" истек',
     'move_task': '{user} переместил(а) карточку "<a href="{link}">{task}</a>"'
                  'из колонки "{old_col}" в колонку "{new_col}"',
-    'delete_task': '{user} удалил(а) карточку {task}" из колонки "{col}"',
+    'delete_task': '{user} удалил(а) карточку "{task}" из колонки "{col}"',
     'change_name': '{user} изменил(а) название карточки с "{old_name}" на "<a href="{link}">{task}</a>"',
     'change_priority': '{user} изменил(а) приоритет для карточки "<a href="{link}">{task}</a>" на "{priority}"',
     'add_comment': '{user} добавил(а) комментарий к карточке "<a href="{link}">{task}</a>"',

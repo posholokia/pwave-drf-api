@@ -55,27 +55,25 @@ def notification_distributor(parent_obj,
                              **kwargs):
     """Распределение уведомлений по хэндлерам"""
     old = kwargs.get('old', None)
+
     # отправляем в celery создавать уведомления
     # пока нет прокси сервера через celery не будет работать
     if child_obj == 'task' and req['method'] == 'DELETE':
         run_del_task_notification(
             old, user, req
         )
+
     elif parent_obj == 'task' and child_obj == 'comment':
         run_comment_notification(
             user, req, kwargs.get('task_id')
         )
+
     elif parent_obj == 'column' and old is not None:  # для задач
-        # run_task_notification.apply_async(
-        #     (until_change_obj, user, req)
-        # )
         run_task_notification(
             old, user, req
         )
+
     elif parent_obj == 'workspace':  # для РП
-        # run_ws_notification.apply_async(
-        #     (user, req, kwargs['pk'])
-        # )
         run_ws_notification(
             user, req, kwargs['pk']
         )
