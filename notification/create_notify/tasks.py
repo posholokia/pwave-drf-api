@@ -1,16 +1,14 @@
-from django_celery_beat.models import PeriodicTask
-
 from django.contrib.auth import get_user_model
 
 from celery import shared_task
 
-from notification.create_notify.creator import (NotifyFactory,
-                                                CommentNotification,
+from notification.create_notify.creator import (CommentNotification,
                                                 TaskNotification,
-                                                WorkSpaceNotification, DeleteTaskNotification)
+                                                WorkSpaceNotification,
+                                                DeleteTaskNotification,
+                                                DeadlineNotification)
 
-from notification.create_notify.utils import generate_task_link
-from workspaces.models import Task, WorkSpace, Comment
+from workspaces.models import Task, WorkSpace
 
 User = get_user_model()
 
@@ -18,45 +16,46 @@ User = get_user_model()
 @shared_task
 def end_deadline(pk: int):
     task = Task.objects.get(pk=pk)
-    board = task.column.board
-    workspace = board.work_space_id
-    recipients = task.responsible.values_list('id', flat=True)
-    link = generate_task_link(workspace, board, task.id)
-
-    data = {
-        'link': link,
-        'task': task.name,
-        'workspace': workspace,
-        'board': board.id,
-    }
-    context = {
-        'end_deadline': {
-            'recipients': list(recipients)
-        }
-    }
-    NotifyFactory.create_notification(data, context)
-    PeriodicTask.objects.get(name=f'end_deadline_{pk}').delete()
+    DeadlineNotification(obj=task).handler()
 
 
 @shared_task
 def run_task_notification(old, user, request):
     task = Task.objects.get(pk=old['id'])
-    TaskNotification(request, task, user, old).handler()
+    TaskNotification(
+        request=request,
+        obj=task,
+        user=user,
+        old=old
+    ).handler()
 
 
 @shared_task
 def run_del_task_notification(old, user, request):
     obj = None
-    DeleteTaskNotification(request, obj, user, old).handler()
+    DeleteTaskNotification(
+        request=request,
+        obj=obj,
+        user=user,
+        old=old
+    ).handler()
 
 
 @shared_task
 def run_ws_notification(user, request, pk):
     ws = WorkSpace.objects.get(pk=pk)
-    WorkSpaceNotification(request, ws, user).handler()
+    WorkSpaceNotification(
+        request=request,
+        obj=ws,
+        user=user
+    ).handler()
 
 
 @shared_task
 def run_comment_notification(user, request, pk):
     task = Task.objects.get(pk=pk)
-    CommentNotification(request, task, user).handler()
+    CommentNotification(
+        request=request,
+        obj=task,
+        user=user
+    ).handler()
