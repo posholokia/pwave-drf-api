@@ -1,5 +1,6 @@
 import logging
 import time
+import sentry_sdk
 
 from aiogram import Router, F
 from aiogram.filters import Command, CommandStart, CommandObject
@@ -13,15 +14,24 @@ from telebot.keyboards.main_menu import create_menu_keyboard
 from telebot.lexicon.lexicon import LEXICON_RU
 from telebot.models import TeleBotID
 
+from sentry_sdk.integrations.logging import LoggingIntegration
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-stream_handler.setFormatter(formatter)
-logger.addHandler(stream_handler)
+
+logging.basicConfig(level=logging.INFO)
+
+sentry_sdk.init(
+    dsn="https://f801038f7e6e6f1f7ddfad149e1fce83@o4506724974919680.ingest.sentry.io/4506727666286592",
+    integrations=[
+        LoggingIntegration(
+            level=logging.INFO,        # Capture info and above as breadcrumbs
+            event_level=logging.INFO   # Send records as events
+        ),
+    ],
+)
 
 User = get_user_model()
+
 
 # Инициализируем роутер уровня модуля
 router = Router()
@@ -33,23 +43,21 @@ async def process_start_command(message: Message, command: CommandObject):
     Этот хэндлер срабатывает на команду /start в диплинк ссылке
     сохраняет данные юзера либо выводит ошибки.
     """
-    logger.info(f'Пользователь перешел по deeplink ссылке, {message=} | {command=}')
     try:
         user_id = decode_payload(command.args)
-        logger.debug(f'Получили id юзера: {user_id=}')
+        logger.info(f'Deep Link, получили id юзера: {user_id=}')
         # Если такого юзера нет совсем в проекте то возвращаем неверная ссылка
         if await _user_true(user_id):
-            logger.debug(f'Юзер не существует, id: {user_id}')
+            logger.info(f'Юзер не существует, id: {user_id}')
             await message.answer(text=LEXICON_RU['token_error'])
         # Если у данного юзера или данного телеграмм уже есть запись.
         elif await _telegram_in_table(message) or await _user_in_table(user_id):
-            logger.debug(
+            logger.info(
                 f'Этот телеграм <{message.from_user.id}> уже привязан '
                 f'или <user: {user_id}> подключил другой телеграм'
             )
             await message.answer(text=LEXICON_RU['user_in_table'])
         else:
-            logger.debug(f'<user: {user_id}> может подключиться к телеграмму <{message.from_user.id}>')
             await _save_telegram_id(message, user_id)  # Сохраняем и отвечаем что уведомления подключены.
             await message.answer(text=LEXICON_RU['mail_changed'])
     except (UnicodeDecodeError, ValueError):  # Ошибка когда несмогли декодировать deeplink
@@ -112,7 +120,6 @@ async def _user_true(user_id):
     """
     Проверка наличия указанного токена в списке токенов.
     """
-    logger.debug(f'_user_true(user_id) Проверяем, что такой юзер существует')
     return not await User.objects.filter(id=user_id).aexists()
 
 
@@ -121,7 +128,6 @@ async def _user_in_table(user_id):
     """
     Проверка наличия пользователя в таблице.
     """
-    logger.debug(f'_user_in_table(user_id) Проверяем, что этот юзер еще не привязал телеграм')
     return await TeleBotID.objects.filter(user_id=user_id).aexists()
 
 
@@ -130,7 +136,6 @@ async def _telegram_in_table(message):
     """
     Проверка наличия telegram_id в таблице.
     """
-    logger.debug(f'_telegram_in_table(message) Проверяем, что этот телеграм ни к кому не привязан')
     return await TeleBotID.objects.filter(telegram_id=message.from_user.id).aexists()
 
 
@@ -139,7 +144,7 @@ async def _save_telegram_id(message, user_id):
     """
     Сохраненяет user_id и telegram_id  в табличку TeleBotID.
     """
-    logger.debug(f'Сохраняем пользователя и телеграм в БД: <user: {user_id}> <телеграм: {message.from_user.id}>')
+    logger.info(f'Сохраняем пользователя и телеграм в БД: <user: {user_id}> <телеграм: {message.from_user.id}>')
     # в асинхронном контексте не получится передать напрямую
     # id юзера в TeleBotID, поэтому нужно запросить самого юзера
     user = await User.objects.aget(id=user_id)
@@ -148,7 +153,7 @@ async def _save_telegram_id(message, user_id):
         telegram_id=message.from_user.id,
         name=message.from_user.first_name,
     )
-    logger.debug(f'Успешно сохранен в БД: {repr(telebot)}')
+    logger.info(f'Успешно сохранен в БД: {repr(telebot)}')
 
 
 # @sync_to_async
