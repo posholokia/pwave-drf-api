@@ -36,6 +36,8 @@ env:
         name: pwave-backend-s3-creds
         key: AWS_SECRET_KEY
   BOT_TOKEN: "{{ .Values.BOT_TOKEN }}"
+  SENTRY: "83fa61dffb7a25d797d092f3ca2a4267@o4506724974919680"
+  PROJECT: "4506724977082368"
 
 imagePullSecrets:
   - name: gitlab-cr
