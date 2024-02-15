@@ -31,11 +31,14 @@ def get_board_id(path: str) -> Union[int, None]:
 
 
 def get_task_id(path: str) -> Union[int, None]:
-    pattern = r"/api/(\w+)/(\d+)/(\w+)/(\d+)"
+    pattern = r"/api/(\w+)/(\d+)/(\w+)/?(\d*)/"
     match = re.match(pattern, path)
 
     if not match:
         return
 
-    if 'task' == match.group(3):
+    if 'task' == match.group(1):
+        return int(match.group(2))
+    elif 'task' == match.group(3):
         return int(match.group(4))
+
