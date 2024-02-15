@@ -331,7 +331,7 @@ class TaskViewSet(CreateModelMixin,
                     )
         return queryset.order_by('index')
 
-    @sse_create(event_type=['board', 'task', ])
+    @sse_create(event_type=['board', ])
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
