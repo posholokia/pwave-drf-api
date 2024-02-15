@@ -1,5 +1,10 @@
 import os
+import sentry_sdk
+import logging
+
 from dotenv import load_dotenv
+
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 
 load_dotenv()
@@ -128,3 +133,17 @@ CACHEOPS = {
 }
 
 START_BOT_LINK = 'https://t.me/PulseWaveBot?start='
+
+# sentry logging
+SENTRY = os.getenv('SENTRY')
+PROJECT = os.getenv('PROJECT')
+
+sentry_sdk.init(
+    dsn=f"https://{SENTRY}.ingest.sentry.io/{PROJECT}",
+    integrations=[
+        LoggingIntegration(
+            level=logging.ERROR,        # Capture info and above as breadcrumbs
+            event_level=logging.ERROR   # Send records as events
+        ),
+    ],
+)
