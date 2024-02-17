@@ -14,21 +14,9 @@ from telebot.keyboards.main_menu import create_menu_keyboard
 from telebot.lexicon.lexicon import LEXICON_RU
 from telebot.models import TeleBotID
 
-from sentry_sdk.integrations.logging import LoggingIntegration
-
 logger = logging.getLogger(__name__)
 
 logging.basicConfig(level=logging.INFO)
-
-sentry_sdk.init(
-    dsn="https://f801038f7e6e6f1f7ddfad149e1fce83@o4506724974919680.ingest.sentry.io/4506727666286592",
-    integrations=[
-        LoggingIntegration(
-            level=logging.INFO,        # Capture info and above as breadcrumbs
-            event_level=logging.INFO   # Send records as events
-        ),
-    ],
-)
 
 User = get_user_model()
 

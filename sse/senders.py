@@ -28,6 +28,7 @@ def sse_send_board(bord_id, *args):
         board,
         context={'request': args[1], 'view': args[0]},
     ).data
+    data['exclude_user'] = args[1].user.id
     send_event(
         f'board-{bord_id}',
         'board',
@@ -46,6 +47,7 @@ def sse_send_task(task_id, *args):
         task,
         context={'request': args[1], 'view': args[0]},
     ).data
+    data['exclude_user'] = args[1].user.id
     send_event(
         f'task-{task_id}',
         'task',
