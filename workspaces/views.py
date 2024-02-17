@@ -1,6 +1,7 @@
 import string
 import random
 
+from django.db.models import Prefetch
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
@@ -182,7 +183,8 @@ class BoardViewSet(viewsets.ModelViewSet):
                         .prefetch_related('column_board')
                         .prefetch_related('column_board__task')
                         .prefetch_related('column_board__task__responsible')
-                        .prefetch_related('column_board__task__sticker')
+                        .prefetch_related(Prefetch('column_board__task__sticker',
+                                                   queryset=Sticker.objects.order_by('id')))
                         )
 
         return queryset.order_by('id')
