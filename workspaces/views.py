@@ -329,7 +329,8 @@ class TaskViewSet(CreateModelMixin,
 
         queryset = (queryset
                     .prefetch_related('responsible')
-                    .prefetch_related('sticker')
+                    .prefetch_related(Prefetch('sticker',
+                                               queryset=Sticker.objects.order_by('id')))
                     )
         return queryset.order_by('index')
 
