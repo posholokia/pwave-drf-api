@@ -294,8 +294,10 @@ class RetrieveTask(RetrieveModelMixin, viewsets.GenericViewSet):
 
         queryset = (queryset
                     .prefetch_related('responsible')
-                    .prefetch_related('sticker')
-                    .prefetch_related('comments')
+                    .prefetch_related(Prefetch('sticker',
+                                               queryset=Sticker.objects.order_by('id')))
+                    .prefetch_related(Prefetch('comments',
+                                               queryset=Comment.objects.order_by('id')))
                     )
         return queryset
 
