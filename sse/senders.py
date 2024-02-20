@@ -1,7 +1,8 @@
+from django.db.models import Prefetch
 from django_eventstream import send_event
 
 from notification.serializers import NotificationListSerializer
-from workspaces.models import Board, Task
+from workspaces.models import Board, Task, Sticker, Comment
 from workspaces.serializers import BoardSerializer, TaskSerializer
 
 
@@ -37,12 +38,21 @@ def sse_send_board(bord_id, *args):
 
 
 def sse_send_task(task_id, *args):
+    sticker_prefetch = Prefetch(
+        'sticker',
+        queryset=Sticker.objects.order_by('id')
+    )
+    comment_prefetch = Prefetch(
+        'comments',
+        queryset=Comment.objects.order_by('id')
+    )
     task = (Task.objects
             .prefetch_related('responsible')
-            .prefetch_related('sticker')
-            .prefetch_related('comments')
+            .prefetch_related(sticker_prefetch)
+            .prefetch_related(comment_prefetch)
             .get(pk=task_id)
             )
+
     data = TaskSerializer(
         task,
         context={'request': args[1], 'view': args[0]},
