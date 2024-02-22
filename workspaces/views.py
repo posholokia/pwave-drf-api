@@ -1,6 +1,7 @@
 import string
 import random
 
+from django.db.models import Prefetch
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
@@ -182,7 +183,8 @@ class BoardViewSet(viewsets.ModelViewSet):
                         .prefetch_related('column_board')
                         .prefetch_related('column_board__task')
                         .prefetch_related('column_board__task__responsible')
-                        .prefetch_related('column_board__task__sticker')
+                        .prefetch_related(Prefetch('column_board__task__sticker',
+                                                   queryset=Sticker.objects.order_by('id')))
                         )
 
         return queryset.order_by('id')
@@ -292,8 +294,10 @@ class RetrieveTask(RetrieveModelMixin, viewsets.GenericViewSet):
 
         queryset = (queryset
                     .prefetch_related('responsible')
-                    .prefetch_related('sticker')
-                    .prefetch_related('comments')
+                    .prefetch_related(Prefetch('sticker',
+                                               queryset=Sticker.objects.order_by('id')))
+                    .prefetch_related(Prefetch('comments',
+                                               queryset=Comment.objects.order_by('id')))
                     )
         return queryset
 
@@ -321,14 +325,14 @@ class TaskViewSet(CreateModelMixin,
         queryset = super().get_queryset()
         column_id = self.kwargs.get('column_id', None)
         queryset = queryset.filter(column_id=column_id)
-        if (self.action == 'partial_update'
-                or self.action == 'update'):
-            return queryset.order_by('index')
-
         queryset = (queryset
                     .prefetch_related('responsible')
-                    .prefetch_related('sticker')
+                    .prefetch_related(Prefetch('sticker',
+                                               queryset=Sticker.objects.order_by('id')))
+                    .prefetch_related(Prefetch('comments',
+                                               queryset=Comment.objects.order_by('id')))
                     )
+
         return queryset.order_by('index')
 
     @sse_create(event_type=['board', ])
@@ -338,7 +342,16 @@ class TaskViewSet(CreateModelMixin,
     @send_notify
     @sse_create(event_type=['board', 'task', ])
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+        # Из метода удалена джанговская инвалидация кэша,
+        # иначе связанные объекты выводит в случайной сортировке.
+        # Инвалидацию кэша осуществляет cacheops.
+        # (Также лечится принтом serializer.data перед инвалидацией кэша)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
     @send_notify
     @sse_create(event_type=['board', ])
@@ -426,6 +439,7 @@ class StickerViewSet(viewsets.ModelViewSet):
     @sse_create(event_type=['board', 'task', ])
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
+
 
 # @api_view(['POST'])
 # def return_ws(request):
