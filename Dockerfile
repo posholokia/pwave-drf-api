@@ -1,20 +1,22 @@
-FROM python:3.9.12-slim
+FROM python:3.10
 
-RUN addgroup --gid 1000 app &&\     
-    adduser --home /app --uid 1000 --gid 1000 app
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONBUFFERED 1
 
-WORKDIR /app
+RUN addgroup --gid 1000 app &&  \
+    adduser --home /usr/home/web --uid 1000 --gid 1000 app
 
-COPY . .
+WORKDIR /usr/home/web
 
-RUN chown -R app:app /app
+COPY ./requirements.txt /usr/home/web/requirements.txt
 
-USER app
+RUN pip install --upgrade pip && \
+    pip install -r /usr/home/web/requirements.txt
 
-RUN set -ex &&\
-    python3 -m pip install --no-cache-dir --no-warn-script-location --upgrade pip &&\
-    python3 -m pip install --no-cache-dir --no-warn-script-location --user -r requirements.txt
 
-ENTRYPOINT [ "python3" ]
-CMD [ "-m", "gunicorn", "-b", "0.0.0.0:8080", "--workers", "1", "--access-logfile", "-",  "pulsewave.asgi", "--reload", "-k", "uvicorn.workers.UvicornWorker" ]
-#ENTRYPOINT [ "python3", "manage.py", "runserver", "0.0.0.0:8080" ]
+COPY . /usr/home/web
+
+USER celery
+
+EXPOSE 8000
+

@@ -1,0 +1,149 @@
+version: '3.8'
+
+services:
+#  db:
+#    image: postgres:12
+#    volumes:
+#      - pwdb_data:/var/lib/postgresql/data/
+#    ports:
+#      - "5432:5432"
+#    environment:
+#      POSTGRES_DB: "${POSTGRES_DB}"
+#      POSTGRES_USER: "${POSTGRES_USER}"
+#      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+
+#  nginx:
+#    container_name: "pw-nginx"
+#    build:
+#      context: ./nginx
+#      dockerfile: Dockerfile
+#    ports:
+#      - 80:80
+#    depends_on:
+#      - django
+
+#  redis:
+#    container_name: "redis"
+#    image: redis:latest
+#    ports:
+#      - "6379:6379"
+
+#  migrations:
+#    container_name: "migrations"
+#    build:
+#      context: .
+#      dockerfile: DockerfileMys
+#    command: bash -c "python3 /usr/home/web/manage.py makemigrations  && \
+#                      python3 /usr/home/web/manage.py migrate"
+#    tty: true
+#    volumes:
+#      - .:/usr/home/web/:ro
+#    environment:
+#      SECRET_KEY: "${SECRET_KEY}"
+#      DB_NAME: "${DB_NAME}"
+#      DB_HOST: "${DB_HOST}"
+#      DB_PASSWORD: "${DB_PASSWORD}"
+#      DB_USER: "${DB_USER}"
+#      DB_PORT: "${DB_PORT}"
+#    depends_on:
+#      - db
+
+  django:
+    container_name: "django"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash -c "gunicorn -k uvicorn.workers.UvicornWorker pulsewave.asgi:application --bind 0.0.0.0:8000"
+    tty: true
+    env_file:
+      - $env
+    volumes:
+      - .:/usr/home/web/
+    read_only: true
+    ports:
+      - "8000:8000"
+    environment:
+      EMAIL_HOST_USER: "${EMAIL_HOST_USER}"
+      EMAIL_HOST_PASSWORD: "${EMAIL_HOST_PASSWORD}"
+      SECRET_KEY: "${SECRET_KEY}"
+      REDIS_HOST: "${REDIS_HOST}"
+      DB_NAME: "${DB_NAME}"
+      DB_HOST: "${DB_HOST}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_USER: "${DB_USER}"
+      DB_PORT: "${DB_PORT}"
+      AWS_KEY_IDENTIFICATOR: "${AWS_KEY_IDENTIFICATOR}"
+      AWS_SECRET_KEY: "${AWS_SECRET_KEY}"
+      BOT_TOKEN: "${BOT_TOKEN}"
+#    depends_on:
+#      - migrations
+#      - db
+
+  celery-worker:
+    container_name: "celery-worker"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A pulsewave worker -l INFO
+    tty: true
+    env_file:
+      - $env
+    volumes:
+      - .:/usr/home/web/:ro
+    environment:
+      SECRET_KEY: "${SECRET_KEY}"
+      DB_NAME: "${DB_NAME}"
+      DB_HOST: "${DB_HOST}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_USER: "${DB_USER}"
+      DB_PORT: "${DB_PORT}"
+      REDIS_HOST: "${REDIS_HOST}"
+#    depends_on:
+#      - redis
+
+  celery-beat:
+    container_name: "celery-beat"
+    build:
+      context: .
+      dockerfile: DockerfileMys
+    command: celery -A pulsewave beat -l INFO
+    read_only: true
+    volumes:
+      - .:/usr/home/web/:ro
+    environment:
+      SECRET_KEY: "${SECRET_KEY}"
+      DB_NAME: "${DB_NAME}"
+      DB_HOST: "${DB_HOST}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_USER: "${DB_USER}"
+      DB_PORT: "${DB_PORT}"
+      REDIS_HOST: "${REDIS_HOST}"
+#    depends_on:
+#      - redis
+
+#  bot:
+#    container_name: "bot"
+#    build:
+#      context: .
+#      dockerfile: DockerfileMys
+#    command: python3 manage.py startbot
+#    tty: true
+#    read_only: true
+#    volumes:
+#      - .:/usr/home/web/:ro
+#    environment:
+#      SECRET_KEY: "${SECRET_KEY}"
+#      DB_NAME: "${DB_NAME}"
+#      DB_HOST: "${DB_HOST}"
+#      DB_PASSWORD: "${DB_PASSWORD}"
+#      DB_USER: "${DB_USER}"
+#      DB_PORT: "${DB_PORT}"
+#      BOT_TOKEN: "${BOT_TOKEN}"
+#      REDIS_HOST: "${REDIS_HOST}"
+#    depends_on:
+#      - django
+#      - redis
+
+
+#volumes:
+#  pwdb_data:
