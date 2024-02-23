@@ -11,8 +11,8 @@ WORKDIR /usr/home/web
 
 COPY ./requirements.txt /usr/home/web/requirements.txt
 
-#RUN pip install --upgrade pip && \
-#    pip install -r /usr/home/web/requirements.txt
+RUN pip install --upgrade pip && \
+    pip install -r /usr/home/web/requirements.txt
 
 
 COPY . /usr/home/web
