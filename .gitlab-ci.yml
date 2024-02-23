@@ -17,7 +17,7 @@ deploy:
   only:
     - master
   script:
-    - apt-get update -qy
+    - apk update -qy
     - apk install -y openssh-client
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
