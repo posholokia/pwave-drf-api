@@ -1,6 +1,6 @@
 stages:
   - build
-#  - delivery
+  - deploy
 
 build:
   stage: build
@@ -12,15 +12,16 @@ build:
     - docker build --network host -t $CI_REGISTRY_IMAGE .
     - docker push $CI_REGISTRY_IMAGE
 
-
-#delivery:
-#  stage: delivery
-#  before_script:
-#    - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
-#  script:
-#    - set -e
-#    - docker tag pulsewave-drf-api-django:latest $CI_REGISTRY_IMAGE
-#    - docker push $CI_REGISTRY_IMAGE
+deploy:
+  stage: deploy
+  only:
+    - master
+  script:
+    - apt-get update -qy
+    - apt-get install -y openssh-client
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh $SERVER_USER@$SERVER_IP "bash -s" < deploy_script.sh
 
 
 
