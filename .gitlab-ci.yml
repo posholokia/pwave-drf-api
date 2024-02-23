@@ -20,7 +20,7 @@ delivery:
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
     - set -e
-    - docker tag pw-django:latest $CI_REGISTRY_IMAGE
+    - docker tag pulsewave-drf-api-django:latest $CI_REGISTRY_IMAGE
     - docker push $CI_REGISTRY_IMAGE
 
 
