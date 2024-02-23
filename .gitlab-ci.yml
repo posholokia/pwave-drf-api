@@ -1,29 +1,26 @@
 stages:
   - build
-  - delivery
+#  - delivery
 
 build:
   stage: build
   services:
-    - docker:20.10.16-dind
-
-  script:
-    - set -e
-    - docker network ls
-    - docker volume ls
-    - docker-compose down || true
-    - docker-compose build
-    - docker-compose up
-
-
-delivery:
-  stage: delivery
+    - docker:stable-dind
   before_script:
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
-    - set -e
-    - docker tag pulsewave-drf-api-django:latest $CI_REGISTRY_IMAGE
+    - docker build -t $CI_REGISTRY_IMAGE .
     - docker push $CI_REGISTRY_IMAGE
+
+
+#delivery:
+#  stage: delivery
+#  before_script:
+#    - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
+#  script:
+#    - set -e
+#    - docker tag pulsewave-drf-api-django:latest $CI_REGISTRY_IMAGE
+#    - docker push $CI_REGISTRY_IMAGE
 
 
 
