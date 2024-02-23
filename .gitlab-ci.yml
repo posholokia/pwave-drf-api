@@ -11,7 +11,9 @@ build:
   stage: build
   script:
     - set -e
-    - docker-compose down
+    - docker network ls
+    - docker volume ls
+    - docker-compose down || true
     - docker-compose build
     - docker-compose up
 
