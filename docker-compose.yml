@@ -49,7 +49,7 @@ services:
 #      - db
 
   django:
-    container_name: "django"
+    container_name: "pw-django"
     build:
       context: .
       dockerfile: Dockerfile

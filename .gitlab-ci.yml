@@ -23,7 +23,7 @@ delivery:
   script:
     - set -e
     - echo $DOCKER_KEY | docker login -u $DOCKER_USER --password-stdin
-    - docker tag pw_main_app:latest $CI_REGISTRY_IMAGE
+    - docker tag pw-django:latest $CI_REGISTRY_IMAGE
     - docker push $CI_REGISTRY_IMAGE
 
 
