@@ -105,7 +105,7 @@ services:
     container_name: "celery-beat"
     build:
       context: .
-      dockerfile: DockerfileMys
+      dockerfile: Dockerfile
     command: celery -A pulsewave beat -l INFO
     read_only: true
     volumes:
