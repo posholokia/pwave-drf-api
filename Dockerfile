@@ -3,8 +3,6 @@ FROM python:3.10
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONBUFFERED 1
 
-#RUN addgroup --gid 1000 app &&  \
-#    adduser --home /usr/home/web --uid 1000 --gid 1000 app
 RUN useradd -u 1000 -ms /bin/bash celery
 
 WORKDIR /usr/home/web
