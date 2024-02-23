@@ -18,7 +18,7 @@ deploy:
     - master
   script:
     - apt-get update -qy
-    - apt-get install -y openssh-client
+    - apk install -y openssh-client
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh $SERVER_USER@$SERVER_IP "bash -s" < deploy_script.sh
