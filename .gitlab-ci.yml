@@ -17,8 +17,8 @@ deploy:
   only:
     - master
   script:
-    - apk update
-    - apk install openssh-client
+    - apk --no-cache update
+    - apk --no-cache add openssh-client
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh $SERVER_USER@$SERVER_IP "bash -s" < deploy_script.sh
