@@ -10,16 +10,19 @@ build:
     - docker network ls
     - docker volume ls
     - docker-compose down || true
-    - docker-compose build
+    - docker-compose build pw-django:latest
     - docker-compose up
 
 
 delivery:
   stage: delivery
+  before_script:
+    - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
     - set -e
-    - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
     - docker tag pw-django:latest $CI_REGISTRY_IMAGE
     - docker push $CI_REGISTRY_IMAGE
+
+
 
 
