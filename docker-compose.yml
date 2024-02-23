@@ -79,45 +79,45 @@ services:
 #      - migrations
 #      - db
 
-  celery-worker:
-    container_name: "celery-worker"
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: celery -A pulsewave worker -l INFO
-    tty: true
-    env_file:
-      - $env
-    volumes:
-      - .:/usr/home/web/:ro
-    environment:
-      SECRET_KEY: "${SECRET_KEY}"
-      DB_NAME: "${DB_NAME}"
-      DB_HOST: "${DB_HOST}"
-      DB_PASSWORD: "${DB_PASSWORD}"
-      DB_USER: "${DB_USER}"
-      DB_PORT: "${DB_PORT}"
-      REDIS_HOST: "${REDIS_HOST}"
+#  celery-worker:
+#    container_name: "celery-worker"
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    command: celery -A pulsewave worker -l INFO
+#    tty: true
+#    env_file:
+#      - $env
+#    volumes:
+#      - .:/usr/home/web/:ro
+#    environment:
+#      SECRET_KEY: "${SECRET_KEY}"
+#      DB_NAME: "${DB_NAME}"
+#      DB_HOST: "${DB_HOST}"
+#      DB_PASSWORD: "${DB_PASSWORD}"
+#      DB_USER: "${DB_USER}"
+#      DB_PORT: "${DB_PORT}"
+#      REDIS_HOST: "${REDIS_HOST}"
 #    depends_on:
 #      - redis
-
-  celery-beat:
-    container_name: "celery-beat"
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: celery -A pulsewave beat -l INFO
-    read_only: true
-    volumes:
-      - .:/usr/home/web/:ro
-    environment:
-      SECRET_KEY: "${SECRET_KEY}"
-      DB_NAME: "${DB_NAME}"
-      DB_HOST: "${DB_HOST}"
-      DB_PASSWORD: "${DB_PASSWORD}"
-      DB_USER: "${DB_USER}"
-      DB_PORT: "${DB_PORT}"
-      REDIS_HOST: "${REDIS_HOST}"
+#
+#  celery-beat:
+#    container_name: "celery-beat"
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    command: celery -A pulsewave beat -l INFO
+#    read_only: true
+#    volumes:
+#      - .:/usr/home/web/:ro
+#    environment:
+#      SECRET_KEY: "${SECRET_KEY}"
+#      DB_NAME: "${DB_NAME}"
+#      DB_HOST: "${DB_HOST}"
+#      DB_PASSWORD: "${DB_PASSWORD}"
+#      DB_USER: "${DB_USER}"
+#      DB_PORT: "${DB_PORT}"
+#      REDIS_HOST: "${REDIS_HOST}"
 #    depends_on:
 #      - redis
 
