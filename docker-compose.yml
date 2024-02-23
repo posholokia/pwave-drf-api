@@ -61,18 +61,18 @@ services:
     ports:
       - "8000:8000"
     environment:
-      EMAIL_HOST_USER: "$EMAIL_HOST_USER"
-      EMAIL_HOST_PASSWORD: "$EMAIL_HOST_PASSWORD"
-      SECRET_KEY: "$SECRET_KEY"
-      REDIS_HOST: "$REDIS_HOST"
-      DB_NAME: "$DB_NAME"
-      DB_HOST: "$DB_HOST"
-      DB_PASSWORD: "$DB_PASSWORD"
-      DB_USER: "$DB_USER"
-      DB_PORT: "$DB_PORT"
-      AWS_KEY_IDENTIFICATOR: "$AWS_KEY_IDENTIFICATOR"
-      AWS_SECRET_KEY: "$AWS_SECRET_KEY"
-      BOT_TOKEN: "$BOT_TOKEN"
+      EMAIL_HOST_USER: "${EMAIL_HOST_USER}"
+      EMAIL_HOST_PASSWORD: "${EMAIL_HOST_PASSWORD}"
+      SECRET_KEY: "${SECRET_KEY}"
+      REDIS_HOST: "${REDIS_HOST}"
+      DB_NAME: "${DB_NAME}"
+      DB_HOST: "${DB_HOST}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_USER: "${DB_USER}"
+      DB_PORT: "${DB_PORT}"
+      AWS_KEY_IDENTIFICATOR: "${AWS_KEY_IDENTIFICATOR}"
+      AWS_SECRET_KEY: "${AWS_SECRET_KEY}"
+      BOT_TOKEN: "${BOT_TOKEN}"
 #    depends_on:
 #      - migrations
 #      - db
