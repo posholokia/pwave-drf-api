@@ -55,8 +55,6 @@ services:
       dockerfile: Dockerfile
     command: bash -c "gunicorn -k uvicorn.workers.UvicornWorker pulsewave.asgi:application --bind 0.0.0.0:8000"
     tty: true
-    env_file:
-      - .env
     volumes:
       - .:/usr/home/web/
     read_only: true
