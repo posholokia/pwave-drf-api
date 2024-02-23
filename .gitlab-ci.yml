@@ -10,7 +10,7 @@ build:
     - docker network ls
     - docker volume ls
     - docker-compose down || true
-    - docker-compose build pw-django
+    - docker-compose build
     - docker-compose up
 
 
