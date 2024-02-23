@@ -3,9 +3,14 @@ stages:
   - delivery
 #  - deploy
 
+cache:
+  paths:
+    - .venv/
+
 build:
   stage: build
   script:
+    - set -e
     - docker-compose down
     - docker-compose build
     - docker-compose up
@@ -14,6 +19,7 @@ build:
 delivery:
   stage: delivery
   script:
+    - set -e
     - echo $DOCKER_KEY | docker login -u $DOCKER_USER --password-stdin
     - docker tag pw_main_app:latest $CI_REGISTRY_IMAGE
     - docker push $CI_REGISTRY_IMAGE
