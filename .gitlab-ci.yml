@@ -14,23 +14,23 @@ build:
 
 
 deploy:
- stage: deploy
- image: docker:20.10-git
- before_script:
-   - mkdir -p ~/.ssh
-   - chmod 700 ~/.ssh
-   - eval $(ssh-agent -s)
-   - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-   - '[[ -f /.dockerenv || -d /run/secrets/kubernetes.io/serviceaccount ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
-   - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
- script:
-   - docker compose --env-file $env pull
-   - docker compose --env-file $env down --timeout=60 --remove-orphans
-   - docker compose --env-file $env up --build --detach
-   - docker image prune -f || true
- only:
-   - main
- when: manual
+  stage: deploy
+  image: docker:20.10-git
+  before_script:
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - '[[ -f /.dockerenv || -d /run/secrets/kubernetes.io/serviceaccount ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
+  script:
+    - docker compose --env-file $env pull
+    - docker compose --env-file $env down --timeout=60 --remove-orphans
+    - docker compose --env-file $env up --build --detach
+    - docker image prune -f || true
+  only:
+    - main
+  when: manual
 
 
 
