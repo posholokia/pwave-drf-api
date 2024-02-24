@@ -19,3 +19,7 @@ USER celery
 
 EXPOSE 8000
 
+ENTRYPOINT [ "python3" ]
+CMD [ "-m", "gunicorn", "-b", "0.0.0.0:8080", "--workers", "1", "--access-logfile", "-",  "pulsewave.asgi", "--reload", "-k", "uvicorn.workers.UvicornWorker" ]
+
+
