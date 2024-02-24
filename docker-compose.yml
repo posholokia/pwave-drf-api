@@ -50,9 +50,7 @@ services:
 
   django:
     container_name: "pw-django"
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: marelboro/pw-main-app:latest
     command: bash -c "gunicorn -k uvicorn.workers.UvicornWorker pulsewave.asgi:application --bind 0.0.0.0:8000"
     tty: true
     env_file:
