@@ -83,19 +83,19 @@ services:
     depends_on:
       - redis
 
-  bot:
-    container_name: "bot"
-    image: marelboro/pw-main-app:latest
-    command: python3 manage.py startbot
-    tty: true
-    env_file:
-      - $env
-    read_only: true
-    volumes:
-      - .:/usr/home/web/:ro
-    depends_on:
-      - django
-      - redis
+#  bot:
+#    container_name: "bot"
+#    image: marelboro/pw-main-app:latest
+#    command: python3 manage.py startbot
+#    tty: true
+#    env_file:
+#      - $env
+#    read_only: true
+#    volumes:
+#      - .:/usr/home/web/:ro
+#    depends_on:
+#      - django
+#      - redis
 
 
 volumes:
