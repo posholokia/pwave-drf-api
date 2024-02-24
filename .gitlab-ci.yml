@@ -27,7 +27,7 @@ deploy:
   script:
     - docker compose --env-file $env pull
     - docker compose --env-file $env down --timeout=60 --remove-orphans
-    - docker compose --env-file $env up --network host --build --detach
+    - docker compose --env-file $env up --build --detach
     - docker image prune -f || true
   only:
     - master
