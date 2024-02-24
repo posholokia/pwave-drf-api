@@ -11,7 +11,8 @@ build:
   script:
     - docker build --network host -t $CI_REGISTRY_IMAGE .
     - docker push $CI_REGISTRY_IMAGE
-
+  only:
+    - main
 
 deploy:
   stage: deploy
@@ -20,7 +21,7 @@ deploy:
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - '[[ -f /.dockerenv || -d /run/secrets/kubernetes.io/serviceaccount ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
@@ -30,8 +31,3 @@ deploy:
     - docker image prune -f || true
   only:
     - main
-  when: manual
-
-
-
-
