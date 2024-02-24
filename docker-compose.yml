@@ -48,9 +48,6 @@ services:
   django:
     container_name: "django"
     image: marelboro/pw-main-app:latest
-    command: bash -c "python3 /usr/home/web/manage.py makemigrations  && \
-                      python3 /usr/home/web/manage.py migrate && \
-                      gunicorn -k uvicorn.workers.UvicornWorker pulsewave.asgi:application --bind 0.0.0.0:8000"
     tty: true
     env_file:
       - $env
@@ -64,7 +61,9 @@ services:
   celery-worker:
     container_name: "celery-worker"
     image: marelboro/pw-main-app:latest
-    command: celery -A pulsewave worker -l INFO
+    entrypoint:
+      - "python3"
+    command: [ "-m", "celery", "-A", "pulsewave", "worker", "-l", "INFO" ]
     tty: true
     env_file:
       - $env
@@ -73,17 +72,17 @@ services:
     depends_on:
       - redis
 
-  celery-beat:
-    container_name: "celery-beat"
-    image: marelboro/pw-main-app:latest
-    command: celery -A pulsewave beat -l INFO
-    env_file:
-      - $env
-    read_only: true
-    volumes:
-      - .:/usr/home/web/:ro
-    depends_on:
-      - redis
+#  celery-beat:
+#    container_name: "celery-beat"
+#    image: marelboro/pw-main-app:latest
+#    command: celery -A pulsewave beat -l INFO
+#    env_file:
+#      - $env
+#    read_only: true
+#    volumes:
+#      - .:/usr/home/web/:ro
+#    depends_on:
+#      - redis
 
 #  bot:
 #    container_name: "bot"
