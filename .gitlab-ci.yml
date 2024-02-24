@@ -29,7 +29,7 @@ deploy:
     - docker compose --env-file $env up --build --detach
     - docker image prune -f || true
   only:
-    - main
+    - master
   when: manual
 
 
