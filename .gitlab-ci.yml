@@ -4,8 +4,6 @@ stages:
 
 build:
   stage: build
-  services:
-    - docker:stable-dind
   before_script:
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:

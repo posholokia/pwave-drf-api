@@ -1,50 +1,6 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:12
-    volumes:
-      - pwdb_data_test:/var/lib/postgresql/data/
-    env_file:
-      - $env
-    ports:
-      - "5432:5432"
-
-
-  nginx:
-    container_name: "nginx"
-    image: marelboro/nginx
-    ports:
-      - 80:80
-    depends_on:
-      - django
-
-  redis:
-    container_name: "redis"
-    image: redis:latest
-    ports:
-      - "6379:6379"
-
-#  migrations:
-#    container_name: "migrations"
-#    build:
-#      context: .
-#      dockerfile: DockerfileMys
-#    command: bash -c "python3 /usr/home/web/manage.py makemigrations  && \
-#                      python3 /usr/home/web/manage.py migrate"
-#    tty: true
-#    volumes:
-#      - .:/usr/home/web/:ro
-#    environment:
-#      SECRET_KEY: "${SECRET_KEY}"
-#      DB_NAME: "${DB_NAME}"
-#      DB_HOST: "${DB_HOST}"
-#      DB_PASSWORD: "${DB_PASSWORD}"
-#      DB_USER: "${DB_USER}"
-#      DB_PORT: "${DB_PORT}"
-#    depends_on:
-#      - db
-
   django:
     container_name: "django"
     image: marelboro/pw-main-app:latest
@@ -52,11 +8,10 @@ services:
     env_file:
       - $env
     volumes:
-      - .:/usr/home/web/
+      - .:/app/
+    read_only: true
     ports:
       - "8000:8000"
-    depends_on:
-      - db
 
   celery-worker:
     container_name: "celery-worker"
@@ -68,9 +23,7 @@ services:
     env_file:
       - $env
     volumes:
-      - .:/usr/home/web/:ro
-    depends_on:
-      - redis
+      - .:/app/
 
 #  celery-beat:
 #    container_name: "celery-beat"
@@ -91,13 +44,61 @@ services:
 #    tty: true
 #    env_file:
 #      - $env
+#    volumes:
+#      - .:/usr/home/web/:ro
+#    environment:
+#      SECRET_KEY: "${SECRET_KEY}"
+#      DB_NAME: "${DB_NAME}"
+#      DB_HOST: "${DB_HOST}"
+#      DB_PASSWORD: "${DB_PASSWORD}"
+#      DB_USER: "${DB_USER}"
+#      DB_PORT: "${DB_PORT}"
+#      REDIS_HOST: "${REDIS_HOST}"
+#    depends_on:
+#      - redis
+#
+#  celery-beat:
+#    container_name: "celery-beat"
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    command: celery -A pulsewave beat -l INFO
 #    read_only: true
 #    volumes:
 #      - .:/usr/home/web/:ro
+#    environment:
+#      SECRET_KEY: "${SECRET_KEY}"
+#      DB_NAME: "${DB_NAME}"
+#      DB_HOST: "${DB_HOST}"
+#      DB_PASSWORD: "${DB_PASSWORD}"
+#      DB_USER: "${DB_USER}"
+#      DB_PORT: "${DB_PORT}"
+#      REDIS_HOST: "${REDIS_HOST}"
+#    depends_on:
+#      - redis
+
+#  bot:
+#    container_name: "bot"
+#    build:
+#      context: .
+#      dockerfile: DockerfileMys
+#    command: python3 manage.py startbot
+#    tty: true
+#    read_only: true
+#    volumes:
+#      - .:/usr/home/web/:ro
+#    environment:
+#      SECRET_KEY: "${SECRET_KEY}"
+#      DB_NAME: "${DB_NAME}"
+#      DB_HOST: "${DB_HOST}"
+#      DB_PASSWORD: "${DB_PASSWORD}"
+#      DB_USER: "${DB_USER}"
+#      DB_PORT: "${DB_PORT}"
+#      BOT_TOKEN: "${BOT_TOKEN}"
+#      REDIS_HOST: "${REDIS_HOST}"
 #    depends_on:
 #      - django
 #      - redis
-
 
 volumes:
   pwdb_data_test:

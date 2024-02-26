@@ -6,7 +6,7 @@ ENV PYTHONBUFFERED 1
 RUN useradd -u 1000 -ms /bin/bash app
 WORKDIR /app
 
-COPY . .
+COPY . /app
 
 RUN chown -R app:app /app
 
