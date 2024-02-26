@@ -5,9 +5,11 @@ stages:
 build:
   stage: build
   before_script:
-    - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
+    - docker login --username $DOCKER_USER --password "$DOCKER_KEY"
+#    - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
     - echo "BUILD STAGE"
+    - echo $USER
     - docker build --network host -t $CI_REGISTRY_IMAGE .
     - docker push $CI_REGISTRY_IMAGE
   only:
@@ -27,6 +29,7 @@ deploy:
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
     - echo "DEPLOY STAGE"
+# echo "dckr_pat_KSYQ2ik-mVXD5FuOYBJ1QWJAAkA" | docker login --username marelboro
 
 #    - docker compose --env-file $env pull
 #    - docker compose --env-file $env run django manage.py makemigrations
