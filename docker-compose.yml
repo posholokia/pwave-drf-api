@@ -12,6 +12,15 @@ services:
     ports:
       - "8000:8000"
 
+  nginx:
+    container_name: "nginx"
+    image: marelboro/nginx
+    ports:
+      - "80:80"
+    restart: always
+    depends_on:
+      - django
+
   celery-worker:
     container_name: "celery-worker"
     image: marelboro/pw-main-app:latest
