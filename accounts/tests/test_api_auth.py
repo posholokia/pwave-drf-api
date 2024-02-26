@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
 from logic.token import token_generator
-from taskmanager.serializers import CurrentUserSerializer
+from accounts.serializers import CurrentUserSerializer
 User = get_user_model()
 
 

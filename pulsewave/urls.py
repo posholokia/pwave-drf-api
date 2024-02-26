@@ -24,7 +24,7 @@ from pulsewave import settings
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    path('auth/', include('taskmanager.urls')),
+    path('auth/', include('accounts.urls')),
     path('api/', include('workspaces.urls')),
     path('api/notification/', include('notification.urls')),
     path('log/telebot/', include('telebot.urls')),

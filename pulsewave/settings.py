@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     'cacheops',
     'django_celery_beat',
     #apps
-    'taskmanager.apps.TaskmanagerConfig',
+    'accounts.apps.AccountsConfig',
     'telebot',
     'workspaces.apps.WorkspacesConfig',
     'notification.apps.NotificationConfig'
@@ -162,11 +162,11 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     'POSTPROCESSING_HOOKS': [
         'drf_spectacular.hooks.postprocess_schema_enums',
-        'taskmanager.schema.user_me_postprocessing_hook',
+        'accounts.schema.user_me_postprocessing_hook',
     ],
 }
 # custom User
-AUTH_USER_MODEL = 'taskmanager.User'
+AUTH_USER_MODEL = 'accounts.User'
 
 # djoser
 DJOSER = {
@@ -177,9 +177,9 @@ DJOSER = {
     'CHANGE_EMAIL_URL_EXPIRED': {'hours': 1},  # своя настройка, не из модуля
     'SEND_ACTIVATION_EMAIL': True,
     'SERIALIZERS': {
-        'current_user': 'taskmanager.serializers.ProfileUserSerializer',
-        'user': 'taskmanager.serializers.ProfileUserSerializer',
-        'set_password_retype': 'taskmanager.serializers.SetPasswordSerializer',
+        'current_user': 'accounts.serializers.ProfileUserSerializer',
+        'user': 'accounts.serializers.ProfileUserSerializer',
+        'set_password_retype': 'accounts.serializers.SetPasswordSerializer',
     },
     'TOKEN_MODEL': None,
     'USER_CREATE_PASSWORD_RETYPE': True,
@@ -192,7 +192,7 @@ DJOSER = {
 PASSWORD_RESET_TIMEOUT = 3600
 
 AUTHENTICATION_BACKENDS = (
-    'taskmanager.backends.AuthBackend',  # кастомный бекэнд аутентификации
+    'accounts.backends.AuthBackend',  # кастомный бекэнд аутентификации
     'django.contrib.auth.backends.ModelBackend',  # для входа в админ панель
 )
 
@@ -223,7 +223,7 @@ SIMPLE_JWT = {
 
     'JTI_CLAIM': 'jti',
 
-    'TOKEN_OBTAIN_SERIALIZER': 'taskmanager.serializers.MyTokenObtainPairSerializer',
+    'TOKEN_OBTAIN_SERIALIZER': 'accounts.serializers.MyTokenObtainPairSerializer',
 
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),

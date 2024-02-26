@@ -119,8 +119,8 @@ CACHEOPS_DEFAULTS = {
 CACHEOPS_REDIS = f"redis://{REDIS_HOST}:6379/2"
 
 CACHEOPS = {
-    'taskmanager.user': {'ops': ('get', 'fetch'), },
-    'taskmanager.user_set': {'ops': ('get', 'fetch'), },
+    'accounts.user': {'ops': ('get', 'fetch'), },
+    'accounts.user_set': {'ops': ('get', 'fetch'), },
     'workspaces.workspace': {'ops': ('get', 'fetch'), },
     'workspaces.workspace_set': {'ops': ('get', 'fetch'), },
     'workspaces.board': {'ops': ('get', 'fetch'), },

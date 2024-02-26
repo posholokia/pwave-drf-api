@@ -1,10 +1,10 @@
 from django.apps import AppConfig
 
 
-class TaskmanagerConfig(AppConfig):
+class AccountsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'taskmanager'
+    name = 'accounts'
 
     def ready(self):
-        import taskmanager.schema
+        import accounts.schema
         from . import signals

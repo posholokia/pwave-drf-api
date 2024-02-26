@@ -15,7 +15,7 @@ from drf_spectacular.utils import extend_schema
 
 from logic.email import ChangeEmail
 from notification.create_notify.utils import send_notification_to_redis, get_telegram_id
-from taskmanager.serializers import (ChangeEmailSerializer,
+from accounts.serializers import (ChangeEmailSerializer,
                                      ChangeEmailConfirmSerializer,
                                      PasswordResetSerializer,
                                      InvitedPasswordSerializer)

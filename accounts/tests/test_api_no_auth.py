@@ -10,7 +10,7 @@ from djoser.serializers import UserCreatePasswordRetypeSerializer
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from taskmanager.serializers import CurrentUserSerializer
+from accounts.serializers import CurrentUserSerializer
 from workspaces.models import InvitedUsers, WorkSpace
 
 User = get_user_model()

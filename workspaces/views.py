@@ -18,7 +18,7 @@ from django_eventstream import send_event
 from .models import *
 from . import serializers, mixins
 from .permissions import *
-from taskmanager.serializers import CurrentUserSerializer
+from accounts.serializers import CurrentUserSerializer
 
 from logic.ws_users import ws_users
 from logic.indexing import index_recalculation

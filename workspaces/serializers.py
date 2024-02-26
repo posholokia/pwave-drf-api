@@ -8,7 +8,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from pulsewave.settings import WORKSAPCES
-from taskmanager.serializers import CurrentUserSerializer
+from accounts.serializers import CurrentUserSerializer
 from . import mixins
 from logic.indexing import index_recalculation
 from .models import *

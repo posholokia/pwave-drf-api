@@ -12,7 +12,7 @@ class Fix1(OpenApiViewExtension):
     """
     Дополнение описания эндпоинтов авторизации.
     """
-    target_class = 'taskmanager.views.CustomUserViewSet'
+    target_class = 'accounts.views.CustomUserViewSet'
 
     def view_replacement(self):
         @extend_schema_view(list=extend_schema(description='Запрос от юзера: данные юзера.\n\n'

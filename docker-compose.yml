@@ -9,7 +9,6 @@ services:
       - $env
     volumes:
       - .:/app/
-    read_only: true
     ports:
       - "8000:8000"
 
@@ -100,5 +99,5 @@ services:
 #      - django
 #      - redis
 
-volumes:
-  pwdb_data_test:
+#volumes:
+#  pwdb_data_test:
