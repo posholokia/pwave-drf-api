@@ -28,7 +28,7 @@ deploy:
   script:
     - echo "DEPLOY STAGE"
 
-  #    - docker compose --env-file $env pull
+#    - docker compose --env-file $env pull
 #    - docker compose --env-file $env run django manage.py makemigrations
 #    - docker compose --env-file $env run django manage.py migrate
 #    - docker compose --env-file $env down --timeout=60 --remove-orphans
