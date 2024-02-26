@@ -8,8 +8,8 @@ build:
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
     - echo "BUILD STAGE"
-#    - docker build --network host -t $CI_REGISTRY_IMAGE .
-#    - docker push $CI_REGISTRY_IMAGE
+    - docker build --network host -t $CI_REGISTRY_IMAGE .
+    - docker push $CI_REGISTRY_IMAGE
   only:
     - master
 
