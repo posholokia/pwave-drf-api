@@ -8,7 +8,7 @@ services:
     env_file:
       - $env
     volumes:
-      - .:.
+      - .:/app/main/
     ports:
       - "8000:8000"
 
@@ -22,7 +22,7 @@ services:
     env_file:
       - $env
     volumes:
-      - .:.
+      - .:/app/main/
 
 #  celery-beat:
 #    container_name: "celery-beat"
