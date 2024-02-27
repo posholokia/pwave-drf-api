@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.7'
 
 services:
   django:
@@ -32,6 +32,11 @@ services:
       - $env
     volumes:
       - .:/app/main/
+
+networks:
+  backend:
+    name: "server-bridge"
+    external: true
 
 #  celery-beat:
 #    container_name: "celery-beat"
