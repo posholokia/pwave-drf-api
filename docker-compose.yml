@@ -11,6 +11,7 @@ services:
       - .:/app/main/
     ports:
       - "8000:8000"
+      - "465:465"
 
   celery-worker:
     container_name: "celery-worker"
