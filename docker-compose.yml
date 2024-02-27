@@ -12,15 +12,6 @@ services:
     ports:
       - "8000:8000"
 
-#  nginx:
-#    container_name: "nginx"
-#    image: marelboro/nginx
-#    ports:
-#      - "80:80"
-#    restart: always
-#    depends_on:
-#      - django
-
   celery-worker:
     container_name: "celery-worker"
     image: marelboro/pw-main-app:latest
@@ -33,23 +24,24 @@ services:
     volumes:
       - .:/app/main/
 
+  celery-beat:
+    container_name: "celery-beat"
+    image: marelboro/pw-main-app:latest
+    entrypoint:
+      - "python3"
+    command: ["-m", "celery", "-A", "pulsewave", "beat", "-l", "INFO"]
+    env_file:
+      - $env
+    read_only: true
+    volumes:
+      - .:/app/main/
 
 networks:
   default:
     name: "server-bridge"
     external: true
 
-#  celery-beat:
-#    container_name: "celery-beat"
-#    image: marelboro/pw-main-app:latest
-#    command: celery -A pulsewave beat -l INFO
-#    env_file:
-#      - $env
-#    read_only: true
-#    volumes:
-#      - .:/usr/home/web/:ro
-#    depends_on:
-#      - redis
+
 
 #  bot:
 #    container_name: "bot"
@@ -70,49 +62,3 @@ networks:
 #      REDIS_HOST: "${REDIS_HOST}"
 #    depends_on:
 #      - redis
-#
-#  celery-beat:
-#    container_name: "celery-beat"
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    command: celery -A pulsewave beat -l INFO
-#    read_only: true
-#    volumes:
-#      - .:/usr/home/web/:ro
-#    environment:
-#      SECRET_KEY: "${SECRET_KEY}"
-#      DB_NAME: "${DB_NAME}"
-#      DB_HOST: "${DB_HOST}"
-#      DB_PASSWORD: "${DB_PASSWORD}"
-#      DB_USER: "${DB_USER}"
-#      DB_PORT: "${DB_PORT}"
-#      REDIS_HOST: "${REDIS_HOST}"
-#    depends_on:
-#      - redis
-
-#  bot:
-#    container_name: "bot"
-#    build:
-#      context: .
-#      dockerfile: DockerfileMys
-#    command: python3 manage.py startbot
-#    tty: true
-#    read_only: true
-#    volumes:
-#      - .:/usr/home/web/:ro
-#    environment:
-#      SECRET_KEY: "${SECRET_KEY}"
-#      DB_NAME: "${DB_NAME}"
-#      DB_HOST: "${DB_HOST}"
-#      DB_PASSWORD: "${DB_PASSWORD}"
-#      DB_USER: "${DB_USER}"
-#      DB_PORT: "${DB_PORT}"
-#      BOT_TOKEN: "${BOT_TOKEN}"
-#      REDIS_HOST: "${REDIS_HOST}"
-#    depends_on:
-#      - django
-#      - redis
-
-#volumes:
-#  pwdb_data_test:
