@@ -16,12 +16,13 @@ from drf_spectacular.utils import extend_schema
 from logic.email import ChangeEmail
 from notification.create_notify.utils import send_notification_to_redis, get_telegram_id
 from accounts.serializers import (ChangeEmailSerializer,
-                                     ChangeEmailConfirmSerializer,
-                                     PasswordResetSerializer,
-                                     InvitedPasswordSerializer)
+                                  ChangeEmailConfirmSerializer,
+                                  PasswordResetSerializer,
+                                  InvitedPasswordSerializer)
 from telebot.models import TeleBotID
 from workspaces import mixins
 from telebot.lexicon.lexicon import LEXICON_RU as bot_message
+
 User = get_user_model()
 
 
@@ -31,6 +32,7 @@ class CustomUserViewSet(mixins.DefaultWorkSpaceMixin,
     Вьюсет на базе вьюсета библиотеки Djoser.
     Часть методов переопределена под требования проекта.
     """
+
     def get_serializer_class(self):
         if self.action == 'check_link':
             return UidAndTokenSerializer
@@ -69,7 +71,7 @@ class CustomUserViewSet(mixins.DefaultWorkSpaceMixin,
         }, status=status.HTTP_200_OK)
 
     @extend_schema(description='Проверка действительности ссылки восстановления пароля',
-                   responses={204: None, },)
+                   responses={204: None, }, )
     @action(methods=['post'], detail=False, permission_classes=[permissions.AllowAny])
     def check_link(self, request, *args, **kwargs):
         """
@@ -183,6 +185,7 @@ class DeleteTelegramView(generics.GenericAPIView):
     """
     Удаление данных Юзера из таблицы TelegramBotID т.е. отключение телеграмм
     """
+
     @extend_schema(responses={204: None, })
     def delete(self, request, *args, **kwargs):
         user = request.user
@@ -202,7 +205,6 @@ class DeleteTelegramView(generics.GenericAPIView):
             return Response(
                 data={'detail': 'Телеграм для данного пользователя не подключен.'},
                 status=status.HTTP_403_FORBIDDEN)
-
 
 # class CreateSuperuser(generics.CreateAPIView):
 #     serializer_class = UserCreateSerializer
