@@ -34,7 +34,7 @@ services:
       - .:/app/main/
 
 networks:
-  backend:
+  default:
     name: "server-bridge"
     external: true
 
