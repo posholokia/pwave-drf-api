@@ -4,6 +4,8 @@ services:
   django:
     container_name: "django"
     image: ${CI_REGISTRY_IMAGE}
+    env_file:
+      - $env
     tty: true
     volumes:
       - .:/app/main/
@@ -17,6 +19,8 @@ services:
     entrypoint:
       - "python3"
     command: [ "-m", "celery", "-A", "pulsewave", "worker", "-l", "INFO" ]
+    env_file:
+      - $env
     tty: true
     volumes:
       - .:/app/main/
@@ -27,6 +31,8 @@ services:
     entrypoint:
       - "python3"
     command: ["-m", "celery", "-A", "pulsewave", "beat", "-l", "INFO"]
+    env_file:
+      - $env
     read_only: true
     volumes:
       - .:/app/main/
