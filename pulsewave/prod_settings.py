@@ -95,13 +95,13 @@ SERVER_EMAIL = os.getenv('EMAIL_HOST_USER')
 DOMAIN = 'https://pulsewave.ru'
 
 # для доступа к админке
-CSRF_TRUSTED_ORIGINS = ["https://api.pwave.pnpl.tech"]
+CSRF_TRUSTED_ORIGINS = ["https://pulsewave.ru"]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # SSE
 EVENTSTREAM_STORAGE_CLASS = 'sse.storage.RedisStorage'
-EVENTSTREAM_ALLOW_ORIGIN = 'https://front.pwave.pnpl.tech'
+EVENTSTREAM_ALLOW_ORIGIN = 'https://pulsewave.ru'
 EVENTSTREAM_ALLOW_CREDENTIALS = True
 EVENTSTREAM_ALLOW_HEADERS = 'Authorization'
 
