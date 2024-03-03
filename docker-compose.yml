@@ -3,10 +3,8 @@ version: '3.7'
 services:
   django:
     container_name: "django"
-    image: marelboro/pw-main-app:latest
+    image: ${CI_REGISTRY_IMAGE}
     tty: true
-    env_file:
-      - $env
     volumes:
       - .:/app/main/
     ports:
@@ -15,24 +13,20 @@ services:
 
   celery-worker:
     container_name: "celery-worker"
-    image: marelboro/pw-main-app:latest
+    image: ${CI_REGISTRY_IMAGE}
     entrypoint:
       - "python3"
     command: [ "-m", "celery", "-A", "pulsewave", "worker", "-l", "INFO" ]
     tty: true
-    env_file:
-      - $env
     volumes:
       - .:/app/main/
 
   celery-beat:
     container_name: "celery-beat"
-    image: marelboro/pw-main-app:latest
+    image: ${CI_REGISTRY_IMAGE}
     entrypoint:
       - "python3"
     command: ["-m", "celery", "-A", "pulsewave", "beat", "-l", "INFO"]
-    env_file:
-      - $env
     read_only: true
     volumes:
       - .:/app/main/

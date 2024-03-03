@@ -92,7 +92,7 @@ SERVER_EMAIL = os.getenv('EMAIL_HOST_USER')
 
 
 # ссылка на фронт, для формирования ссылок
-DOMAIN = 'https://front.pwave.pnpl.tech'
+DOMAIN = 'https://pulsewave.ru'
 
 # для доступа к админке
 CSRF_TRUSTED_ORIGINS = ["https://api.pwave.pnpl.tech"]
