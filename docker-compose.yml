@@ -43,7 +43,6 @@ networks:
     external: true
 
 
-
 #  bot:
 #    container_name: "bot"
 #    image: marelboro/pw-main-app:latest
