@@ -26,7 +26,7 @@ deploy:
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
     - docker compose --env-file $env pull
-    - docker run --rm --env-file $env --network=$NETWORK $CI_REGISTRY_IMAGE manage.py makemigrations --merge --no-input && python manage.py migrate
+    - docker run --rm --env-file $env --network=$NETWORK $CI_REGISTRY_IMAGE manage.py makemigrations --merge --no-input && python3 manage.py migrate
     - docker compose --env-file $env down --timeout=60
     - docker compose --env-file $env up --build --detach
     - docker image prune -a -f || true
