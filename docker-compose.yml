@@ -7,17 +7,17 @@ services:
     env_file:
       - $env
     tty: true
+    read_only: true
     volumes:
       - .:/app/main/
     ports:
       - "8000:8000"
-      - "465:465"
 
   celery-worker:
     container_name: "celery-worker"
     image: ${CI_REGISTRY_IMAGE}
     entrypoint:
-      - "python3"
+      - "python"
     command: [ "-m", "celery", "-A", "pulsewave", "worker", "-l", "INFO" ]
     env_file:
       - $env
@@ -29,13 +29,27 @@ services:
     container_name: "celery-beat"
     image: ${CI_REGISTRY_IMAGE}
     entrypoint:
-      - "python3"
+      - "python"
     command: ["-m", "celery", "-A", "pulsewave", "beat", "-l", "INFO"]
+    tty: true
     env_file:
       - $env
     read_only: true
     volumes:
       - .:/app/main/
+
+  bot:
+    container_name: "bot"
+    image: ${CI_REGISTRY_IMAGE}
+    entrypoint:
+      - "python"
+    command: ["-m", "manage.py", "startbot"]
+    read_only: true
+    env_file:
+      - $env
+    volumes:
+      - .:/app/main/
+
 
 networks:
   default:
@@ -43,22 +57,4 @@ networks:
     external: true
 
 
-#  bot:
-#    container_name: "bot"
-#    image: marelboro/pw-main-app:latest
-#    command: python3 manage.py startbot
-#    tty: true
-#    env_file:
-#      - $env
-#    volumes:
-#      - .:/usr/home/web/:ro
-#    environment:
-#      SECRET_KEY: "${SECRET_KEY}"
-#      DB_NAME: "${DB_NAME}"
-#      DB_HOST: "${DB_HOST}"
-#      DB_PASSWORD: "${DB_PASSWORD}"
-#      DB_USER: "${DB_USER}"
-#      DB_PORT: "${DB_PORT}"
-#      REDIS_HOST: "${REDIS_HOST}"
-#    depends_on:
-#      - redis
+
