@@ -7,9 +7,9 @@ services:
     env_file:
       - $env
     tty: true
-#    read_only: true
+    read_only: true
     volumes:
-      - .:/app/main/
+      - .:/app
     ports:
       - "8000:8000"
 
@@ -23,7 +23,7 @@ services:
       - $env
     tty: true
     volumes:
-      - .:/app/main/
+      - .:/app
 
   celery-beat:
     container_name: "celery-beat"
@@ -36,7 +36,7 @@ services:
       - $env
     read_only: true
     volumes:
-      - .:/app/main/
+      - .:/app
 
   bot:
     container_name: "bot"
@@ -48,8 +48,7 @@ services:
     env_file:
       - $env
     volumes:
-      - .:/app/main/
-
+      - .:/app
 
 networks:
   default:
