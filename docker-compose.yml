@@ -41,9 +41,9 @@ services:
   bot:
     container_name: "bot"
     image: ${CI_REGISTRY_IMAGE}
-#    entrypoint:
-#      - "python"
-    command: ["python", "manage.py", "startbot"]
+    entrypoint:
+      - "python"
+    command: ["manage.py", "startbot"]
     read_only: true
     env_file:
       - $env
