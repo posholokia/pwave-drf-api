@@ -132,7 +132,7 @@ CACHEOPS = {
     'workspaces.sticker_set': {'ops': ('get', 'fetch'), },
 }
 
-START_BOT_LINK = 'https://t.me/PulseWaveBot?start='
+START_BOT_LINK = 'https://t.me/pwave_bot?start='
 
 # sentry logging
 SENTRY = os.getenv('SENTRY')
