@@ -236,7 +236,7 @@ CORS_ALLOWED_ORIGINS = [
     'https://pulse-wave.netlify.app',
     'https://front.pwave.pnpl.tech',
     'https://pulsewave.ru',
-    # 'https://www.pulsewave.ru',
+    'https://www.pulsewave.ru',
 ]
 
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
