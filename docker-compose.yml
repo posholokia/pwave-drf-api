@@ -24,6 +24,12 @@ services:
     tty: true
     volumes:
       - .:/app
+    healthcheck:
+      test: ["CMD", "test", "-e",  "/tmp/worker_heartbeat"]
+      interval: 10s
+      timeout: 1s
+      retries: 3
+      start_period: 10s
 
   celery-beat:
     container_name: "celery-beat"

@@ -16,7 +16,7 @@ USER app
 
 RUN set -ex &&\
     python -m pip install --no-cache-dir --no-warn-script-location --upgrade pip &&\
-    python -m pip install --no-cache-dir --no-warn-script-location -r requirements.txt
+    python -m pip install --no-cache-dir --no-warn-script-location --user -r requirements.txt
 
 EXPOSE 8000
 
