@@ -12,12 +12,16 @@ services:
       - .:/app
     ports:
       - "8000:8000"
+    healthcheck:
+      test: "curl --fail http://localhost:8000/api/schema/swagger-ui/"
+      interval: 30s
+      timeout: 2s
+      retries: 3
+      start_period: 1m
 
   celery-worker:
     container_name: "celery-worker"
     image: ${CI_REGISTRY_IMAGE}
-    entrypoint:
-      - "python"
     command: [ "-m", "celery", "-A", "pulsewave", "worker", "-l", "INFO" ]
     env_file:
       - $env
@@ -29,13 +33,11 @@ services:
       interval: 10s
       timeout: 1s
       retries: 3
-      start_period: 10s
+      start_period: 1m
 
   celery-beat:
     container_name: "celery-beat"
     image: ${CI_REGISTRY_IMAGE}
-    entrypoint:
-      - "python"
     command: ["-m", "celery", "-A", "pulsewave", "beat", "-l", "INFO"]
     tty: true
     env_file:
@@ -47,8 +49,6 @@ services:
   bot:
     container_name: "bot"
     image: ${CI_REGISTRY_IMAGE}
-    entrypoint:
-      - "python"
     command: ["manage.py", "startbot"]
     read_only: true
     env_file:

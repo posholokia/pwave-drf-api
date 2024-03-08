@@ -22,13 +22,13 @@ deploy:
     - chmod 700 ~/.ssh
     - eval $(ssh-agent -s)
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
-    - '[[ -f /.dockerenv || -d /run/secrets/kubernetes.io/serviceaccount ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+#    - '[[ -f /.dockerenv || -d /run/secrets/kubernetes.io/serviceaccount ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
     - docker compose --env-file $env pull
     - docker run --rm --env-file $env --network $NETWORK --entrypoint "./migrate.sh" $CI_REGISTRY_IMAGE migrate.sh
     - docker compose --env-file $env down --timeout=60
     - docker compose --env-file $env up --build --detach
-    - docker image prune -a -f || true
+    - docker system prune -a -f || true
   only:
     - master
