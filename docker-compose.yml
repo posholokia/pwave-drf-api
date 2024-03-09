@@ -45,10 +45,10 @@ services:
     volumes:
       - .:/app
     healthcheck:
-      test: [ "CMD-SHELL", "[[ $(($(date +%s)-$(stat -c %Y /tmp/celery_heartbeat))) -gt 10 ]] && exit 1 || exit 0" ]
-      interval: 10s
+      test: [ "CMD-SHELL", "[[ $(($(date +%s)-$(stat -c %Y /tmp/celery_heartbeat))) -gt 61 ]] && exit 1 || exit 0" ]
+      interval: 30s
       timeout: 2s
-      retries: 1
+      retries: 2
       start_period: 1m
 
   bot:
