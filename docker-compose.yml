@@ -4,8 +4,8 @@ services:
   django:
     container_name: "django"
     image: ${CI_REGISTRY_IMAGE}
-    env_file:
-      - $env
+#    env_file:
+#      - $env
     tty: true
     read_only: true
     volumes:
@@ -23,36 +23,41 @@ services:
     container_name: "celery-worker"
     image: ${CI_REGISTRY_IMAGE}
     command: [ "-m", "celery", "-A", "pulsewave", "worker", "-l", "INFO" ]
-    env_file:
-      - $env
+#    env_file:
+#      - $env
     tty: true
     volumes:
       - .:/app
     healthcheck:
-      test: ["CMD", "test", "-e",  "/tmp/worker_heartbeat"]
-      interval: 10s
-      timeout: 1s
-      retries: 3
-      start_period: 1m
+      test: [ "CMD-SHELL", "[[ $(($(date +%s)-$(stat -c %Y /tmp/celery_heartbeat))) -gt 2 ]] && exit 0 || exit 1" ]
+      interval: 30s
+      timeout: 2s
+      retries: 2
+      start_period: 30s
 
   celery-beat:
     container_name: "celery-beat"
     image: ${CI_REGISTRY_IMAGE}
     command: ["-m", "celery", "-A", "pulsewave", "beat", "-l", "INFO"]
     tty: true
-    env_file:
-      - $env
-    read_only: true
+#    env_file:
+#      - $env
     volumes:
       - .:/app
+    healthcheck:
+      test: [ "CMD-SHELL", "[[ $(($(date +%s)-$(stat -c %Y /tmp/celery_heartbeat))) -gt 61 ]] && exit 0 || exit 1" ]
+      interval: 1m
+      timeout: 2s
+      retries: 1
+      start_period: 1m
 
   bot:
     container_name: "bot"
     image: ${CI_REGISTRY_IMAGE}
     command: ["manage.py", "startbot"]
     read_only: true
-    env_file:
-      - $env
+#    env_file:
+#      - $env
     volumes:
       - .:/app
 
