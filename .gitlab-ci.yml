@@ -24,10 +24,10 @@ deploy:
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
-    - docker compose -f ./ci/docker-compose.yml pull
+    - docker compose pull
     - docker run --rm --env-file $env --network $NETWORK --entrypoint "./ci/migrate.sh" $CI_REGISTRY_IMAGE
-    - docker compose -f ./ci/docker-compose.yml down --timeout=60
-    - docker compose -f ./ci/docker-compose.yml up --build --detach
+    - docker compose down --timeout=60
+    - docker compose up --build --detach
     - docker image prune -a -f || true
   only:
     - master
