@@ -34,13 +34,17 @@ def sse_create(event_type=None):
                 board_id = get_board_id(path)
 
                 if board_id is not None:
-                    sse_send_board(board_id, *args)
+                    sse_send_board(
+                        board_id, *args
+                    )
 
             if 'task' in event_type:
                 task_id = get_task_id(path)
 
                 if task_id is not None:
-                    sse_send_task(task_id, *args)
+                    sse_send_task(
+                        task_id, *args
+                    )
 
             return res
         return wrapper

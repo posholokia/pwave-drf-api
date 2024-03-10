@@ -1,5 +1,8 @@
 from django.db.models import Prefetch
+
 from django_eventstream import send_event
+
+from celery import shared_task
 
 from notification.serializers import NotificationListSerializer
 from workspaces.models import Board, Task, Sticker, Comment
@@ -16,6 +19,7 @@ def sse_send_notifications(obj, pks):
         )
 
 
+@shared_task
 def sse_send_board(bord_id, *args):
     board = (Board.objects
              .prefetch_related('members')
@@ -37,6 +41,7 @@ def sse_send_board(bord_id, *args):
     )
 
 
+@shared_task
 def sse_send_task(task_id, *args):
     sticker_prefetch = Prefetch(
         'sticker',

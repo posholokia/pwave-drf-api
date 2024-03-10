@@ -24,10 +24,10 @@ deploy:
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
-    - docker compose --env-file $env pull
-    - docker run --rm --env-file $env --network $NETWORK --entrypoint "./migrate.sh" $CI_REGISTRY_IMAGE migrate.sh
-    - docker compose --env-file $env down --timeout=60
-    - docker compose --env-file $env up --build --detach
+    - docker compose pull
+    - docker run --rm --network $NETWORK --entrypoint "./ci/migrate.sh" $CI_REGISTRY_IMAGE
+    - docker compose down --timeout=60
+    - docker compose up --build --detach
     - docker system prune -a -f || true
   only:
     - master

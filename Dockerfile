@@ -10,7 +10,7 @@ COPY . .
 
 RUN chown -R app:app /app
 
-RUN chmod +x ./migrate.sh
+RUN chmod +x ./ci/migrate.sh
 
 USER app
 
@@ -21,4 +21,4 @@ RUN set -ex &&\
 EXPOSE 8000
 
 ENTRYPOINT [ "python" ]
-CMD [ "-m", "gunicorn", "-b", "0.0.0.0:8000", "--workers", "1", "--access-logfile", "-",  "pulsewave.asgi", "--reload", "-k", "uvicorn.workers.UvicornWorker" ]
+CMD [ "-m", "gunicorn", "-b", "0.0.0.0:8000", "--workers", "2", "--access-logfile", "-",  "pulsewave.asgi", "--reload", "-k", "uvicorn.workers.UvicornWorker" ]
