@@ -19,20 +19,20 @@ services:
       retries: 3
       start_period: 1m
 
-#  pushpin:
-#    container_name: "pushpin"
-#    image: fanout/pushpin
-#    environment:
-#      - target=django:8000
-#    volumes:
-#      - ./ci/routes:/etc/pushpin/routes
-#    ports:
-#      - "5561:5561"
-#      - "5562:5562"
-#      - "5563:5563"
-#      - "7999:7999"
-#    depends_on:
-#      - django
+  pushpin:
+    container_name: "pushpin"
+    image: fanout/pushpin
+    environment:
+      - target=django:8000
+    volumes:
+      - ./ci/routes:/etc/pushpin/routes
+    ports:
+      - "5561:5561"
+      - "5562:5562"
+      - "5563:5563"
+      - "7999:7999"
+    depends_on:
+      - django
 
   celery-worker:
     container_name: "celery-worker"
