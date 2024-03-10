@@ -132,6 +132,8 @@ CACHEOPS = {
     'workspaces.task_set': {'ops': ('get', 'fetch'), },
     'workspaces.sticker': {'ops': ('get', 'fetch'), },
     'workspaces.sticker_set': {'ops': ('get', 'fetch'), },
+    'workspaces.comment': {'ops': ('get', 'fetch'), },
+    'workspaces.comment_set': {'ops': ('get', 'fetch'), },
 }
 
 START_BOT_LINK = 'https://t.me/pwave_bot?start='
