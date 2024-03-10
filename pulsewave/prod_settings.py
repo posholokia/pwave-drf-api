@@ -50,45 +50,40 @@ STORAGES = {
 }
 AWS_S3_FILE_OVERWRITE = False
 
-ADMINS = (
-    ('admin', 'ilya.posholokk@gmail.com'),
-)
-SERVER_EMAIL = os.getenv('EMAIL_HOST_USER')
+# ADMINS = (
+#     ('admin', 'ilya.posholokk@gmail.com'),
+# )
+# SERVER_EMAIL = os.getenv('EMAIL_HOST_USER')
 
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'formatters': {
-#         'console': {
-#             'format': '%(name)-12s %(levelname)-8s %(message)s'
-#         },
-#         'mail_admins': {
-#             'format': '%(name)-12s %(levelname)-8s %(message)s'
-#         },
-#     },
-#     'handlers': {
-#         'console': {
-#             'class': 'logging.StreamHandler',
-#             'formatter': 'console'
-#         },
-#         'mail_admins': {
-#             'level': 'ERROR',
-#             'class': 'django.utils.log.AdminEmailHandler',
-#             'include_html': True,
-#         },
-#     },
-#     'loggers': {
-#         '': {
-#             'level': 'ERROR',
-#             'handlers': ['console', 'mail_admins'],
-#             'propagate': True
-#         },
-#         'django.request': {
-#             'level': 'DEBUG',
-#             'handlers': ['console', ]
-#         }
-#     }
-# }
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'console': {
+            'format': '%(name)-12s %(levelname)-8s %(message)s'
+        },
+        'mail_admins': {
+            'format': '%(name)-12s %(levelname)-8s %(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console'
+        },
+    },
+    'loggers': {
+        '': {
+            'level': 'ERROR',
+            'handlers': ['console', ],
+            'propagate': True
+        },
+        'django.request': {
+            'level': 'DEBUG',
+            'handlers': ['console', ]
+        }
+    }
+}
 
 
 # ссылка на фронт, для формирования ссылок
@@ -139,7 +134,6 @@ SENTRY = os.getenv('SENTRY')
 PROJECT = os.getenv('PROJECT')
 
 sentry_sdk.init(
-    # dsn=f"https://c2da026a69c4630d470e2a9c4030d907@o4506724974919680.ingest.sentry.io/4506751797231616",
     dsn=f"https://{SENTRY}.ingest.sentry.io/{PROJECT}",
     integrations=[
         LoggingIntegration(
