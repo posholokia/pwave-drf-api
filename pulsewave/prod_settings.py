@@ -93,6 +93,13 @@ DOMAIN = 'https://pulsewave.ru'
 CSRF_TRUSTED_ORIGINS = ["https://pulsewave.ru"]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+#CORS
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'https://pulse-wave.netlify.app',
+    'https://pulsewave.ru',
+    'https://www.pulsewave.ru',
+]
 
 # SSE
 EVENTSTREAM_STORAGE_CLASS = 'sse.storage.RedisStorage'

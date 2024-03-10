@@ -230,15 +230,6 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
-#CORS
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-    'https://pulse-wave.netlify.app',
-    'https://front.pwave.pnpl.tech',
-    'https://pulsewave.ru',
-    'https://www.pulsewave.ru',
-]
-
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media/images')
 # MEDIA_URL = '/media/images/'
 
