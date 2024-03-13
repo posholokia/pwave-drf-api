@@ -117,30 +117,30 @@ REDIS_USER = os.getenv('REDIS_USER')
 REDIS_PORT = os.getenv('REDIS_PORT')
 
 # cache
-# CACHEOPS_DEFAULTS = {
-#     'timeout': 60*60*6,
-# }
-#
-# CACHEOPS_REDIS = (f'redis://{REDIS_USER}:'
-#                   f'{REDIS_PASS}@'
-#                   f'{REDIS_HOST}:'
-#                   f'{REDIS_PORT}/2')
-#
-# CACHEOPS = {
-#     'accounts.user': {'ops': ('get', 'fetch'), },
-#     'accounts.user_set': {'ops': ('get', 'fetch'), },
-#     'workspaces.workspace': {'ops': ('get', 'fetch'), },
-#     'workspaces.workspace_set': {'ops': ('get', 'fetch'), },
-#     'workspaces.board': {'ops': ('get', 'fetch'), },
-#     'workspaces.column': {'ops': ('get', 'fetch'), },
-#     'workspaces.column_set': {'ops': ('get', 'fetch'), },
-#     'workspaces.task': {'ops': ('get', 'fetch'), },
-#     'workspaces.task_set': {'ops': ('get', 'fetch'), },
-#     'workspaces.sticker': {'ops': ('get', 'fetch'), },
-#     'workspaces.sticker_set': {'ops': ('get', 'fetch'), },
-#     'workspaces.comment': {'ops': ('get', 'fetch'), },
-#     'workspaces.comment_set': {'ops': ('get', 'fetch'), },
-# }
+CACHEOPS_DEFAULTS = {
+    'timeout': 60*60*6,
+}
+
+CACHEOPS_REDIS = (f'redis://{REDIS_USER}:'
+                  f'{REDIS_PASS}@'
+                  f'{REDIS_HOST}:'
+                  f'{REDIS_PORT}/2')
+
+CACHEOPS = {
+    'accounts.user': {'ops': ('get', 'fetch'), },
+    'accounts.user_set': {'ops': ('get', 'fetch'), },
+    'workspaces.workspace': {'ops': ('get', 'fetch'), },
+    'workspaces.workspace_set': {'ops': ('get', 'fetch'), },
+    'workspaces.board': {'ops': ('get', 'fetch'), },
+    'workspaces.column': {'ops': ('get', 'fetch'), },
+    'workspaces.column_set': {'ops': ('get', 'fetch'), },
+    'workspaces.task': {'ops': ('get', 'fetch'), },
+    'workspaces.task_set': {'ops': ('get', 'fetch'), },
+    'workspaces.sticker': {'ops': ('get', 'fetch'), },
+    'workspaces.sticker_set': {'ops': ('get', 'fetch'), },
+    'workspaces.comment': {'ops': ('get', 'fetch'), },
+    'workspaces.comment_set': {'ops': ('get', 'fetch'), },
+}
 
 START_BOT_LINK = 'https://t.me/pwave_bot?start='
 
