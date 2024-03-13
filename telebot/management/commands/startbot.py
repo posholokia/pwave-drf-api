@@ -1,10 +1,11 @@
 import asyncio
 import json
-import os
 import logging
 
 from redis import asyncio as aioredis
+
 from django.core.management.base import BaseCommand
+from django.conf import settings
 
 from aiogram import Bot, Dispatcher
 
@@ -50,7 +51,10 @@ class Command(BaseCommand):
         async def redis_pubsub():
             """Подписка на PubSub Redis для отслеживания уведомлений"""
             redis = await aioredis.Redis.from_url(
-                f"redis://{os.getenv('REDIS_HOST')}:6379/4"
+                (f'redis://{settings.REDIS_USER}:'
+                 f'{settings.REDIS_PASS}@'
+                 f'{settings.REDIS_HOST}:'
+                 f'{settings.REDIS_PORT}/3')
             )
             pub = redis.pubsub()
             await pub.subscribe('notify')
@@ -70,4 +74,3 @@ class Command(BaseCommand):
         # процессами, поэтому запускаем оба через asyncio.gather
         loop.run_until_complete(asyncio.gather(main(), redis_pubsub()))
         loop.close()
-        # asyncio.run(main())  # после подключения редиса убрать

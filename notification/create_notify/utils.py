@@ -1,10 +1,10 @@
 import json
-import os
 import zoneinfo
 import redis
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 
@@ -82,9 +82,11 @@ def send_notification_to_redis(message: str, users: list[int]):
     users - список из id телеграм чатов пользователей.
     """
     redis_client = redis.Redis(
-        host=f'{os.getenv("REDIS_HOST")}',
-        port=6379,
-        db=4
+        username=f'{settings.REDIS_USER}',
+        password=f'{settings.REDIS_PASS}',
+        host=f'{settings.REDIS_HOST}',
+        port=f'{settings.REDIS_PORT}',
+        db=3
     )
     data = {
         'message': message,

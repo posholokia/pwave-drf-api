@@ -8,6 +8,7 @@ services:
       - $env
     tty: true
     read_only: true
+    restart: unless-stopped
     volumes:
       - .:/app
     ports:
@@ -41,6 +42,7 @@ services:
     env_file:
       - $env
     tty: true
+    restart: unless-stopped
     volumes:
       - .:/app
     healthcheck:
@@ -55,6 +57,7 @@ services:
     image: ${CI_REGISTRY_IMAGE}
     command: ["-m", "celery", "-A", "pulsewave", "beat", "-l", "INFO"]
     tty: true
+    restart: unless-stopped
     env_file:
       - $env
     volumes:
@@ -71,6 +74,7 @@ services:
     image: ${CI_REGISTRY_IMAGE}
     command: ["manage.py", "startbot"]
     read_only: true
+    restart: unless-stopped
     env_file:
       - $env
     volumes:

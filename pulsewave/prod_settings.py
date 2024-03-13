@@ -110,15 +110,21 @@ EVENTSTREAM_ALLOW_HEADERS = 'Authorization'
 PUSHPIN = os.getenv("PUSHPIN_HOST")
 GRIP_URL = f'http://{PUSHPIN}:5561'
 
-# cache
+#redis env
 REDIS_HOST = os.getenv('REDIS_HOST')
-REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+REDIS_PASS = os.getenv('REDIS_PASS')
+REDIS_USER = os.getenv('REDIS_USER')
+REDIS_PORT = os.getenv('REDIS_PORT')
 
+# cache
 CACHEOPS_DEFAULTS = {
     'timeout': 60*60*6,
 }
 
-CACHEOPS_REDIS = f"redis://{REDIS_HOST}:6379/2"
+CACHEOPS_REDIS = (f'redis://{REDIS_USER}:'
+                  f'{REDIS_PASS}@'
+                  f'{REDIS_HOST}:'
+                  f'{REDIS_PORT}/2')
 
 CACHEOPS = {
     'accounts.user': {'ops': ('get', 'fetch'), },

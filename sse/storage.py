@@ -2,6 +2,8 @@ import os
 import json
 import redis
 
+from django.conf import settings
+
 from django_eventstream.storage import StorageBase, EventDoesNotExist
 from django_eventstream.event import Event
 
@@ -11,8 +13,10 @@ EVENT_TIMEOUT = 60 * 24
 class RedisStorage(StorageBase):
     def __init__(self):
         self.redis_conn = redis.StrictRedis(
-            host=f'{os.getenv("REDIS_HOST")}',
-            port=6379,
+            username=f'{settings.REDIS_USER}',
+            password=f'{settings.REDIS_PASS}',
+            host=f'{settings.REDIS_HOST}',
+            port=f'{settings.REDIS_PORT}',
             db=1
         )
 
