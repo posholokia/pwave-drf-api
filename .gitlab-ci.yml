@@ -23,13 +23,16 @@ deploy:
     - eval $(ssh-agent -s)
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
+    - chmod +x ./ci/db_dump.sh
   script:
     - docker compose pull
+    - ./ci/db_dump.sh
     - docker run --rm --env-file $env --network $NETWORK --entrypoint "./ci/migrate.sh" $CI_REGISTRY_IMAGE
     - docker compose down --timeout=60
     - docker compose up --build --detach
   after_script:
-    - rm -r -f ~/.ssh
-    - docker image prune -a -f || true
+#    - rm -r -f ~/.ssh
+    - chmod -x ./ci/db_dump.sh
+    - docker system prune -a -f || true
   only:
     - master
