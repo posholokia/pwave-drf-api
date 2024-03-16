@@ -8,7 +8,7 @@ services:
       - $env
     tty: true
     read_only: true
-#    restart: unless-stopped
+    restart: unless-stopped
     volumes:
       - .:/app
     ports:
@@ -27,6 +27,7 @@ services:
       - target=django:8000
     volumes:
       - ./ci/routes:/etc/pushpin/routes
+    restart: unless-stopped
     ports:
       - "5561:5561"
       - "5562:5562"
@@ -42,7 +43,7 @@ services:
     env_file:
       - $env
     tty: true
-#    restart: unless-stopped
+    restart: unless-stopped
     volumes:
       - .:/app
     healthcheck:
@@ -74,7 +75,7 @@ services:
     image: ${CI_REGISTRY_IMAGE}
     command: ["manage.py", "startbot"]
     read_only: true
-#    restart: unless-stopped
+    restart: unless-stopped
     env_file:
       - $env
     volumes:
