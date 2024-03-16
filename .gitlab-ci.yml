@@ -31,7 +31,7 @@ deploy:
     - docker compose down --timeout=60
     - docker compose up --build --detach
   after_script:
-#    - rm -r -f ~/.ssh
+    - rm -r -f ~/.ssh
     - chmod -x ./ci/db_dump.sh
     - docker system prune -a -f || true
   only:
