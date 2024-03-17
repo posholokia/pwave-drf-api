@@ -4,7 +4,7 @@ from django.conf import settings
 broker_url = (f'redis://{settings.REDIS_USER}:'
               f'{settings.REDIS_PASS}@'
               f'{settings.REDIS_HOST}:'
-              f'6379/0')
+              f'{settings.REDIS_PORT}/0')
 result_backend = (f'redis://{settings.REDIS_USER}:'
                   f'{settings.REDIS_PASS}@'
                   f'{settings.REDIS_HOST}:'
