@@ -1,6 +1,5 @@
 #!/bin/bash
 DUMPFILE=$PGDATABASE_$(date +%Y-%m-%d_%H:%M:%S).dump;
-echo "--$PGDATABASE--"
 echo $PGPASS | docker exec -i $PGCONTAINER bash -c "pg_dump -U $PGUSER -W -Fc -x $PGDATABASE -f /tmp/dumpfile.dump";
 docker cp $PGCONTAINER:/tmp/dumpfile.dump ~/tmp/$DUMPFILE
 docker exec -i $PGCONTAINER rm /tmp/dumpfile.dump;
