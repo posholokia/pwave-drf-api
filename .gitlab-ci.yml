@@ -28,7 +28,7 @@ deploy:
     - chmod +x ./ci/db_dump.sh
   script:
     - docker compose pull
-    - ./ci/db_dump.sh
+#    - ./ci/db_dump.sh
     - docker run --rm --env-file $env --network $NETWORK --entrypoint "./ci/migrate.sh" $CI_REGISTRY_IMAGE
     - docker compose down --timeout=60
     - docker compose up --build --detach
