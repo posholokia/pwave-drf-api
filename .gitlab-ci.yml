@@ -11,6 +11,8 @@ build:
     - docker push $CI_REGISTRY_IMAGE
   only:
     - master
+  tags:
+    - backend
 
 deploy:
   stage: deploy
@@ -36,3 +38,5 @@ deploy:
     - docker system prune -a -f || true
   only:
     - master
+  tags:
+    - backend
