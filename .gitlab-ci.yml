@@ -2,23 +2,23 @@ stages:
   - build
   - deploy
 
-#build:
-#  stage: build
-#  before_script:
-#    - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
-#  script:
-#    - docker build --network host -t $CI_REGISTRY_IMAGE .
-#    - docker push $CI_REGISTRY_IMAGE
-#  only:
-#    - master
-#  tags:
-#    - backend
+build:
+  stage: build
+  before_script:
+    - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
+  script:
+    - docker build --network host -t $CI_REGISTRY_IMAGE .
+    - docker push $CI_REGISTRY_IMAGE
+  only:
+    - master
+  tags:
+    - backend
 
 deploy:
   stage: deploy
   image: docker:20.10-git
-#  dependencies:
-#    - build
+  dependencies:
+    - build
   before_script:
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
