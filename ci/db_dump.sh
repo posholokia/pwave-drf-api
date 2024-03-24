@@ -5,7 +5,7 @@ docker cp $PGCONTAINER:/tmp/dumpfile.dump ~/tmp/$DUMPFILE
 docker exec -i $PGCONTAINER rm /tmp/dumpfile.dump;
 
 printf "%s\n" "$AWSKEY" "$AWSSECRET" "$AWSREGION" "" | aws configure
-aws s3 --endpoint-url=https://storage.yandexcloud.net cp ~/tmp/$DUMPFILE s3://$AWSBUCKET/postgresql/test_db_dumps/$DUMPFILE;
+aws s3 --endpoint-url=https://storage.yandexcloud.net cp ~/tmp/$DUMPFILE s3://$AWSBUCKET/postgresql/db_dumps/$DUMPFILE;
 
 # Remove old backups
 aws s3 ls --endpoint-url=https://storage.yandexcloud.net s3://$AWSBUCKET/postgresql/db_dumps --recursive |\
