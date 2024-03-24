@@ -2,23 +2,23 @@ stages:
   - build
   - deploy
 
-build:
-  stage: build
-  before_script:
-    - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
-  script:
-    - docker build --network host -t $CI_REGISTRY_IMAGE .
-    - docker push $CI_REGISTRY_IMAGE
-  only:
-    - master
-  tags:
-    - backend
+#build:
+#  stage: build
+#  before_script:
+#    - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
+#  script:
+#    - docker build --network host -t $CI_REGISTRY_IMAGE .
+#    - docker push $CI_REGISTRY_IMAGE
+#  only:
+#    - master
+#  tags:
+#    - backend
 
 deploy:
   stage: deploy
   image: docker:20.10-git
-  dependencies:
-    - build
+#  dependencies:
+#    - build
   before_script:
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
@@ -27,11 +27,11 @@ deploy:
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
     - chmod +x ./ci/db_dump.sh
   script:
-    - docker compose pull
-    - ./ci/db_dump.sh
+#    - docker compose pull
+#    - ./ci/db_dump.sh
     - docker run --rm --env-file $env --network $NETWORK --entrypoint "./ci/migrate.sh" $CI_REGISTRY_IMAGE
-    - docker compose down --timeout=60
-    - docker compose up --build --detach
+#    - docker compose down --timeout=60
+#    - docker compose up --build --detach
   after_script:
     - rm -r -f ~/.ssh
     - chmod -x ./ci/db_dump.sh
