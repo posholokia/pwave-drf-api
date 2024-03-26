@@ -329,8 +329,8 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        number_of_tasks = len(self.context["view"].get_queryset())
-        column_id = self.context['view'].kwargs['column_id']
+        column_id = self.initial_data['column']
+        number_of_tasks = len(Task.objects.filter(column_id=column_id))
 
         validated_data['index'] = number_of_tasks
         validated_data['column_id'] = column_id

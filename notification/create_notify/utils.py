@@ -8,7 +8,7 @@ from django.conf import settings
 
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 
-from sse.senders import sse_send_notifications
+# from sse.senders import sse_send_notifications
 from telebot.models import TeleBotID
 from workspaces.models import Task
 
@@ -111,7 +111,7 @@ def get_telegram_id(users: list[int]) -> list[int]:
 def sending_to_channels(notification, recipients):
     """Рассылка уведомлений с сервера в другие каналы"""
     # через server events
-    sse_send_notifications(notification, recipients)
+    # sse_send_notifications(notification, recipients)
 
     # в телеграм
     telegram_id_list = get_telegram_id(recipients)

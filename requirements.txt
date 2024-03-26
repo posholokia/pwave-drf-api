@@ -17,7 +17,7 @@ CacheControl==0.13.1
 celery==5.3.6
 certifi==2024.2.2
 cffi==1.16.0
-channels==3.0.5
+channels==4.0.0
 charset-normalizer==3.3.2
 cleo==2.1.0
 click==8.1.7
@@ -27,19 +27,19 @@ click-repl==0.3.0
 constantly==23.10.4
 crashtest==0.4.1
 cron-descriptor==1.4.3
-cryptography==42.0.3
+cryptography==42.0.5
 daphne==3.0.2
 defusedxml==0.7.1
 distlib==0.3.8
-Django==4.2.10
+Django==4.2.8
 django-cacheops==7.0.2
 django-celery-beat==2.5.0
 django-cors-headers==4.3.1
-django-eventstream==4.5.1
 django-grip==3.5.0
 django-storages==1.14.2
 django-templated-mail==1.1.1
 django-timezone-field==6.1.0
+djangochannelsrestframework==1.2.0
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.1
 djoser==2.2.2
@@ -53,6 +53,7 @@ funcy==2.0
 gripcontrol==4.2.0
 gunicorn==21.2.0
 h11==0.14.0
+hiredis==2.3.2
 hyperlink==21.0.0
 idna==3.6
 importlib-metadata==7.0.1
@@ -130,4 +131,3 @@ Werkzeug==3.0.1
 yarl==1.9.4
 zipp==3.17.0
 zope.interface==6.2
-
