@@ -33,27 +33,22 @@ class TaskConsumer(mixins.CreateModelMixin,
         return super().get_serializer_class()
 
     def get_queryset(self, **kwargs):
-        """Задачи фильтруются по колонкам"""
         queryset = super().get_queryset()
-        # print(f'\n{kwargs}=')
-        # column_id = kwargs.get('column', None)
-        # print(f'\n\n{column_id=}')
-        #
-        # queryset = queryset.filter(column_id=column_id)
-        # queryset = (queryset
-        #             .prefetch_related('responsible')
-        #             .prefetch_related(Prefetch('sticker',
-        #                                        queryset=Sticker.objects.order_by('id')))
-        #             .prefetch_related(Prefetch('comments',
-        #                                        queryset=Comment.objects.order_by('id')))
-        #             )
+        queryset = (queryset
+                    .prefetch_related('responsible')
+                    .prefetch_related(Prefetch('sticker',
+                                               queryset=Sticker.objects.order_by('id')))
+                    .prefetch_related(Prefetch('comments',
+                                               queryset=Comment.objects.order_by('id')))
+                    )
 
-        return queryset.order_by('index')
+        return queryset
 
     @action()
     async def subscribe_to_task(self, pk, **kwargs):
         await self.task_activity.subscribe(id=pk)
         await self.sticker_activity.subscribe(sticker__id=pk)
+        await self.comment_activity.subscribe(comments__id=pk)
 
     @model_observer(Task)
     async def task_activity(self, task, observer=None, **kwargs):
@@ -69,4 +64,12 @@ class TaskConsumer(mixins.CreateModelMixin,
 
     @sticker_activity.serializer
     def sticker_activity(self, instance: Sticker, action, **kwargs):
+        return TaskListSerializer(instance.task).data
+
+    @model_observer(Comment)
+    async def comment_activity(self, task, observer=None, **kwargs):
+        await self.send_json(task)
+
+    @comment_activity.serializer
+    def comment_activity(self, instance: Comment, action, **kwargs):
         return TaskListSerializer(instance.task).data

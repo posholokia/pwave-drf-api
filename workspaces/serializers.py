@@ -330,7 +330,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         column_id = self.initial_data['column']
-        number_of_tasks = len(Task.objects.filter(column_id=column_id))
+        number_of_tasks = Task.objects.filter(column_id=column_id).count()
 
         validated_data['index'] = number_of_tasks
         validated_data['column_id'] = column_id
@@ -446,9 +446,9 @@ class TaskSerializer(
         new_col = attrs.get('column', None)
 
         if (new_col is not None) and (self.instance.column != new_col):
-            valid_columns = self.instance.column.board.column_board.all().values_list('id')
+            valid_columns = self.instance.column.board.column_board.all().values_list('id', flat=True)
 
-            if (new_col.id,) not in valid_columns:
+            if new_col.id not in valid_columns:
                 raise ValidationError(
                     {"column": 'Задачи можно перемещать только между колонками внутри доски'},
                     'invalid_column'
@@ -489,7 +489,7 @@ class CreateColumnSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        number_of_columns = len(self.context["view"].get_queryset())
+        number_of_columns = self.context["view"].get_queryset().count()
         board_pk = self.context['view'].kwargs['board_id']
 
         validated_data['index'] = number_of_columns

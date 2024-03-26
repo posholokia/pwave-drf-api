@@ -1,0 +1,36 @@
+version: '3.7'
+
+services:
+  db-test:
+    container_name: db-test
+    image: postgres:12
+    volumes:
+      - pwdb_data_test:/var/lib/postgresql/data/
+    env_file:
+      - ../test.env
+    ports:
+      - "5433:5432"
+
+  redis-test:
+    container_name: "redis-test"
+    image: redis:7.2.4
+    ports:
+      - "6378:6379"
+
+  django-test:
+    container_name: "django-test"
+#    image: ${CI_REGISTRY_IMAGE}
+    image: marelboro/pw-main-app
+    env_file:
+      - ../test.env
+    tty: true
+    entrypoint: "python"
+    command: ["test"]
+    read_only: true
+    restart: unless-stopped
+    volumes:
+      - .:/app
+
+volumes:
+  pwdb_data_test:
+    name: "asd"

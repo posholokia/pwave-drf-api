@@ -7,7 +7,7 @@ from django.contrib.auth.models import AnonymousUser
 from rest_framework.exceptions import ValidationError
 
 from logic.email import InviteUserEmail
-from .models import WorkSpace, InvitedUsers, Board, Column
+from .models import WorkSpace, InvitedUsers, Board, Column, Task
 
 User = get_user_model()
 
@@ -45,8 +45,9 @@ class GetWorkSpaceMixin:
 
 class CheckWorkSpaceUsersMixin:
     """Проверка, что пользователь является участником РП"""
+
     def user_is_added_to_workspace(self) -> bool:
-        if (self.user.id, ) in self.workspace.users.all().values_list('id'):
+        if (self.user.id,) in self.workspace.users.all().values_list('id'):
             return True
 
         return False
@@ -54,8 +55,9 @@ class CheckWorkSpaceUsersMixin:
 
 class CheckWorkSpaceInvitedMixin:
     """Проверка, что пользователь приглашен в РП"""
+
     def user_is_invited_to_workspace(self) -> bool:
-        if (self.user.id, ) in self.workspace.invited.all().values_list('id'):
+        if (self.user.id,) in self.workspace.invited.all().values_list('id'):
             return True
 
         return False
@@ -107,6 +109,7 @@ class UserNoAuthOrThisUser:
 
 class DefaultWorkSpaceMixin:
     """Создание РП по умолчанию"""
+
     def create_default_workspace(self, user: User, create_for_board: Optional[bool] = None) -> WorkSpace:
         workspace = WorkSpace.objects.create(owner=user, name='Рабочее пространство 1')
         workspace.users.add(user)
@@ -119,8 +122,8 @@ class DefaultWorkSpaceMixin:
 
 class ColumnValidateMixin:
     def column_validate(self, new_index: int, new_col: Column):
-        valid_columns = self.instance.column.board.column_board.all().values_list('id')
-        if (new_col.id, ) not in valid_columns:
+        valid_columns = self.instance.column.board.column_board.all().values_list('id', flat=True)
+        if new_col.id not in valid_columns:
             raise ValidationError(
                 {"column": 'Задачи можно перемещать только между колонками внутри доски'},
                 'invalid_column'
@@ -144,11 +147,16 @@ class IndexValidateMixin:
         max_length = 0
         if new_col is not None:
             # условие применяется для задач, если задачу перемещают между колонками,
-            # список обьектов нужно получить из другой колонки
+            # список объектов нужно получить из другой колонки
+            # для корректной перестановки индексов объекты должны быть отсортированы
             objects = new_col.task.all().order_by('index')
             max_length += 1
         else:
-            objects = self.context['view'].get_queryset()
+            model_class = self.instance.__class__
+            filter_kwargs = self.get_filter_kwargs(model_class)
+            objects = model_class.objects.filter(
+                **filter_kwargs
+            ).order_by('index')
 
         max_length += len(objects)
         if new_index >= max_length or new_index < 0:
@@ -158,3 +166,11 @@ class IndexValidateMixin:
                 'invalid_index'
             )
         return objects
+
+    def get_filter_kwargs(self, model_class):
+        kwargs = {
+            Task: {'column_id': getattr(self.instance, "column_id", None)},
+            Column: {"board_id": getattr(self.instance, "board_id", None)},
+        }
+
+        return kwargs[model_class]
