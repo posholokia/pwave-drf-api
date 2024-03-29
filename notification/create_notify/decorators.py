@@ -5,6 +5,9 @@ from notification.create_notify.tasks import run_task_notification, run_ws_notif
 from .utils import get_current_task, get_user_data
 from functools import wraps
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 
 def send_notify(func):
     """
