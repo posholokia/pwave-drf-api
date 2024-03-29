@@ -32,7 +32,6 @@ class NotifyFactory:
         self.get_empty_data()
         self.fill_common_data()
         context = self.get_context()
-        logging.info(f'Подготовлены данные для создания уведомления')
         self.create_notification(self.data, context)
 
     def get_empty_data(self):
@@ -55,6 +54,7 @@ class NotifyFactory:
         """
         logging.info(f'Создание уведомления...')
         for event, context in context.items():
+            logging.info(f'Полученные данные для создания уведомления: {context=}, {data=}')
             text = MESSAGE[event].format(**context, **data)
             workspace = data['workspace']
             board = data['board']
@@ -195,7 +195,7 @@ class TaskNotification(TaskCommonDataMixin, NotifyFactory):
                         'recipients': list(recipients),
                     },
                 })
-
+        logging.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
         return context
 
 
@@ -226,7 +226,7 @@ class WorkSpaceNotification(NotifyFactory):
                     'recipients': [self.request['data']['user_id']],
                 }
             })
-
+        logging.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
         return context
 
 
@@ -252,7 +252,7 @@ class DeleteTaskNotification(TaskNotification):
                 'recipients': list(recipients),
             }
         }
-
+        logging.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
         return context
 
 
@@ -273,7 +273,7 @@ class CommentNotification(TaskCommonDataMixin, NotifyFactory):
                     'recipients': list(recipients)
                 },
             })
-
+        logging.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
         return context
 
 
@@ -300,4 +300,5 @@ class DeadlineNotification(TaskCommonDataMixin, NotifyFactory):
                 'recipients': list(recipients)
             },
         }
+        logging.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
         return context

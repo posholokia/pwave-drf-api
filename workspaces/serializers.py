@@ -329,8 +329,8 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        column_id = self.initial_data['column']
-        number_of_tasks = Task.objects.filter(column_id=column_id).count()
+        number_of_tasks = self.context["view"].get_queryset().count()
+        column_id = self.context['view'].kwargs['column_id']
 
         validated_data['index'] = number_of_tasks
         validated_data['column_id'] = column_id
@@ -403,12 +403,8 @@ class CommentSerializer(serializers.ModelSerializer):
         )
 
     # def get_is_author(self, obj):
-    #     request = self.context.get('request')
-    #     if request is None:
-    #         user = self.context.get('user')
-    #         return obj.author == user
-    #
-    #     return obj.author == request.user
+    #     user = self.context['request'].user
+    #     return obj.author == user
 
     def create(self, validated_data):
         task_id = self.context['view'].kwargs['task_id']

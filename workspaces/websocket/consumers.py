@@ -11,9 +11,8 @@ from djangochannelsrestframework.observer import model_observer
 from rest_framework import status
 
 from logic.indexing import index_recalculation
-from workspaces import serializers
+from workspaces.websocket import serializers
 from workspaces.models import Task, Sticker, Comment
-from workspaces.serializers import TaskSerializer
 from .permissions import IsAuthenticated, ThisTaskInUserWorkspace
 
 User = get_user_model()
@@ -25,7 +24,7 @@ class TaskConsumer(mixins.CreateModelMixin,
                    mixins.DeleteModelMixin,
                    GenericAsyncAPIConsumer):
     queryset = Task.objects.all()
-    serializer_class = TaskSerializer
+    serializer_class = serializers.TaskSerializer
     lookup_field = "pk"
     permission_classes = [IsAuthenticated, ThisTaskInUserWorkspace, ]
 
@@ -88,11 +87,14 @@ class TaskConsumer(mixins.CreateModelMixin,
 
     @task_activity.serializer
     def task_activity(self, task: Task, action, **kwargs):
-        return TaskSerializer(task).data
+        return serializers.TaskSerializer(task).data
+
+    """----------------------------------------------------------------------------------------"""
 
     @model_observer(Sticker)
-    async def sticker_activity(self, task, observer=None, **kwargs):
-        await self.send_json(task)
+    async def sticker_activity(self, task, observer=None, subscribing_request_ids=[], **kwargs):
+        for request_id in subscribing_request_ids:
+            await self.send_json(task)
 
     @sticker_activity.groups_for_consumer
     def sticker_activity(self, task: Task = None, **kwargs):
@@ -106,11 +108,15 @@ class TaskConsumer(mixins.CreateModelMixin,
 
     @sticker_activity.serializer
     def sticker_activity(self, instance: Sticker, action, **kwargs):
-        return TaskSerializer(instance.task).data
+        return serializers.TaskSerializer(instance.task).data
+
+    """----------------------------------------------------------------------------------------"""
+
 
     @model_observer(Comment)
-    async def comment_activity(self, task, observer=None, **kwargs):
-        await self.send_json(task)
+    async def comment_activity(self, task, observer=None, subscribing_request_ids=[], **kwargs):
+        for request_id in subscribing_request_ids:
+            await self.send_json(task)
 
     @comment_activity.groups_for_consumer
     def comment_activity(self, task: Task = None, **kwargs):
@@ -124,4 +130,4 @@ class TaskConsumer(mixins.CreateModelMixin,
 
     @comment_activity.serializer
     def comment_activity(self, instance: Comment, action, **kwargs):
-        return TaskSerializer(instance.task).data
+        return serializers.TaskSerializer(instance.task).data
