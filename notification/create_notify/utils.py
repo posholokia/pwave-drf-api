@@ -13,6 +13,8 @@ from django_celery_beat.models import PeriodicTask, CrontabSchedule
 from telebot.models import TeleBotID
 from workspaces.models import Task
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 User = get_user_model()
 
 
