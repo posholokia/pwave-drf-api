@@ -50,24 +50,24 @@ services:
       retries: 3
       start_period: 1m
 
-  pushpin:
-    container_name: "pushpin"
-    image: fanout/pushpin
-    environment:
-      - target=django:8000
-    volumes:
-      - ./ci/routes:/etc/pushpin/routes
-    restart: unless-stopped
-    expose:
-      - "5561"
-      - "5562"
-      - "5563"
-      - "7999"
-    networks:
-      server-bridge:
-        ipv4_address: 172.16.238.7
-    depends_on:
-      - django
+#  pushpin:
+#    container_name: "pushpin"
+#    image: fanout/pushpin
+#    environment:
+#      - target=django:8000
+#    volumes:
+#      - ./ci/routes:/etc/pushpin/routes
+#    restart: unless-stopped
+#    expose:
+#      - "5561"
+#      - "5562"
+#      - "5563"
+#      - "7999"
+#    networks:
+#      server-bridge:
+#        ipv4_address: 172.16.238.7
+#    depends_on:
+#      - django
 
   celery-worker:
     container_name: "celery-worker"
