@@ -13,6 +13,8 @@ from notification.models import Notification
 
 from workspaces.models import Column, Board
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 User = get_user_model()
 
 
