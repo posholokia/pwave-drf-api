@@ -77,6 +77,7 @@ poetry-plugin-export==1.7.1
 prompt-toolkit==3.0.43
 psycopg2-binary==2.9.9
 ptyprocess==0.7.0
+-e git+https://gitlab.com/pulsewave/backend/pulsewave-drf-api.git@a451aafc86bfab9c344f6166050107ae8b91f387#egg=pulsewave
 pycparser==2.21
 pydantic==2.5.3
 pydantic_core==2.14.6
@@ -86,6 +87,7 @@ python-crontab==3.0.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python3-openid==3.2.0
+pytz==2024.1
 PyYAML==6.0.1
 rapidfuzz==3.7.0
 redis==5.0.3
