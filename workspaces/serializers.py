@@ -329,7 +329,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        number_of_tasks = len(self.context["view"].get_queryset())
+        number_of_tasks = self.context["view"].get_queryset().count()
         column_id = self.context['view'].kwargs['column_id']
 
         validated_data['index'] = number_of_tasks
@@ -388,7 +388,7 @@ class TaskUsersListSerializer(serializers.ListSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     author = CurrentUserSerializer(read_only=True)
-    is_author = serializers.SerializerMethodField()
+    # is_author = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
@@ -399,12 +399,12 @@ class CommentSerializer(serializers.ModelSerializer):
             'author',
             'message',
             'created_data',
-            'is_author',
+            # 'is_author',
         )
 
-    def get_is_author(self, obj):
-        user = self.context['request'].user
-        return obj.author == user
+    # def get_is_author(self, obj):
+    #     user = self.context['request'].user
+    #     return obj.author == user
 
     def create(self, validated_data):
         task_id = self.context['view'].kwargs['task_id']
@@ -446,9 +446,9 @@ class TaskSerializer(
         new_col = attrs.get('column', None)
 
         if (new_col is not None) and (self.instance.column != new_col):
-            valid_columns = self.instance.column.board.column_board.all().values_list('id')
+            valid_columns = self.instance.column.board.column_board.all().values_list('id', flat=True)
 
-            if (new_col.id,) not in valid_columns:
+            if new_col.id not in valid_columns:
                 raise ValidationError(
                     {"column": 'Задачи можно перемещать только между колонками внутри доски'},
                     'invalid_column'
@@ -489,7 +489,7 @@ class CreateColumnSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        number_of_columns = len(self.context["view"].get_queryset())
+        number_of_columns = self.context["view"].get_queryset().count()
         board_pk = self.context['view'].kwargs['board_id']
 
         validated_data['index'] = number_of_columns

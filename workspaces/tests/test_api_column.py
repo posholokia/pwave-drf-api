@@ -56,7 +56,7 @@ class ColumnTestCase(APITestCase):
             data = {'name': 'My Column'}
             self.client.post(reverse('column-list', kwargs={'board_id': self.board.id}), data)
 
-        all_indexes = list(Column.objects.filter(board=self.board).values_list('index'))
+        all_indexes = list(Column.objects.filter(board=self.board).order_by('index').values_list('index'))
         self.assertEquals(expected_indexes, all_indexes)
 
     def test_get_column_list(self):

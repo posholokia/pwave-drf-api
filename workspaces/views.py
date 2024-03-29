@@ -13,7 +13,7 @@ from rest_framework.mixins import (CreateModelMixin,
 
 from django.contrib.auth import get_user_model
 
-from django_eventstream import send_event
+# from django_eventstream import send_event
 
 from .models import *
 from . import serializers, mixins
@@ -23,7 +23,7 @@ from accounts.serializers import CurrentUserSerializer
 from logic.ws_users import ws_users
 from logic.indexing import index_recalculation
 from notification.create_notify.decorators import send_notify
-from sse.decorators import sse_create
+# from sse.decorators import sse_create
 
 User = get_user_model()
 
@@ -207,7 +207,7 @@ class BoardViewSet(viewsets.ModelViewSet):
         else:
             return Response(data={'detail': 'Возможно создать не более 10 Досок'}, status=status.HTTP_400_BAD_REQUEST)
 
-    @sse_create(event_type=['board', ])
+    # @sse_create(event_type=['board', ])
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
@@ -263,15 +263,15 @@ class ColumnViewSet(viewsets.ModelViewSet):
 
         return super().get_serializer_class()
 
-    @sse_create(event_type=['board', ])
+    # @sse_create(event_type=['board', ])
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
-    @sse_create(event_type=['board', ])
+    # @sse_create(event_type=['board', ])
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
-    @sse_create(event_type=['board', ])
+    # @sse_create(event_type=['board', ])
     def destroy(self, request, *args, **kwargs):
         """
         При удалении колонки перезаписывает порядковые номера оставшихся колонок
@@ -335,12 +335,12 @@ class TaskViewSet(CreateModelMixin,
 
         return queryset.order_by('index')
 
-    @sse_create(event_type=['board', ])
+    # @sse_create(event_type=['board', ])
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
     @send_notify
-    @sse_create(event_type=['board', 'task', ])
+    # @sse_create(event_type=['board', 'task', ])
     def update(self, request, *args, **kwargs):
         # Из метода удалена джанговская инвалидация кэша,
         # иначе связанные объекты выводит в случайной сортировке.
@@ -354,7 +354,7 @@ class TaskViewSet(CreateModelMixin,
         return Response(serializer.data)
 
     @send_notify
-    @sse_create(event_type=['board', ])
+    # @sse_create(event_type=['board', ])
     def destroy(self, request, *args, **kwargs):
         """
         При удалении задачи перезаписывает порядковые номера оставшихся задач
@@ -380,7 +380,7 @@ class CommentViewSet(ListModelMixin,
         queryset = queryset.filter(task_id=task_id)
         return queryset
 
-    @sse_create(event_type=['board', 'task', ])
+    # @sse_create(event_type=['board', 'task', ])
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if request.user == instance.author:
@@ -390,7 +390,7 @@ class CommentViewSet(ListModelMixin,
             return Response(data={'detail': 'Вы не являетесь автором комментария.'}, status=status.HTTP_403_FORBIDDEN)
 
     @send_notify
-    @sse_create(event_type=['board', 'task', ])
+    # @sse_create(event_type=['board', 'task', ])
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
@@ -428,15 +428,15 @@ class StickerViewSet(viewsets.ModelViewSet):
         queryset = queryset.filter(task_id=task_id)
         return queryset
 
-    @sse_create(event_type=['board', 'task', ])
+    # @sse_create(event_type=['board', 'task', ])
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
-    @sse_create(event_type=['board', 'task', ])
+    # @sse_create(event_type=['board', 'task', ])
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
-    @sse_create(event_type=['board', 'task', ])
+    # @sse_create(event_type=['board', 'task', ])
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
 
