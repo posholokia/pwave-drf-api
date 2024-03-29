@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import Optional
 
@@ -27,9 +28,11 @@ class NotifyFactory:
         self.data = None
 
     def handler(self):
+        logging.info(f'Сработал хэндлер создания уведомлений')
         self.get_empty_data()
         self.fill_common_data()
         context = self.get_context()
+        logging.info(f'Подготовлены данные для создания уведомления')
         self.create_notification(self.data, context)
 
     def get_empty_data(self):
@@ -50,19 +53,20 @@ class NotifyFactory:
             значения: содержит получателей и контекст для форматирования
             текста сообщения
         """
-
+        logging.info(f'Создание уведомления...')
         for event, context in context.items():
             text = MESSAGE[event].format(**context, **data)
             workspace = data['workspace']
             board = data['board']
             recipients = context['recipients']
-
+            logging.info(f'Получатели уведомления: {recipients}')
             if recipients:
                 notification = Notification.objects.create(
                     text=text,
                     workspace_id=workspace,
                     board_id=board,
                 )
+                logging.info(f'Уведомление создано: {notification}')
                 notification.recipients.set(recipients)
                 sending_to_channels(notification, recipients)
 

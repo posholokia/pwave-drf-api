@@ -1,4 +1,5 @@
 import json
+import logging
 import zoneinfo
 import redis
 
@@ -110,6 +111,7 @@ def get_telegram_id(users: list[int]) -> list[int]:
 
 def sending_to_channels(notification, recipients):
     """Рассылка уведомлений с сервера в другие каналы"""
+    logging.info(f'Рассылка уведомлений по каналам')
     # через server events
     # sse_send_notifications(notification, recipients)
 
