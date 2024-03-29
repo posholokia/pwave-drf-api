@@ -44,7 +44,7 @@ services:
       server-bridge:
         ipv4_address: 172.16.238.12
     healthcheck:
-      test: "curl --fail http://localhost:8000/api/schema/swagger-ui/"
+      test: "curl --fail http://localhost:8001/api/schema/swagger-ui/"
       interval: 30s
       timeout: 2s
       retries: 3
