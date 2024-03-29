@@ -107,8 +107,8 @@ EVENTSTREAM_ALLOW_ORIGIN = 'https://pulsewave.ru'
 EVENTSTREAM_ALLOW_CREDENTIALS = True
 EVENTSTREAM_ALLOW_HEADERS = 'Authorization'
 
-PUSHPIN = os.getenv("PUSHPIN_HOST")
-GRIP_URL = f'http://{PUSHPIN}:5561'
+# PUSHPIN = os.getenv("PUSHPIN_HOST")
+# GRIP_URL = f'http://{PUSHPIN}:5561'
 
 #redis env
 REDIS_HOST = os.getenv('REDIS_HOST')

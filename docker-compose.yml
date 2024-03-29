@@ -23,6 +23,29 @@ services:
       retries: 3
       start_period: 1m
 
+  django_ws:
+    container_name: "django_ws"
+    image: ${CI_REGISTRY_IMAGE}
+    command: [ "-m", "gunicorn", "-b", "0.0.0.0:8001", "--workers", "2", "--access-logfile", "-",  "pulsewave.asgi", "--reload", "-k", "uvicorn.workers.UvicornWorker" ]
+    env_file:
+      - $env
+    tty: true
+    read_only: true
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    expose:
+      - "8001"
+    networks:
+      server-bridge:
+        ipv4_address: 172.16.238.12
+    healthcheck:
+      test: "curl --fail http://localhost:8000/api/schema/swagger-ui/"
+      interval: 30s
+      timeout: 2s
+      retries: 3
+      start_period: 1m
+
   pushpin:
     container_name: "pushpin"
     image: fanout/pushpin
