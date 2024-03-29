@@ -13,6 +13,8 @@ services:
       - .:/app
     expose:
       - "8000"
+    ports:
+      - "8000:8000"
     networks:
       server-bridge:
         ipv4_address: 172.16.238.6
@@ -36,6 +38,8 @@ services:
       - .:/app
     expose:
       - "8001"
+    ports:
+      - "8001:8001"
     networks:
       server-bridge:
         ipv4_address: 172.16.238.12
