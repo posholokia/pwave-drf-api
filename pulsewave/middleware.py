@@ -28,7 +28,7 @@ def get_user(token):
         print('user', user)
     except User.DoesNotExist:
         print('no user')
-        return AnonymousUser()
+        return AnonymousUser
 
     return user
 
@@ -44,6 +44,7 @@ class TokenAuthMiddleware(BaseMiddleware):
 
         scope['user'] = await get_user(token_key)
         return await super().__call__(scope, receive, send)
+
 
 def JwtAuthMiddlewareStack(inner):
     return TokenAuthMiddleware(inner)

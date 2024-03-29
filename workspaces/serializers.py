@@ -388,7 +388,7 @@ class TaskUsersListSerializer(serializers.ListSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     author = CurrentUserSerializer(read_only=True)
-    is_author = serializers.SerializerMethodField()
+    # is_author = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
@@ -399,12 +399,16 @@ class CommentSerializer(serializers.ModelSerializer):
             'author',
             'message',
             'created_data',
-            'is_author',
+            # 'is_author',
         )
 
-    def get_is_author(self, obj):
-        user = self.context['request'].user
-        return obj.author == user
+    # def get_is_author(self, obj):
+    #     request = self.context.get('request')
+    #     if request is None:
+    #         user = self.context.get('user')
+    #         return obj.author == user
+    #
+    #     return obj.author == request.user
 
     def create(self, validated_data):
         task_id = self.context['view'].kwargs['task_id']
