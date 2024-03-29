@@ -157,3 +157,14 @@ sentry_sdk.init(
         ),
     ],
 )
+
+# django channels
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [f"redis://{REDIS_USER}:{REDIS_PASS}@{REDIS_HOST}:{REDIS_PORT}/4"],
+            "symmetric_encryption_keys": [SECRET_KEY],
+        },
+    },
+}
