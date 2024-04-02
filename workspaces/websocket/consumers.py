@@ -12,24 +12,22 @@ from rest_framework import status
 
 from logic.indexing import index_recalculation
 from workspaces.websocket import serializers
-from workspaces.models import Task, Sticker, Comment
+from workspaces.models import Task, Sticker, Comment, Board, Column
 from .permissions import IsAuthenticated, ThisTaskInUserWorkspace
+from ..serializers import BoardSerializer
 
 User = get_user_model()
 
 
 class TaskConsumer(mixins.CreateModelMixin,
                    mixins.PatchModelMixin,
-                   ObserverModelInstanceMixin,
                    mixins.DeleteModelMixin,
+                   ObserverModelInstanceMixin,
                    GenericAsyncAPIConsumer):
     queryset = Task.objects.all()
     serializer_class = serializers.TaskSerializer
     lookup_field = "pk"
     permission_classes = [IsAuthenticated, ThisTaskInUserWorkspace, ]
-
-    def disconnect(self, code):
-        return super().disconnect(code)
 
     def get_serializer_class(self, **kwargs):
         if kwargs.get('action') == 'create':
@@ -37,7 +35,7 @@ class TaskConsumer(mixins.CreateModelMixin,
         elif kwargs.get('action') == 'retrieve':
             return serializers.TaskSerializer
 
-        return super().get_serializer_class()
+        return super().get_serializer_class(**kwargs)
 
     def get_queryset(self, **kwargs):
         queryset = super().get_queryset()
@@ -52,13 +50,13 @@ class TaskConsumer(mixins.CreateModelMixin,
         return queryset
 
     @action()
-    async def subscribe_to_task(self, pk, request_id, **kwargs):
+    async def subscribe(self, pk, request_id, **kwargs):
         await self.task_activity.subscribe(task=pk, request_id=request_id)
         await self.sticker_activity.subscribe(task=pk, request_id=request_id)
         await self.comment_activity.subscribe(task=pk, request_id=request_id)
 
     @action()
-    async def unsubscribe_to_task(self, pk, **kwargs):
+    async def unsubscribe(self, pk, **kwargs):
         await self.task_activity.unsubscribe(task=pk)
         await self.sticker_activity.unsubscribe(task=pk)
         await self.comment_activity.unsubscribe(task=pk)
@@ -86,10 +84,8 @@ class TaskConsumer(mixins.CreateModelMixin,
             yield f'ws_task_group_{instance.id}'
 
     @task_activity.serializer
-    def task_activity(self, task: Task, action, **kwargs):
-        return serializers.TaskSerializer(task).data
-
-    """----------------------------------------------------------------------------------------"""
+    def task_activity(self, instance, action, **kwargs):
+        return serializers.TaskSerializer(instance).data
 
     @model_observer(Sticker)
     async def sticker_activity(self, task, observer=None, subscribing_request_ids=[], **kwargs):
@@ -110,9 +106,6 @@ class TaskConsumer(mixins.CreateModelMixin,
     def sticker_activity(self, instance: Sticker, action, **kwargs):
         return serializers.TaskSerializer(instance.task).data
 
-    """----------------------------------------------------------------------------------------"""
-
-
     @model_observer(Comment)
     async def comment_activity(self, task, observer=None, subscribing_request_ids=[], **kwargs):
         for request_id in subscribing_request_ids:
@@ -131,3 +124,158 @@ class TaskConsumer(mixins.CreateModelMixin,
     @comment_activity.serializer
     def comment_activity(self, instance: Comment, action, **kwargs):
         return serializers.TaskSerializer(instance.task).data
+
+
+class BoardConsumer(mixins.CreateModelMixin,
+                    mixins.PatchModelMixin,
+                    mixins.DeleteModelMixin,
+                    ObserverModelInstanceMixin,
+                    GenericAsyncAPIConsumer):
+    queryset = Board.objects.all()
+    serializer_class = BoardSerializer
+    lookup_field = "pk"
+    permission_classes = [IsAuthenticated, ]
+
+    def get_serializer_class(self, **kwargs):
+        if kwargs.get('action') == 'create':
+            return serializers.CreateBoardSerializer
+
+        return super().get_serializer_class()
+
+    def get_queryset(self):
+        queryset = (
+            super().get_queryset()
+            .prefetch_related('members')
+            .prefetch_related(
+                Prefetch('column_board',
+                         queryset=Column.objects.order_by('index'),
+                         ))
+            .prefetch_related(
+                Prefetch('column_board__task',
+                         queryset=Task.objects.order_by('index'),
+                         ))
+            .prefetch_related('column_board__task__responsible')
+            .prefetch_related(
+                Prefetch('column_board__task__sticker',
+                         queryset=Sticker.objects.order_by('id'))
+            )
+        )
+
+        return queryset.order_by('id')
+
+    @action()
+    def create(self, data: dict, **kwargs):
+        workspace_id = data.get('work_space')
+        serializer = self.get_serializer(data=data, action_kwargs=kwargs)
+        serializer.is_valid(raise_exception=True)
+
+        if Board.objects.filter(work_space_id=workspace_id).count() >= 10:
+            data = {'detail': 'Возможно создать не более 10 Досок'}
+            return data, status.HTTP_400_BAD_REQUEST
+
+        self.perform_create(serializer, **kwargs)
+        return serializer.data, status.HTTP_201_CREATED
+
+    @action()
+    def patch(self, data: dict, **kwargs):
+        """
+        Удалена django валидация кэша.
+        Иначе сортировка объектов рандомная
+        """
+        instance = self.get_object(data=data, **kwargs)
+        serializer = self.get_serializer(
+            instance=instance, data=data, action_kwargs=kwargs, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_patch(serializer, **kwargs)
+        return serializer.data, status.HTTP_200_OK
+
+    @action()
+    async def subscribe(self, pk, request_id, **kwargs):
+        await self.board_activity.subscribe(instance=pk, request_id=request_id)
+        await self.column_activity.subscribe(board=pk, request_id=request_id)
+        await self.task_activity.subscribe(board=pk, request_id=request_id)
+        await self.sticker_activity.subscribe(board=pk, request_id=request_id)
+
+    @action()
+    async def unsubscribe(self, pk, **kwargs):
+        await self.board_activity.subscribe(instance=pk)
+        await self.column_activity.unsubscribe(board=pk)
+        await self.task_activity.unsubscribe(board=pk)
+        await self.sticker_activity.unsubscribe(board=pk)
+
+    @model_observer(Board)
+    async def board_activity(self, board, observer=None, subscribing_request_ids=[], **kwargs):
+        for request_id in subscribing_request_ids:
+            await self.send_json(board)
+
+    @board_activity.groups_for_consumer
+    def board_activity(self, board: int = None, request_id=None, **kwargs):
+        if board is not None:
+            yield f'ws_board_group_{board}'
+
+    @board_activity.groups_for_signal
+    def board_activity(self, instance: Task = None, **kwargs):
+        if instance is not None:
+            yield f'ws_board_group_{instance.id}'
+
+    @board_activity.serializer
+    def board_activity(self, board: Board, action, **kwargs):
+        return BoardSerializer(board).data
+
+    @model_observer(Column)
+    async def column_activity(self, board, observer=None, subscribing_request_ids=[], **kwargs):
+        for request_id in subscribing_request_ids:
+            await self.send_json(board)
+
+    @column_activity.groups_for_consumer
+    def column_activity(self, board: int = None, request_id=None, **kwargs):
+        if board is not None:
+            yield f'ws_board_group_{board}'
+
+    @column_activity.groups_for_signal
+    def column_activity(self, instance: Column = None, **kwargs):
+        if instance is not None:
+            yield f'ws_board_group_{instance.board_id}'
+
+    @column_activity.serializer
+    def column_activity(self, column: Column, action, **kwargs):
+        return BoardSerializer(column.board).data
+
+    @model_observer(Task)
+    async def task_activity(self, board, observer=None, subscribing_request_ids=[], **kwargs):
+        for request_id in subscribing_request_ids:
+            await self.send_json(board)
+
+    @task_activity.groups_for_consumer
+    def task_activity(self, board: int = None, request_id=None, **kwargs):
+        if board is not None:
+            yield f'ws_board_group_{board}'
+
+    @task_activity.groups_for_signal
+    def task_activity(self, instance: Task = None, **kwargs):
+        if instance is not None:
+            yield f'ws_board_group_{instance.column.board_id}'
+
+    @task_activity.serializer
+    def task_activity(self, task: Task, action, **kwargs):
+        return BoardSerializer(task.column.board).data
+
+    @model_observer(Sticker)
+    async def sticker_activity(self, board, observer=None, subscribing_request_ids=[], **kwargs):
+        for request_id in subscribing_request_ids:
+            await self.send_json(board)
+
+    @sticker_activity.groups_for_consumer
+    def sticker_activity(self, board: int = None, request_id=None, **kwargs):
+        if board is not None:
+            yield f'ws_board_group_{board}'
+
+    @sticker_activity.groups_for_signal
+    def sticker_activity(self, instance: Sticker = None, **kwargs):
+        if instance is not None:
+            yield f'ws_board_group_{instance.task.column.board_id}'
+
+    @sticker_activity.serializer
+    def sticker_activity(self, sticker: Sticker, action, **kwargs):
+        return BoardSerializer(sticker.task.column.board).data

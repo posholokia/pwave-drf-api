@@ -108,3 +108,20 @@ class TaskSerializer(
                 instance = index_recalculation().shift(self.objects, instance, new_index, new_col)
 
             return super().update(instance, validated_data)
+
+
+
+class CreateBoardSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор создания доски
+    """
+    # workspace = serializers.PrimaryKeyRelatedField(queryset=WorkSpace.objects.all(), required=False)
+
+    class Meta:
+        model = Board
+        fields = (
+            'id',
+            'name',
+            'work_space',
+        )
+
