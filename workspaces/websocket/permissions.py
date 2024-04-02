@@ -10,7 +10,7 @@ User = get_user_model()
 
 class IsAuthenticated(BasePermission):
     async def has_permission(
-        self, scope: Dict[str, Any], consumer: AsyncConsumer, action: str, **kwargs
+            self, scope: Dict[str, Any], consumer: AsyncConsumer, action: str, **kwargs
     ) -> bool:
         user = scope.get("user")
         if type(user) is User:
@@ -31,10 +31,32 @@ class IsAuthenticated(BasePermission):
 
 class ThisTaskInUserWorkspace(BasePermission):
     async def has_permission(
+            self, scope: Dict[str, Any], consumer: AsyncConsumer, action: str, **kwargs
+    ) -> bool:
+        user = scope.get("user")
+        task_id = kwargs.get('pk')
+
+        if task_id is not int:
+            return True
+        elif await Task.objects.filter(
+                column__board__workspace__users__in=[user.pk],
+                pk=task_id
+        ).aexists():
+            return True
+
+        return False
+
+class UserInWorkSpaceUsers(BasePermission):
+    """Настройка прав для досок, пользователь является участником РП"""
+    async def has_permission(
         self, scope: Dict[str, Any], consumer: AsyncConsumer, action: str, **kwargs
     ) -> bool:
         user = scope.get("user")
-        if await Task.objects.filter(column__board__work_space__users__in=[user.pk]).aexists():
+        workspace_id = kwargs.get('workspace')
+
+        if workspace_id is not int:
+            return True
+        elif await user.joined_workspaces.filter(id=workspace_id).aexists():
             return True
 
         return False

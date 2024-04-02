@@ -369,7 +369,7 @@ class TaskUsersListSerializer(serializers.ListSerializer):
         column = (Column.objects.select_related('board__work_space')
                   .only('board__work_space__users')
                   .get(pk=column_id))
-        users = column.board.work_space.users.all().values_list('id')
+        users = column.board.workspace.users.all().values_list('id')
         for user_id in attrs:
             if (user_id,) not in users:
                 raise ValidationError(
@@ -559,7 +559,7 @@ class BoardSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['columns'] = sorted(representation['columns'], key=lambda x: x['index'])
-        users = instance.work_space.users.all()
+        users = instance.workspace.users.all()
         # удалить после реализации добавления участников доски
         representation['members'] = CurrentUserSerializer(users, many=True).data
         return representation

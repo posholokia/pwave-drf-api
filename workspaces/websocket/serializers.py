@@ -9,7 +9,7 @@ from logic.indexing import index_recalculation
 from workspaces.models import *
 from workspaces.serializers import (TaskUsersListSerializer,
                                     CommentSerializer,
-                                    StickerListSerializer,
+                                    StickerListSerializer, ColumnSerializer,
                                     )
 User = get_user_model()
 
@@ -110,6 +110,23 @@ class TaskSerializer(
             return super().update(instance, validated_data)
 
 
+class BoardSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор доски
+    """
+    columns = ColumnSerializer(many=True, read_only=True, source='column_board')
+
+    class Meta:
+        model = Board
+        read_only_fields = ['members', 'workspace']
+        fields = (
+            'id',
+            'name',
+            'workspace',
+            'members',
+            'columns',
+        )
+
 
 class CreateBoardSerializer(serializers.ModelSerializer):
     """
@@ -122,6 +139,6 @@ class CreateBoardSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'name',
-            'work_space',
+            'workspace',
         )
 

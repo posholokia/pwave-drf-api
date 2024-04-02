@@ -69,7 +69,7 @@ class UserHasAccessStickers(BasePermission):
             task = (Task.objects.select_related('column__board__work_space')
                     .only('column__board__work_space__users')
                     .get(pk=task_id))
-            if (user,) in task.column.board.work_space.users.all().values_list('id'):
+            if (user,) in task.column.board.workspace.users.all().values_list('id'):
                 # print(f'\nEND PERM\n')
                 return True
 

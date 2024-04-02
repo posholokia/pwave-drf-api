@@ -13,7 +13,7 @@ from rest_framework import status
 from logic.indexing import index_recalculation
 from workspaces.websocket import serializers
 from workspaces.models import Task, Sticker, Comment, Board, Column
-from .permissions import IsAuthenticated, ThisTaskInUserWorkspace
+from .permissions import IsAuthenticated, ThisTaskInUserWorkspace, UserInWorkSpaceUsers
 from ..serializers import BoardSerializer
 
 User = get_user_model()
@@ -132,9 +132,9 @@ class BoardConsumer(mixins.CreateModelMixin,
                     ObserverModelInstanceMixin,
                     GenericAsyncAPIConsumer):
     queryset = Board.objects.all()
-    serializer_class = BoardSerializer
+    serializer_class = serializers.BoardSerializer
     lookup_field = "pk"
-    permission_classes = [IsAuthenticated, ]
+    permission_classes = [IsAuthenticated, UserInWorkSpaceUsers, ]
 
     def get_serializer_class(self, **kwargs):
         if kwargs.get('action') == 'create':
@@ -142,7 +142,7 @@ class BoardConsumer(mixins.CreateModelMixin,
 
         return super().get_serializer_class()
 
-    def get_queryset(self):
+    def get_queryset(self, **kwargs):
         queryset = (
             super().get_queryset()
             .prefetch_related('members')
