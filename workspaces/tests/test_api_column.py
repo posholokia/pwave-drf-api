@@ -23,7 +23,7 @@ class ColumnTestCase(APITestCase):
 
         self.ws = WorkSpace.objects.create(owner=self.user, name='WorkSpace1')
         self.ws.users.add(self.user)
-        self.board = Board.objects.create(work_space=self.ws, name='Board1')
+        self.board = Board.objects.create(workspace=self.ws, name='Board1')
         self.col1 = Column.objects.get(board=self.board, index=0)
         self.col2 = Column.objects.get(board=self.board, index=1)
         self.col3 = Column.objects.get(board=self.board, index=2)
@@ -39,7 +39,7 @@ class ColumnTestCase(APITestCase):
         self.user2 = User.objects.create_user(**user_data2)
         self.ws2 = WorkSpace.objects.create(owner=self.user, name='WorkSpace2')
         self.ws2.users.add(self.user2)
-        self.board2 = Board.objects.create(work_space=self.ws2, name='Board1 WS2')
+        self.board2 = Board.objects.create(workspace=self.ws2, name='Board1 WS2')
         self.col11 = Column.objects.get(board=self.board2, index=0)
         self.col22 = Column.objects.get(board=self.board2, index=1)
         self.col33 = Column.objects.get(board=self.board2, index=2)
@@ -196,7 +196,7 @@ class ColumnTestCase(APITestCase):
         self.assertEquals(1, self.col3.index)
 
     def test_after_delete_indexes(self):
-        board2 = Board.objects.create(work_space=self.ws, name='Board2')
+        board2 = Board.objects.create(workspace=self.ws, name='Board2')
 
         self.client.delete(
             reverse('column-detail', kwargs={'board_id': self.board.id, 'pk': self.col1.id}),

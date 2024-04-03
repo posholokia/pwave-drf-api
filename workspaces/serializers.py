@@ -249,19 +249,19 @@ class CreateBoardSerializer(serializers.ModelSerializer):
     """
     Сериализатор создания доски
     """
-    work_space = serializers.PrimaryKeyRelatedField(queryset=WorkSpace.objects.all(), required=False)
+    workspace = serializers.PrimaryKeyRelatedField(queryset=WorkSpace.objects.all(), required=False)
 
     class Meta:
         model = Board
         fields = (
             'id',
             'name',
-            'work_space',
+            'workspace',
         )
 
     def create(self, validated_data):
         workspace_id = self.context['view'].kwargs.get('workspace_id', None)
-        validated_data['work_space_id'] = workspace_id
+        validated_data['workspace_id'] = workspace_id
         instance = Board.objects.create(**validated_data)
         return instance
 
@@ -272,17 +272,17 @@ class CreateBoardNoWorkSpaceSerializer(mixins.DefaultWorkSpaceMixin,
 
     class Meta:
         model = Board
-        read_only_fields = ['work_space']
+        read_only_fields = ['workspace']
         fields = (
             'id',
             'name',
-            'work_space',
+            'workspace',
         )
 
     def create(self, validated_data):
         user = self.context.get('request', None).user
         workspace = self.create_default_workspace(user, create_for_board=True)
-        validated_data['work_space'] = workspace
+        validated_data['workspace'] = workspace
         instance = Board.objects.create(**validated_data)
         return instance
 
@@ -366,8 +366,8 @@ class TaskListSerializer(serializers.ModelSerializer):
 class TaskUsersListSerializer(serializers.ListSerializer):
     def validate(self, attrs):
         column_id = self.context["view"].kwargs['column_id']
-        column = (Column.objects.select_related('board__work_space')
-                  .only('board__work_space__users')
+        column = (Column.objects.select_related('board__workspace')
+                  .only('board__workspace__users')
                   .get(pk=column_id))
         users = column.board.workspace.users.all().values_list('id')
         for user_id in attrs:
@@ -547,11 +547,11 @@ class BoardSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Board
-        read_only_fields = ['members', 'work_space']
+        read_only_fields = ['members', 'workspace']
         fields = (
             'id',
             'name',
-            'work_space',
+            'workspace',
             'members',
             'columns',
         )

@@ -76,7 +76,7 @@ class WorkSpaceUserHandler:
 
         # удаление пользователя из ответсвенных за задачи в РП
         tasks = Task.objects.filter(
-            column__board__work_space_id=self.workspace.id
+            column__board__workspace_id=self.workspace.id
         )
         for task in tasks:
             task.responsible.remove(self.user)

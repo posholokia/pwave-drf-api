@@ -20,7 +20,7 @@ class BoardSerializer(serializers.ModelSerializer):
         model = Board
         fields = (
             'id',
-            'work_space',
+            'workspace',
             'name',
         )
 

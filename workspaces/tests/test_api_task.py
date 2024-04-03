@@ -23,7 +23,7 @@ class TaskTestCase(APITestCase):
 
         self.ws = WorkSpace.objects.create(owner=self.user, name='WorkSpace1')
         self.ws.users.add(self.user)
-        self.board = Board.objects.create(work_space=self.ws, name='Board1')
+        self.board = Board.objects.create(workspace=self.ws, name='Board1')
         self.column1 = Column.objects.create(name='Column1', board=self.board, index=0)
         self.column2 = Column.objects.create(name='Column2', board=self.board, index=1)
         self.task1 = Task.objects.create(name='task1', index=0, column=self.column1)
@@ -39,7 +39,7 @@ class TaskTestCase(APITestCase):
         self.user2 = User.objects.create_user(**user_data2)
         self.ws2 = WorkSpace.objects.create(owner=self.user, name='WorkSpace2')
         self.ws2.users.add(self.user2)
-        self.board2 = Board.objects.create(work_space=self.ws2, name='Board1 WS2')
+        self.board2 = Board.objects.create(workspace=self.ws2, name='Board1 WS2')
         self.column3 = Column.objects.create(name='Column1 Board2', board=self.board2, index=0)
         self.task2 = Task.objects.create(name='task2', index=0, column=self.column3)
         self.task3 = Task.objects.create(name='task3', index=1, column=self.column3)
@@ -242,7 +242,7 @@ class TaskTestCase(APITestCase):
     #     self.assertEquals(1, len(Column.objects.get(pk=self.column2.id).task.all()))
     #
     # def test_move_task_to_else_column(self):
-    #     board = Board.objects.create(work_space=self.ws, name='Board2')
+    #     board = Board.objects.create(workspace=self.ws, name='Board2')
     #     col = Column.objects.create(name='Col', board=board, index=0)
     #
     #     data = {

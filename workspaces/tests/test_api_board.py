@@ -23,7 +23,7 @@ class BoardTestCase(APITestCase):
 
         self.ws = WorkSpace.objects.create(owner=self.user, name='WorkSpace1')
         self.ws.users.add(self.user)
-        self.board = Board.objects.create(work_space=self.ws, name='Board1')
+        self.board = Board.objects.create(workspace=self.ws, name='Board1')
 
         self.client = APIClient()
         self.client.credentials(HTTP_AUTHORIZATION=f'JWT {user_token}')
@@ -36,7 +36,7 @@ class BoardTestCase(APITestCase):
         self.user2 = User.objects.create_user(**user_data2)
         self.ws2 = WorkSpace.objects.create(owner=self.user, name='WorkSpace2')
         self.ws2.users.add(self.user2)
-        self.board2 = Board.objects.create(work_space=self.ws2, name='Board1 WS2')
+        self.board2 = Board.objects.create(workspace=self.ws2, name='Board1 WS2')
 
     def test_board_create(self):
         data = {'name': 'My Board'}
@@ -82,7 +82,7 @@ class BoardTestCase(APITestCase):
         self.assertEquals(status.HTTP_201_CREATED, response.status_code)
         self.assertEquals(1, len(WorkSpace.objects.get(pk=self.ws.id).board.all()))
 
-        new_ws_id = response.data["work_space"]
+        new_ws_id = response.data["workspace"]
         assert WorkSpace.objects.filter(pk=new_ws_id).exists()
         self.assertNotEqual(new_ws_id, self.ws.id)
 

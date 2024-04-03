@@ -13,6 +13,7 @@ from rest_framework.mixins import (CreateModelMixin,
 
 from django.contrib.auth import get_user_model
 
+from notification.models import Notification
 # from django_eventstream import send_event
 
 from .models import *
@@ -175,7 +176,7 @@ class BoardViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         workspace = self.kwargs.get('workspace_id')
-        queryset = queryset.filter(work_space_id=workspace)
+        queryset = queryset.filter(workspace_id=workspace)
 
         if self.action == 'retrieve' or self.action == 'list':
             queryset = (queryset
@@ -201,7 +202,7 @@ class BoardViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         workspace = self.kwargs.get('workspace_id')
 
-        if Board.objects.filter(work_space_id=workspace).count() < 10:
+        if Board.objects.filter(workspace_id=workspace).count() < 10:
             self.perform_create(serializer)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
@@ -471,3 +472,8 @@ class BoardUserList(generics.ListAPIView):
             )
             return list(queryset)
         return None
+
+
+@api_view(['GET'])
+def healthcheck(request):
+    return Response(status=status.HTTP_200_OK)

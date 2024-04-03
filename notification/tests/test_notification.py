@@ -26,8 +26,8 @@ class NotificationTestCase(APITestCase):
 
         self.ws1 = WorkSpace.objects.create(owner=self.user1, name='WorkSpace1')
         self.ws1.users.set([self.user1, self.user2, self.user3])
-        self.board1 = Board.objects.create(work_space=self.ws1, name='Board1')
-        self.board2 = Board.objects.create(work_space=self.ws1, name='Board2')
+        self.board1 = Board.objects.create(workspace=self.ws1, name='Board1')
+        self.board2 = Board.objects.create(workspace=self.ws1, name='Board2')
         self.column1board1 = Column.objects.get(board=self.board1, name='Готово')
         self.column1board2 = Column.objects.get(board=self.board2, name='Готово')
         self.column2board1 = Column.objects.get(board=self.board1, name='В работе')
@@ -43,7 +43,7 @@ class NotificationTestCase(APITestCase):
 
         # self.ws2 = WorkSpace.objects.create(owner=self.user4, name='WorkSpace2')
         # self.ws2.users.set([self.user1, self.user4, self.user5])
-        # self.board3 = Board.objects.create(work_space=self.ws2, name='Board3')
+        # self.board3 = Board.objects.create(workspace=self.ws2, name='Board3')
         # self.column1board3 = Column.objects.get(board=self.board3, name='Готово')
         # self.task11 = Task.objects.create(name='Task1', column=self.column1board3, index=0)
         # self.task12 = Task.objects.create(name='Task2', column=self.column1board3, index=1)

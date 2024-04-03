@@ -165,11 +165,11 @@ class BoardConsumer(mixins.CreateModelMixin,
 
     @action()
     def create(self, data: dict, **kwargs):
-        workspace_id = data.get('work_space')
+        workspace_id = data.get('workspace')
         serializer = self.get_serializer(data=data, action_kwargs=kwargs)
         serializer.is_valid(raise_exception=True)
 
-        if Board.objects.filter(work_space_id=workspace_id).count() >= 10:
+        if Board.objects.filter(workspace_id=workspace_id).count() >= 10:
             data = {'detail': 'Возможно создать не более 10 Досок'}
             return data, status.HTTP_400_BAD_REQUEST
 

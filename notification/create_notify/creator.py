@@ -235,11 +235,11 @@ class WorkSpaceNotification(NotifyFactory):
 class DeleteTaskNotification(TaskNotification):
     def fill_common_data(self):
         board = Board.objects.get(column_board=self.old['column'])
-        self.data['workspace'] = board.work_space_id
+        self.data['workspace'] = board.workspace_id
         self.data['board'] = board.id
         self.data['task'] = self.old['name']
         self.data['link'] = self.generate_task_link(
-            board.work_space_id,
+            board.workspace_id,
             board.id,
             self.old['id']
         )

@@ -23,8 +23,8 @@ class UserIsBoardMember(BasePermission):
         board_id = int(view.kwargs.get('board_id', None))
 
         try:
-            board = Board.objects.only('work_space_id').get(pk=board_id)
-            if request.user.joined_workspaces.filter(id=board.work_space_id).exists():
+            board = Board.objects.only('workspace_id').get(pk=board_id)
+            if request.user.joined_workspaces.filter(id=board.workspace_id).exists():
                 # print(f'\nEND PERM\n')
                 return True
         except Board.DoesNotExist:
@@ -43,9 +43,9 @@ class UserHasAccessTasks(BasePermission):
         try:
             ws = (Column.objects
                   .select_related('board')
-                  .only('board__work_space_id')
+                  .only('board__workspace_id')
                   .get(pk=column_id)
-                  .board.work_space_id)
+                  .board.workspace_id)
 
             if request.user.joined_workspaces.filter(id=ws).exists():
                 # print(f'\nEND PERM\n')
@@ -66,8 +66,8 @@ class UserHasAccessStickers(BasePermission):
         user = request.user.id
 
         try:
-            task = (Task.objects.select_related('column__board__work_space')
-                    .only('column__board__work_space__users')
+            task = (Task.objects.select_related('column__board__workspace')
+                    .only('column__board__workspace__users')
                     .get(pk=task_id))
             if (user,) in task.column.board.workspace.users.all().values_list('id'):
                 # print(f'\nEND PERM\n')

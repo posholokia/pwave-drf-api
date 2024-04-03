@@ -115,7 +115,7 @@ class DefaultWorkSpaceMixin:
         workspace.users.add(user)
 
         if not create_for_board:
-            Board.objects.create(name='Доска 1', work_space=workspace)
+            Board.objects.create(name='Доска 1', workspace=workspace)
 
         return workspace
 
