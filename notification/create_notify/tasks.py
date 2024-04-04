@@ -31,10 +31,10 @@ def run_task_notification(old, user, data):
 
 
 @shared_task
-def run_del_task_notification(old, user, request):
+def run_del_task_notification(old, user):
     obj = None
     DeleteTaskNotification(
-        request=request,
+        event_data=None,
         obj=obj,
         user=user,
         old=old

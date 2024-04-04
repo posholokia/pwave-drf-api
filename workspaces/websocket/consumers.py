@@ -16,7 +16,7 @@ from workspaces.models import Task, Sticker, Comment, Board, Column
 from .permissions import IsAuthenticated, ThisTaskInUserWorkspace, UserInWorkSpaceUsers
 from ..serializers import BoardSerializer
 from notification.create_notify.decorators import send_notify
-from notification.create_notify.tasks import run_task_notification
+from notification.create_notify.tasks import run_task_notification, run_del_task_notification
 from notification.create_notify.utils import get_pre_inintial_data
 
 User = get_user_model()
@@ -89,12 +89,15 @@ class TaskConsumer(mixins.CreateModelMixin,
         )
         return serializer.data, status.HTTP_200_OK
 
-    @send_notify
     @action()
     def delete(self, **kwargs) -> Tuple[None, int]:
         instance = self.get_object(**kwargs)
+        user, old_task = get_pre_inintial_data(self.scope['user'], instance.pk)
         index_recalculation().delete_shift_index(instance)
         self.perform_delete(instance, **kwargs)
+        run_del_task_notification.apply_async(
+            (old_task, user)
+        )
         return None, status.HTTP_204_NO_CONTENT
 
     @model_observer(Task)
