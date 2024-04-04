@@ -4,13 +4,15 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from accounts.serializers import CurrentUserSerializer
 from workspaces import mixins
 from logic.indexing import index_recalculation
 from workspaces.models import *
-from workspaces.serializers import (TaskUsersListSerializer,
-                                    CommentSerializer,
-                                    StickerListSerializer, ColumnSerializer,
+from workspaces.serializers import (CommentSerializer,
+                                    StickerListSerializer,
+                                    ColumnSerializer,
                                     )
+
 User = get_user_model()
 
 
@@ -47,6 +49,25 @@ class TaskCreateSerializer(serializers.ModelSerializer):
     def get_sticker(self, obj):
         return []
 
+
+class TaskUsersListSerializer(serializers.ListSerializer):
+    def validate(self, attrs):
+        task = self.parent.instance
+        users = task.column.board.workspace.users.all().values_list('id', flat=True)
+        for user_id in attrs:
+            if user_id not in users:
+                raise ValidationError(
+                    {"responsible": f'Пользователь id:{user_id} не добавлен в рабочее пространство'},
+                    'invalid_user'
+                )
+        print(f'{attrs=}')
+        return attrs
+
+    def to_representation(self, data):
+        iterable = data.all()
+        return [
+            CurrentUserSerializer(item).data for item in iterable
+        ]
 
 class TaskSerializer(
     mixins.IndexValidateMixin,

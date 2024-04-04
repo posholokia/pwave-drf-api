@@ -15,6 +15,9 @@ from workspaces.websocket import serializers
 from workspaces.models import Task, Sticker, Comment, Board, Column
 from .permissions import IsAuthenticated, ThisTaskInUserWorkspace, UserInWorkSpaceUsers
 from ..serializers import BoardSerializer
+from notification.create_notify.decorators import send_notify
+from notification.create_notify.tasks import run_task_notification
+from notification.create_notify.utils import get_pre_inintial_data
 
 User = get_user_model()
 
@@ -61,6 +64,32 @@ class TaskConsumer(mixins.CreateModelMixin,
         await self.sticker_activity.unsubscribe(task=pk)
         await self.comment_activity.unsubscribe(task=pk)
 
+    @action()
+    def create(self, data: dict, **kwargs):
+        serializer = self.get_serializer(data=data, action_kwargs=kwargs)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer, **kwargs)
+        return serializer.data, status.HTTP_201_CREATED
+
+    @action()
+    def patch(self, data: dict, **kwargs):
+        instance = self.get_object(data=data, **kwargs)
+        serializer = self.get_serializer(
+            instance=instance, data=data, action_kwargs=kwargs, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+
+        # формирование уведомления
+        # сохраняем текущую задачу и пользователя в словаре
+        user, old_task = get_pre_inintial_data(self.scope['user'], instance.pk)
+        self.perform_patch(serializer, **kwargs)
+        # после обновления задачи отправляет в celery формировать уведомление
+        run_task_notification.apply_async(
+            (old_task, user, data)
+        )
+        return serializer.data, status.HTTP_200_OK
+
+    @send_notify
     @action()
     def delete(self, **kwargs) -> Tuple[None, int]:
         instance = self.get_object(**kwargs)

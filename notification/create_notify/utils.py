@@ -1,6 +1,8 @@
 import json
 import logging
 import zoneinfo
+from typing import Tuple
+
 import redis
 
 from django.contrib.auth import get_user_model
@@ -54,7 +56,7 @@ def end_deadline_notify(task: Task):
         p_task.save()
 
 
-def get_current_task(pk):
+def get_current_task(pk) -> dict | None:
     try:
         task = Task.objects.get(pk=pk)
         data = {
@@ -70,7 +72,7 @@ def get_current_task(pk):
         return
 
 
-def get_user_data(user):
+def get_user_data(user: User) -> dict:
     user_data = {
         'id': user.id,
         'name': user.representation_name(),
@@ -122,3 +124,7 @@ def sending_to_channels(notification, recipients):
     send_notification_to_redis(notification.text, telegram_id_list)
 
 
+def get_pre_inintial_data(user: User, task_id: int) -> Tuple[dict, dict]:
+    user_data = get_user_data(user)
+    task_data = get_current_task(task_id)
+    return user_data, task_data

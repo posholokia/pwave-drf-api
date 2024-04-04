@@ -105,14 +105,14 @@ class NotifyFactory:
 
 
 class TaskNotification(TaskCommonDataMixin, NotifyFactory):
-    def __init__(self, request, obj, user, old: dict):
-        super().__init__(request, obj, user)
+    def __init__(self, event_data, obj, user, old: dict):
+        super().__init__(obj=obj, user=user)
         self.old = old
+        self.event_data = event_data
 
     def get_context(self):
-        data_keys = list(self.request['data'].keys())
+        data_keys = list(self.event_data.keys())
         context = {}
-
         recipients = set(
             self.obj.responsible
             .exclude(pk=self.user['id'])

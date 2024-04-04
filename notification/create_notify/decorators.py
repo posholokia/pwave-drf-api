@@ -1,5 +1,9 @@
 import logging
 
+from typing import Tuple
+
+from django.contrib.auth import get_user_model
+
 from notification.create_notify.tasks import run_task_notification, run_ws_notification, run_comment_notification, \
     run_del_task_notification
 from .utils import get_current_task, get_user_data
@@ -8,12 +12,15 @@ from functools import wraps
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+User = get_user_model()
+
 
 def send_notify(func):
     """
     декоратор формирует первичные данные и передает их в задачу
     celery, которая запускает формирование уведомлений
     """
+
     @wraps(func)  # чтобы работало с action декоратором DRF
     def wrapper(*args, **kwargs):
         logging.info(f'Вызов декоратора для создания уведомлений')
@@ -86,3 +93,7 @@ def notification_distributor(parent_obj,
         run_ws_notification.apply_async(
             (user, req, kwargs['pk'])
         )
+
+
+def delete_task_notify(user: dict, scope: dict, old_task: dict):
+    pass

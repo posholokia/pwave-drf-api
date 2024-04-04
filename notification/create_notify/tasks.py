@@ -20,10 +20,10 @@ def end_deadline(pk: int):
 
 
 @shared_task
-def run_task_notification(old, user, request):
+def run_task_notification(old, user, data):
     task = Task.objects.get(pk=old['id'])
     TaskNotification(
-        request=request,
+        event_data=data,
         obj=task,
         user=user,
         old=old
