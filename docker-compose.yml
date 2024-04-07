@@ -13,7 +13,7 @@ services:
        - db-net
        - service-net
     healthcheck:
-      test: "curl --fail http://localhost:8000/api/schema/swagger-ui/"
+      test: "curl --fail http://localhost:8000/api/healthcheck/"
       interval: 10s
       timeout: 2s
       retries: 3
