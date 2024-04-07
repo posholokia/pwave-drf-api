@@ -1,105 +1,110 @@
-version: '3.7'
-
 services:
   django:
-    container_name: "django"
     image: ${CI_REGISTRY_IMAGE}
     env_file:
       - $env
     tty: true
-    read_only: true
-    restart: unless-stopped
     volumes:
       - .:/app
-    expose:
-      - "8000"
     ports:
       - "8000:8000"
     networks:
-      server-bridge:
-        ipv4_address: 172.16.238.6
+       - nginx-net
+       - db-net
+       - service-net
     healthcheck:
-      test: "curl --fail http://localhost:8000/api/healthcheck/"
+      test: "curl --fail http://localhost:8000/api/schema/swagger-ui/"
       interval: 10s
       timeout: 2s
       retries: 3
       start_period: 20s
-
-#  pushpin:
-#    container_name: "pushpin"
-#    image: fanout/pushpin
-#    environment:
-#      - target=django:8000
-#    volumes:
-#      - ./ci/routes:/etc/pushpin/routes
-#    restart: unless-stopped
-#    expose:
-#      - "5561"
-#      - "5562"
-#      - "5563"
-#      - "7999"
-#    networks:
-#      server-bridge:
-#        ipv4_address: 172.16.238.7
-#    depends_on:
-#      - django
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        order: start-first
+        failure_action: rollback
+        delay: 50s
 
   celery-worker:
-    container_name: "celery-worker"
     image: ${CI_REGISTRY_IMAGE}
     command: [ "-m", "celery", "-A", "pulsewave", "worker", "-l", "INFO" ]
     env_file:
       - $env
     tty: true
-    restart: unless-stopped
     volumes:
       - .:/app
     networks:
-      server-bridge:
-        ipv4_address: 172.16.238.8
+       - service-net
+       - db-net
     healthcheck:
-      test: [ "CMD-SHELL", "[[ $(($(date +%s)-$(stat -c %Y /tmp/celery_heartbeat))) -gt 2 ]] && exit 1 || exit 0" ]
+      test: [ "CMD-SHELL", "[[ $$(($$(date +%s)-$$(stat -c %Y /tmp/celery_heartbeat))) -gt 2 ]] && exit 1 || exit 0" ]
       interval: 30s
       timeout: 2s
       retries: 2
       start_period: 30s
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        order: start-first
+        failure_action: rollback
+        delay: 90s
 
   celery-beat:
-    container_name: "celery-beat"
     image: ${CI_REGISTRY_IMAGE}
     command: ["-m", "celery", "-A", "pulsewave", "beat", "-l", "INFO"]
     tty: true
-    restart: unless-stopped
     env_file:
       - $env
     volumes:
       - .:/app
     networks:
-      server-bridge:
-        ipv4_address: 172.16.238.9
+       - service-net
+       - db-net
     healthcheck:
-      test: [ "CMD-SHELL", "[[ $(($(date +%s)-$(stat -c %Y /tmp/celery_heartbeat))) -gt 61 ]] && exit 1 || exit 0" ]
+      test: [ "CMD-SHELL", "[[ $$(($$(date +%s)-$$(stat -c %Y /tmp/celery_heartbeat))) -gt 61 ]] && exit 1 || exit 0" ]
       interval: 30s
       timeout: 2s
       retries: 2
       start_period: 1m
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        order: start-first
+        failure_action: rollback
+        delay: 90s
+
 
   bot:
-    container_name: "bot"
     image: ${CI_REGISTRY_IMAGE}
     command: ["manage.py", "startbot"]
-    read_only: true
-    restart: unless-stopped
     env_file:
       - $env
     volumes:
       - .:/app
     networks:
-      server-bridge:
-        ipv4_address: 172.16.238.10
+      - service-net
+      - db-net
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        order: start-first
+        failure_action: rollback
+        delay: 90s
 
 networks:
-  server-bridge:
+  nginx-net:
+    external: true
+  db-net:
+    external: true
+  service-net:
     external: true
 
 

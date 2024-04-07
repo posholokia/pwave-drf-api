@@ -12,11 +12,13 @@ build:
   only:
     - master
   tags:
-    - backend
+    - back
+#  when: manual
 
 deploy:
   stage: deploy
   image: docker:20.10-git
+#  needs: []
   dependencies:
     - build
   before_script:
@@ -28,15 +30,14 @@ deploy:
     - chmod +x ./ci/db_dump.sh
   script:
     - docker compose pull
-    - ./ci/db_dump.sh
-    - docker run --rm --env-file $env --network $NETWORK --entrypoint "./ci/migrate.sh" $CI_REGISTRY_IMAGE
-    - docker compose down --timeout=60
-    - docker compose up --build --detach
+#    - ./ci/db_dump.sh
+    - docker run --rm --env-file $env --network db-net --entrypoint "./ci/migrate.sh" $CI_REGISTRY_IMAGE
+    - docker stack deploy -c docker-compose.yml back
   after_script:
     - rm -r -f ~/.ssh
     - chmod -x ./ci/db_dump.sh
-    - docker system prune -a -f || true
-  only:
-    - master
+    - docker image prune -f -a && docker container prune -f || true
   tags:
-    - backend
+    - back
+  when: manual
+
