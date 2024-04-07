@@ -116,15 +116,6 @@ REDIS_PASS = os.getenv('REDIS_PASS')
 REDIS_USER = os.getenv('REDIS_USER')
 REDIS_PORT = os.getenv('REDIS_PORT')
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-stream_handler.setFormatter(formatter)
-logger.addHandler(stream_handler)
-logger.info(f'Redis:\n{REDIS_USER=}\n{REDIS_PASS=}\n{REDIS_HOST=}\n{REDIS_PORT=}')
-
 # cache
 CACHEOPS_DEFAULTS = {
     'timeout': 60*60*6,

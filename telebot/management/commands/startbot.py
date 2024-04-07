@@ -50,7 +50,6 @@ class Command(BaseCommand):
 
         async def redis_pubsub():
             """Подписка на PubSub Redis для отслеживания уведомлений"""
-            logger.info(f'Redis:\n{settings.REDIS_USER=}\n{settings.REDIS_PASS=}\n{settings.REDIS_HOST=}\n{settings.REDIS_PORT=}')
             redis = await aioredis.Redis.from_url(
                 (f'redis://{settings.REDIS_USER}:'
                  f'{settings.REDIS_PASS}@'
