@@ -1,8 +1,9 @@
 #!/bin/bash
 DUMPFILE=${PGDATABASE}_$(date +%Y-%m-%d_%H:%M:%S).dump;
-echo $PGPASS | docker exec -i $PGCONTAINER bash -c "pg_dump -U $PGUSER -W -Fc -x $PGDATABASE -f /tmp/dumpfile.dump";
-docker cp $PGCONTAINER:/tmp/dumpfile.dump ~/tmp/$DUMPFILE
-docker exec -i $PGCONTAINER rm /tmp/dumpfile.dump;
+DB=$(docker ps --filter name=$PGCONTAINER -q)
+echo $PGPASS | docker exec -i $DB bash -c "pg_dump -U $PGUSER -W -Fc -x $PGDATABASE -f /tmp/dumpfile.dump";
+docker cp $DB:/tmp/dumpfile.dump ~/tmp/$DUMPFILE
+docker exec -i $DB rm /tmp/dumpfile.dump;
 
 printf "%s\n" "$AWSKEY" "$AWSSECRET" "$AWSREGION" "" | aws configure
 aws s3 --endpoint-url=https://storage.yandexcloud.net cp ~/tmp/$DUMPFILE s3://$AWSBUCKET/postgresql/db_dumps/$DUMPFILE;

@@ -30,7 +30,7 @@ deploy:
     - chmod +x ./ci/db_dump.sh
   script:
     - docker pull $CI_REGISTRY_IMAGE
-#    - ./ci/db_dump.sh
+    - ./ci/db_dump.sh
     - docker run --rm --env-file $env --network db-net --entrypoint "./ci/migrate.sh" $CI_REGISTRY_IMAGE
     - docker stack deploy --with-registry-auth -c docker-compose.yml back
   after_script:
