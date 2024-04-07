@@ -3,7 +3,6 @@ services:
     image: ${CI_REGISTRY_IMAGE}
     env_file:
       - $env
-    tty: true
     volumes:
       - .:/app
     ports:
@@ -32,7 +31,6 @@ services:
     command: [ "-m", "celery", "-A", "pulsewave", "worker", "-l", "INFO" ]
     env_file:
       - $env
-    tty: true
     volumes:
       - .:/app
     networks:
@@ -95,9 +93,10 @@ services:
       replicas: 1
       update_config:
         parallelism: 1
-        order: start-first
+        order: stop-first
         failure_action: rollback
         delay: 90s
+
 
 networks:
   nginx-net:
