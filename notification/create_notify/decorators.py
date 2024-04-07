@@ -23,7 +23,7 @@ def send_notify(func):
 
     @wraps(func)  # чтобы работало с action декоратором DRF
     def wrapper(*args, **kwargs):
-        logging.info(f'Вызов декоратора для создания уведомлений')
+        logger.info(f'Вызов декоратора для создания уведомлений')
         # получаем данные для создания уведомления
         request = args[1]
         parent_obj = request.path.split('/')[2]
@@ -67,29 +67,29 @@ def notification_distributor(parent_obj,
                              **kwargs):
     """Распределение уведомлений по хэндлерам"""
     old = kwargs.get('old', None)
-    logging.info(f'Распределяем данные для создания уведомлений по хэндлерам')
+    logger.info(f'Распределяем данные для создания уведомлений по хэндлерам')
     # отправляем в celery создавать уведомления
     # пока нет прокси сервера через celery не будет работать
     if child_obj == 'task' and req['method'] == 'DELETE':
-        logging.info(f'Отправка в хэндлер удаления задачи')
+        logger.info(f'Отправка в хэндлер удаления задачи')
         run_del_task_notification.apply_async(
             (old, user, req)
         )
 
     elif parent_obj == 'task' and child_obj == 'comment':
-        logging.info(f'Отправка в хэндлер уведолмение о комментарии')
+        logger.info(f'Отправка в хэндлер уведолмение о комментарии')
         run_comment_notification.apply_async(
             (user, req, kwargs.get('task_id'))
         )
 
     elif parent_obj == 'column' and old is not None:  # для задач
-        logging.info(f'Отправка в хэндлер изменения задачи')
+        logger.info(f'Отправка в хэндлер изменения задачи')
         run_task_notification.apply_async(
             (old, user, req)
         )
 
     elif parent_obj == 'workspace':  # для РП
-        logging.info(f'Отправка в хэндлер рабочего пространства')
+        logger.info(f'Отправка в хэндлер рабочего пространства')
         run_ws_notification.apply_async(
             (user, req, kwargs['pk'])
         )

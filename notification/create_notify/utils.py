@@ -17,6 +17,7 @@ from workspaces.models import Task
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
 User = get_user_model()
 
 
@@ -115,7 +116,7 @@ def get_telegram_id(users: list[int]) -> list[int]:
 
 def sending_to_channels(notification, recipients):
     """Рассылка уведомлений с сервера в другие каналы"""
-    logging.info(f'Рассылка уведомлений по каналам')
+    logger.info(f'Рассылка уведомлений по каналам')
     # через server events
     # sse_send_notifications(notification, recipients)
 

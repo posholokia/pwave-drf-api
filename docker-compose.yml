@@ -3,6 +3,7 @@ services:
     image: ${CI_REGISTRY_IMAGE}
     env_file:
       - $env
+    tty: true
     volumes:
       - .:/app
     ports:

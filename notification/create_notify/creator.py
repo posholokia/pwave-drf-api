@@ -15,6 +15,8 @@ from workspaces.models import Column, Board
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+
 User = get_user_model()
 
 
@@ -30,7 +32,7 @@ class NotifyFactory:
         self.data = None
 
     def handler(self):
-        logging.info(f'Сработал хэндлер создания уведомлений')
+        logger.info(f'Сработал хэндлер создания уведомлений')
         self.get_empty_data()
         self.fill_common_data()
         context = self.get_context()
@@ -54,21 +56,21 @@ class NotifyFactory:
             значения: содержит получателей и контекст для форматирования
             текста сообщения
         """
-        logging.info(f'Создание уведомления...')
+        logger.info(f'Создание уведомления...')
         for event, context in context.items():
-            logging.info(f'Полученные данные для создания уведомления: {context=}, {data=}')
+            logger.info(f'Полученные данные для создания уведомления: {context=}, {data=}')
             text = MESSAGE[event].format(**context, **data)
             workspace = data['workspace']
             board = data['board']
             recipients = context['recipients']
-            logging.info(f'Получатели уведомления: {recipients}')
+            logger.info(f'Получатели уведомления: {recipients}')
             if recipients:
                 notification = Notification.objects.create(
                     text=text,
                     workspace_id=workspace,
                     board_id=board,
                 )
-                logging.info(f'Уведомление создано: {notification}')
+                logger.info(f'Уведомление создано: {notification}')
                 notification.recipients.set(recipients)
                 sending_to_channels(notification, recipients)
 
@@ -197,7 +199,7 @@ class TaskNotification(TaskCommonDataMixin, NotifyFactory):
                         'recipients': list(recipients),
                     },
                 })
-        logging.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
+        logger.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
         return context
 
 
@@ -228,7 +230,7 @@ class WorkSpaceNotification(NotifyFactory):
                     'recipients': [self.request['data']['user_id']],
                 }
             })
-        logging.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
+        logger.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
         return context
 
 
@@ -254,7 +256,7 @@ class DeleteTaskNotification(TaskNotification):
                 'recipients': list(recipients),
             }
         }
-        logging.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
+        logger.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
         return context
 
 
@@ -275,7 +277,7 @@ class CommentNotification(TaskCommonDataMixin, NotifyFactory):
                     'recipients': list(recipients)
                 },
             })
-        logging.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
+        logger.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
         return context
 
 
@@ -302,5 +304,5 @@ class DeadlineNotification(TaskCommonDataMixin, NotifyFactory):
                 'recipients': list(recipients)
             },
         }
-        logging.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
+        logger.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
         return context
