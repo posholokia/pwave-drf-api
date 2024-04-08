@@ -21,6 +21,10 @@ deploy:
 #  needs: []
   dependencies:
     - build
+  variables:
+    DOCKER_HOST: "tcp://${DOCKER_HOST}:2376"
+    DOCKER_CERT_PATH: "~/certs"
+    DOCKER_TLS_VERIFY: 1
   before_script:
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
@@ -28,6 +32,10 @@ deploy:
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
     - chmod +x ./ci/db_dump.sh
+    - mkdir -p $DOCKER_CERT_PATH
+    - echo "$TLSCACERT" > $DOCKER_CERT_PATH/ca.pem
+    - echo "$TLSCERT" > $DOCKER_CERT_PATH/cert.pem
+    - echo "$TLSKEY" > $DOCKER_CERT_PATH/key.pem
   script:
     - docker pull $CI_REGISTRY_IMAGE
     - ./ci/db_dump.sh
@@ -37,6 +45,7 @@ deploy:
     - rm -r -f ~/.ssh
     - chmod -x ./ci/db_dump.sh
     - docker image prune -f -a && docker container prune -f || true
+    - rm -rf $DOCKER_CERT_PATH
   tags:
     - back
 #  when: manual
