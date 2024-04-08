@@ -2,13 +2,26 @@ stages:
   - build
   - deploy
 
+variables:
+  DOCKER_HOST: "tcp://${DOCKER_HOST}:2376"
+  DOCKER_CERT_PATH: "~/certs"
+  DOCKER_TLS_VERIFY: 1
+
+.docker_connect: &docker_connect
+  - mkdir -p $DOCKER_CERT_PATH
+  - echo "$TLSCACERT" > $DOCKER_CERT_PATH/ca.pem
+  - echo "$TLSCERT" > $DOCKER_CERT_PATH/cert.pem
+  - echo "$TLSKEY" > $DOCKER_CERT_PATH/key.pem
+
 build:
   stage: build
   before_script:
+    - *docker_connect
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
     - docker build --network host -t $CI_REGISTRY_IMAGE .
     - docker push $CI_REGISTRY_IMAGE
+    - rm -rf $DOCKER_CERT_PATH
   only:
     - master
   tags:
@@ -21,10 +34,10 @@ deploy:
 #  needs: []
   dependencies:
     - build
-  variables:
-    DOCKER_HOST: "tcp://${DOCKER_HOST}:2376"
-    DOCKER_CERT_PATH: "~/certs"
-    DOCKER_TLS_VERIFY: 1
+#  variables:
+#    DOCKER_HOST: "tcp://${DOCKER_HOST}:2376"
+#    DOCKER_CERT_PATH: "~/certs"
+#    DOCKER_TLS_VERIFY: 1
   before_script:
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
@@ -32,10 +45,7 @@ deploy:
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
     - chmod +x ./ci/db_dump.sh
-    - mkdir -p $DOCKER_CERT_PATH
-    - echo "$TLSCACERT" > $DOCKER_CERT_PATH/ca.pem
-    - echo "$TLSCERT" > $DOCKER_CERT_PATH/cert.pem
-    - echo "$TLSKEY" > $DOCKER_CERT_PATH/key.pem
+    - *docker_connect
   script:
     - docker pull $CI_REGISTRY_IMAGE
     - ./ci/db_dump.sh
