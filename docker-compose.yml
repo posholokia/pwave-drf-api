@@ -21,6 +21,9 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+      placement:
+        constraints:
+          - "node.labels.TAG==prod-2"
       update_config:
         parallelism: 1
         order: start-first
@@ -46,6 +49,9 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+      placement:
+        constraints:
+          - "node.labels.TAG==prod-2"
       update_config:
         parallelism: 1
         order: start-first
@@ -72,6 +78,9 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+      placement:
+        constraints:
+          - "node.labels.TAG==prod-2"
       update_config:
         parallelism: 1
         order: start-first
@@ -92,6 +101,9 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+      placement:
+        constraints:
+          - "node.labels.TAG==prod-2"
       update_config:
         parallelism: 1
         order: stop-first
