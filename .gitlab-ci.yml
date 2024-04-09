@@ -2,26 +2,21 @@ stages:
   - build
   - deploy
 
-variables:
-  DOCKER_HOST: "tcp://${DOCKER_HOST}:2376"
-  DOCKER_CERT_PATH: "~/certs"
-  DOCKER_TLS_VERIFY: 1
-
-.docker_connect: &docker_connect
-  - mkdir -p $DOCKER_CERT_PATH
-  - echo "$TLSCACERT" > $DOCKER_CERT_PATH/ca.pem
-  - echo "$TLSCERT" > $DOCKER_CERT_PATH/cert.pem
-  - echo "$TLSKEY" > $DOCKER_CERT_PATH/key.pem
+#.docker_connect: &docker_connect
+#  - mkdir -p $DOCKER_CERT_PATH
+#  - echo "$TLSCACERT" > $DOCKER_CERT_PATH/ca.pem
+#  - echo "$TLSCERT" > $DOCKER_CERT_PATH/cert.pem
+#  - echo "$TLSKEY" > $DOCKER_CERT_PATH/key.pem
 
 build:
   stage: build
   before_script:
-    - *docker_connect
+#    - *docker_connect
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
   script:
     - docker build --network host -t $CI_REGISTRY_IMAGE .
     - docker push $CI_REGISTRY_IMAGE
-    - rm -rf $DOCKER_CERT_PATH
+#    - rm -rf $DOCKER_CERT_PATH
   only:
     - master
   tags:
@@ -45,17 +40,17 @@ deploy:
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - echo "$DOCKER_KEY" | docker login --username $DOCKER_USER --password-stdin
     - chmod +x ./ci/db_dump.sh
-    - *docker_connect
+#    - *docker_connect
   script:
     - docker pull $CI_REGISTRY_IMAGE
-    - ./ci/db_dump.sh
+#    - ./ci/db_dump.sh
     - docker run --rm --env-file $env --network db-net --entrypoint "./ci/migrate.sh" $CI_REGISTRY_IMAGE
     - docker stack deploy --with-registry-auth -c docker-compose.yml back
   after_script:
     - rm -r -f ~/.ssh
     - chmod -x ./ci/db_dump.sh
     - docker image prune -f -a && docker container prune -f || true
-    - rm -rf $DOCKER_CERT_PATH
+#    - rm -rf $DOCKER_CERT_PATH
   tags:
     - back
 #  when: manual
