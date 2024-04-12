@@ -28,7 +28,7 @@ User = get_user_model()
 def end_deadline_notify(task: Task):
     """
     Создание отложенной задачи в celery-beat на
-    создания уведомления об истечении дедлайна
+    создание уведомления об истечении дедлайна
     """
     if task.deadline is None:
         p = PeriodicTask.objects.filter(name=f'end_deadline_{task.id}').first()

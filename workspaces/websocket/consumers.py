@@ -40,21 +40,10 @@ class TaskConsumer(mixins.CreateModelMixin,
         return super().get_serializer_class(**kwargs)
 
     def get_queryset(self, **kwargs):
-        queryset = get_task(super().get_queryset())
+        queryset = get_task(
+            super().get_queryset()
+        )
         return queryset.order_by('index')
-
-    @action()
-    async def subscribe(self, pk, **kwargs):
-        """
-        Добавление канала в группу для отслеживания сообщений.
-        Одновременно может быть подписка только на одну задачу,
-        если канал уже был добавлен в группу, сперва его удаляем.
-        """
-        if hasattr(self, 'group_name'):
-            await self.remove_group(self.group_name)
-
-        self.group_name = f'task-{pk}'
-        await self.add_group(self.group_name)
 
     @action()
     def create(self, data: dict, **kwargs):
@@ -124,21 +113,7 @@ class BoardConsumer(mixins.CreateModelMixin,
         queryset = get_board(
             super().get_queryset()
         )
-
         return queryset.order_by('id')
-
-    @action()
-    async def subscribe(self, pk, **kwargs):
-        """
-        Добавление канала в группу для отслеживания сообщений.
-        Одновременно может быть подписка только на одну задачу,
-        если канал уже был добавлен в группу, сперва его удаляем.
-        """
-        if hasattr(self, 'group_name'):
-            await self.remove_group(self.group_name)
-
-        self.group_name = f'board-{pk}'
-        await self.add_group(self.group_name)
 
     @action()
     def create(self, data: dict, **kwargs):

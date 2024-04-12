@@ -31,7 +31,7 @@ def send_board_group_consumers(board_id: int) -> None:
     data = BoardSerializer(board).data
     group_send_data(
         channel_layer,
-        f'board-{board_id}',
+        f'BoardConsumer-{board_id}',
         data,
     )
 
@@ -45,6 +45,6 @@ def send_task_group_consumers(task_id: int) -> None:
 
     group_send_data(
         channel_layer,
-        f'task-{task_id}',
+        f'TaskConsumer-{task_id}',
         data,
     )

@@ -7,6 +7,8 @@ from django.contrib.auth.models import AnonymousUser
 
 from rest_framework.exceptions import ValidationError
 
+from djangochannelsrestframework.observer.generics import action
+
 from logic.email import InviteUserEmail
 from .models import WorkSpace, InvitedUsers, Board, Column, Task
 
@@ -178,6 +180,19 @@ class IndexValidateMixin:
 
 
 class ConsumerMixin:
+    @action()
+    async def subscribe(self, pk, **kwargs):
+        """
+        Добавление канала в группу для отслеживания сообщений.
+        Одновременно может быть подписка только на одну задачу,
+        если канал уже был добавлен в группу, сперва его удаляем.
+        """
+        if hasattr(self, 'group_name'):
+            await self.remove_group(self.group_name)
+
+        self.group_name = f'{self.__class__.__name__}-{pk}'
+        await self.add_group(self.group_name)
+
     async def disconnect(self, code):
         """При закрытии соединения удаляем канал из группы"""
         if hasattr(self, 'group_name'):
