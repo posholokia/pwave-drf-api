@@ -381,7 +381,6 @@ class CommentViewSet(ListModelMixin,
         queryset = queryset.filter(task_id=task_id)
         return queryset
 
-    # @sse_create(event_type=['board', 'task', ])
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if request.user == instance.author:
@@ -396,27 +395,6 @@ class CommentViewSet(ListModelMixin,
         return super().create(request, *args, **kwargs)
 
 
-@api_view(['POST'])
-def index_columns(request):
-    boards = Board.objects.all()
-    for board in boards:
-        columns = Column.objects.filter(board=board).order_by('index')
-        c_index = 0
-        for column in columns:
-            tasks = Task.objects.filter(column=column).order_by('index')
-            t_index = 0
-            for task in tasks:
-                task.index = t_index
-                task.save()
-                t_index += 1
-
-            column.index = c_index
-            column.save()
-            c_index += 1
-
-    return Response(status=status.HTTP_200_OK)
-
-
 class StickerViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.StickerCreateSerializer
     queryset = Sticker.objects.all()
@@ -428,28 +406,6 @@ class StickerViewSet(viewsets.ModelViewSet):
         task_id = self.kwargs.get('task_id', None)
         queryset = queryset.filter(task_id=task_id)
         return queryset
-
-    # @sse_create(event_type=['board', 'task', ])
-    def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
-
-    # @sse_create(event_type=['board', 'task', ])
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
-
-    # @sse_create(event_type=['board', 'task', ])
-    def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
-
-
-# @api_view(['POST'])
-# def return_ws(request):
-#     workspaces = WorkSpace.objects.all()
-#     for ws in workspaces:
-#         if ws.owner not in ws.users.all():
-#             ws.users.add(ws.owner)
-#
-#     return Response(status=status.HTTP_200_OK)
 
 
 class BoardUserList(generics.ListAPIView):

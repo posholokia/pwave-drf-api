@@ -1,12 +1,10 @@
 import logging
 
-from typing import Tuple
-
 from django.contrib.auth import get_user_model
 
 from notification.create_notify.tasks import run_task_notification, run_ws_notification, run_comment_notification, \
     run_del_task_notification
-from .utils import get_current_task, get_user_data
+from .utils import get_current_task, get_user_data, get_pre_inintial_data
 from functools import wraps
 
 logger = logging.getLogger(__name__)
@@ -73,7 +71,7 @@ def notification_distributor(parent_obj,
     if child_obj == 'task' and req['method'] == 'DELETE':
         logger.info(f'Отправка в хэндлер удаления задачи')
         run_del_task_notification.apply_async(
-            (old, user, req)
+            (old, user)
         )
 
     elif parent_obj == 'task' and child_obj == 'comment':
@@ -95,5 +93,21 @@ def notification_distributor(parent_obj,
         )
 
 
-def delete_task_notify(user: dict, scope: dict, old_task: dict):
-    pass
+def task_notification(func):
+    @wraps(func)  # чтобы работало с action декоратором DCRF
+    def wrapper(*args, **kwargs):
+        user_obj = args[0].scope["user"]
+        user, old_task = get_pre_inintial_data(user_obj, kwargs.get('pk'))
+        res = func(*args, **kwargs)
+
+        if kwargs.get('action') == 'patch':
+            run_task_notification.apply_async(
+                (old_task, user, kwargs.get('data'))
+            )
+        elif kwargs.get('action') == 'delete':
+            run_del_task_notification.apply_async(
+                (old_task, user)
+            )
+
+        return res
+    return wrapper

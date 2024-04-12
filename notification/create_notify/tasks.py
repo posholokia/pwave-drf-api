@@ -31,7 +31,7 @@ def run_task_notification(old, user, data):
 
 
 @shared_task
-def run_del_task_notification(old, user, **kwargs):
+def run_del_task_notification(old, user):
     obj = None
     DeleteTaskNotification(
         event_data=None,

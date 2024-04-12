@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 
 from django.contrib.auth import get_user_model
@@ -174,3 +175,21 @@ class IndexValidateMixin:
         }
 
         return kwargs[model_class]
+
+
+class ConsumerMixin:
+    async def disconnect(self, code):
+        """При закрытии соединения удаляем канал из группы"""
+        if hasattr(self, 'group_name'):
+            await self.remove_group(self.group_name)
+
+    async def message_send(self, event):
+        """
+        Рассылка сообщений полученных из других частей приложения
+        """
+        await self.send_json(event["data"])
+
+    @classmethod
+    async def encode_json(cls, content):
+        """Убрано экранирование кириллицы"""
+        return json.dumps(content, ensure_ascii=False)

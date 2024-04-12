@@ -1,9 +1,9 @@
 import json
 import logging
 import zoneinfo
-from typing import Tuple
-
 import redis
+
+from typing import Tuple
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -11,7 +11,6 @@ from django.conf import settings
 
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 
-# from sse.senders import sse_send_notifications
 from telebot.models import TeleBotID
 from workspaces.models import Task
 

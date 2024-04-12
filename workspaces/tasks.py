@@ -12,3 +12,5 @@ def delete_invitation_to_ws(invitation_id):
         task = PeriodicTask.objects.get(name=f'delete_invitation-{invitation_id}')
         invitation.delete()
         task.delete()
+
+
