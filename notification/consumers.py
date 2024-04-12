@@ -1,18 +1,18 @@
 from djangochannelsrestframework.generics import GenericAsyncAPIConsumer
 from djangochannelsrestframework import mixins
-from djangochannelsrestframework.observer.generics import (ObserverModelInstanceMixin, action)
-from djangochannelsrestframework.observer import model_observer
+from djangochannelsrestframework.observer.generics import action
 
 from rest_framework import status
 
 from notification.models import Notification
+from workspaces.mixins import ConsumerMixin
 from workspaces.websocket.permissions import IsAuthenticated
 from .serializers import NotificationListSerializer, NotificationUpdateSerializer
 
 
 class NotificationConsumer(mixins.ListModelMixin,
                            mixins.PatchModelMixin,
-                           ObserverModelInstanceMixin,
+                           ConsumerMixin,
                            GenericAsyncAPIConsumer):
     queryset = Notification.objects.all()
     serializer_class = NotificationListSerializer
@@ -33,15 +33,9 @@ class NotificationConsumer(mixins.ListModelMixin,
         return queryset.order_by('-created_at')[:25]
 
     async def connect(self):
-        await self.notification_activity.subscribe()
+        user = self.scope['user']
+        self.group_name = f'notification-{user.id}'
         await self.accept()
-
-    @model_observer(Notification, serializer_class=NotificationListSerializer)
-    async def notification_activity(self,
-                                    notification,
-                                    observer=None,
-                                    **kwargs):
-        await self.reply(notification)
 
     @action()
     def read_all(self, **kwargs):

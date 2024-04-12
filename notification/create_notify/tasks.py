@@ -42,20 +42,20 @@ def run_del_task_notification(old, user):
 
 
 @shared_task
-def run_ws_notification(user, request, pk):
+def run_ws_notification(user: dict, data: dict, pk: int):
     ws = WorkSpace.objects.get(pk=pk)
     WorkSpaceNotification(
-        request=request,
+        event_data=data,
         obj=ws,
         user=user
     ).handler()
 
 
 @shared_task
-def run_comment_notification(user, request, pk):
+def run_comment_notification(user: dict, data: dict, pk: int):
     task = Task.objects.get(pk=pk)
     CommentNotification(
-        request=request,
+        event_data=data,
         obj=task,
         user=user
     ).handler()

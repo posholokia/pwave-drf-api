@@ -11,8 +11,13 @@ from django.conf import settings
 
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 
+from channels.layers import get_channel_layer
+
+from notification.models import Notification
+from notification.serializers import NotificationListSerializer
 from telebot.models import TeleBotID
 from workspaces.models import Task
+from workspaces.websocket.utils import group_send_data
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -56,7 +61,7 @@ def end_deadline_notify(task: Task):
         p_task.save()
 
 
-def get_current_task(pk) -> dict | None:
+def get_current_task(pk: int) -> dict | None:
     try:
         task = Task.objects.get(pk=pk)
         data = {
@@ -98,7 +103,6 @@ def send_notification_to_redis(message: str, users: list[int]):
         'users': users,
     }
     redis_client.publish('notify', json.dumps(data))
-    print('\nMessage PUB!')
 
 
 def get_telegram_id(users: list[int]) -> list[int]:
@@ -113,18 +117,29 @@ def get_telegram_id(users: list[int]) -> list[int]:
     return chat_ids
 
 
-def sending_to_channels(notification, recipients):
+def sending_to_channels(notification: Notification,
+                        recipients: list[int]) -> None:
     """Рассылка уведомлений с сервера в другие каналы"""
     logger.info(f'Рассылка уведомлений по каналам')
-    # через server events
-    # sse_send_notifications(notification, recipients)
 
     # в телеграм
     telegram_id_list = get_telegram_id(recipients)
-    send_notification_to_redis(notification.text, telegram_id_list)
+    send_notification_to_redis(
+        notification.text, telegram_id_list
+    )
+
+    # по вебсокету
+    channel_layer = get_channel_layer()
+    data = NotificationListSerializer(notification).data
+    for user_id in recipients:
+        group_send_data(channel_layer,
+                        f'notification-{user_id}',
+                        data
+                        )
 
 
-def get_pre_inintial_data(user: User, task_id: int) -> Tuple[dict, dict]:
+def get_pre_inintial_data(user: User,
+                          task_id: int) -> Tuple[dict, dict]:
     user_data = get_user_data(user)
     task_data = get_current_task(task_id)
     return user_data, task_data

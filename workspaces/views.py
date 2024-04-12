@@ -1,6 +1,3 @@
-import string
-import random
-
 from django.db.models import Prefetch
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
@@ -13,18 +10,14 @@ from rest_framework.mixins import (CreateModelMixin,
 
 from django.contrib.auth import get_user_model
 
-from notification.models import Notification
-# from django_eventstream import send_event
-
 from .models import *
 from . import serializers, mixins
 from .permissions import *
-from accounts.serializers import CurrentUserSerializer
 
 from logic.ws_users import ws_users
 from logic.indexing import index_recalculation
-from notification.create_notify.decorators import send_notify
-# from sse.decorators import sse_create
+from notification.create_notify.decorators import (comment_notification,
+                                                   workspace_notification)
 
 User = get_user_model()
 
@@ -80,7 +73,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         return Response(data=serialized_data, status=status.HTTP_201_CREATED)
 
     @action(methods=['post'], detail=True, url_name='invite_user')
-    @send_notify
+    @workspace_notification
     def invite_user(self, request, *args, **kwargs):
         """
         Представление для приглашения пользователей в РП.
@@ -120,7 +113,7 @@ class WorkSpaceViewSet(mixins.GetInvitationMixin,
         return response
 
     @action(['post'], detail=True, url_name='kick_user')
-    @send_notify
+    @workspace_notification
     def kick_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -208,13 +201,6 @@ class BoardViewSet(viewsets.ModelViewSet):
         else:
             return Response(data={'detail': 'Возможно создать не более 10 Досок'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # @sse_create(event_type=['board', ])
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
-
-    def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
-
 
 class BoardCreateWithoutWorkSpace(generics.CreateAPIView):
     """Создание доски вне РП"""
@@ -227,19 +213,6 @@ class ColumnViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ColumnSerializer
     queryset = Column.objects.all()
     permission_classes = [permissions.IsAuthenticated, UserIsBoardMember]
-
-    # def get_queryset(self):
-    #     """Колонки отфилрованы по доске"""
-    #     queryset = super().get_queryset()
-    #     board_id = self.kwargs.get('board_id', None)
-    #     queryset = (queryset
-    #                 .filter(board_id=board_id)
-    #                 .prefetch_related('task')
-    #                 .prefetch_related('task__responsible')
-    #                 .prefetch_related('task__sticker')
-    #                 )
-    #
-    #     return queryset.order_by('index')
 
     def get_queryset(self):
         """Колонки отфилрованы по доске"""
@@ -264,15 +237,6 @@ class ColumnViewSet(viewsets.ModelViewSet):
 
         return super().get_serializer_class()
 
-    # @sse_create(event_type=['board', ])
-    def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
-
-    # @sse_create(event_type=['board', ])
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
-
-    # @sse_create(event_type=['board', ])
     def destroy(self, request, *args, **kwargs):
         """
         При удалении колонки перезаписывает порядковые номера оставшихся колонок
@@ -336,12 +300,6 @@ class TaskViewSet(CreateModelMixin,
 
         return queryset.order_by('index')
 
-    # @sse_create(event_type=['board', ])
-    def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
-
-    @send_notify
-    # @sse_create(event_type=['board', 'task', ])
     def update(self, request, *args, **kwargs):
         # Из метода удалена джанговская инвалидация кэша,
         # иначе связанные объекты выводит в случайной сортировке.
@@ -354,8 +312,6 @@ class TaskViewSet(CreateModelMixin,
         self.perform_update(serializer)
         return Response(serializer.data)
 
-    @send_notify
-    # @sse_create(event_type=['board', ])
     def destroy(self, request, *args, **kwargs):
         """
         При удалении задачи перезаписывает порядковые номера оставшихся задач
@@ -389,8 +345,7 @@ class CommentViewSet(ListModelMixin,
         else:
             return Response(data={'detail': 'Вы не являетесь автором комментария.'}, status=status.HTTP_403_FORBIDDEN)
 
-    @send_notify
-    # @sse_create(event_type=['board', 'task', ])
+    @comment_notification
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 

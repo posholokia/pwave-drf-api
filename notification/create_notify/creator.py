@@ -22,11 +22,11 @@ User = get_user_model()
 
 class NotifyFactory:
     def __init__(self,
-                 request: Optional[dict] = None,
+                 event_data: dict,
                  obj=None,
                  user: Optional[dict] = None
                  ):
-        self.request = request
+        self.event_data = event_data
         self.obj = obj
         self.user = user
         self.data = None
@@ -108,9 +108,8 @@ class NotifyFactory:
 
 class TaskNotification(TaskCommonDataMixin, NotifyFactory):
     def __init__(self, event_data, obj, user, old: dict):
-        super().__init__(obj=obj, user=user)
+        super().__init__(event_data, obj, user)
         self.old = old
-        self.event_data = event_data
 
     def get_context(self):
         data_keys = list(self.event_data.keys())
@@ -199,7 +198,7 @@ class TaskNotification(TaskCommonDataMixin, NotifyFactory):
                         'recipients': list(recipients),
                     },
                 })
-        logger.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
+        logger.info(f'Собран контекст для уведомления, {context=}')
         return context
 
 
@@ -208,7 +207,7 @@ class WorkSpaceNotification(NotifyFactory):
         self.data['workspace'] = self.obj.id
 
     def get_context(self):
-        data_keys = list(self.request['data'].keys())
+        data_keys = list(self.event_data.keys())
         context = {}
 
         if 'email' in data_keys:
@@ -218,7 +217,7 @@ class WorkSpaceNotification(NotifyFactory):
                     'recipients': [
                         User.objects
                         .values_list('id', flat=True)
-                        .get(email=self.request['data']['email'])
+                        .get(email=self.event_data['email'])
                     ],
                 }
             })
@@ -227,10 +226,10 @@ class WorkSpaceNotification(NotifyFactory):
             context.update({
                 'del_from_ws': {
                     'ws': self.obj.name,
-                    'recipients': [self.request['data']['user_id']],
+                    'recipients': [self.event_data['user_id']],
                 }
             })
-        logger.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
+        logger.info(f'Собран контекст для уведомления, {context=}')
         return context
 
 
@@ -256,13 +255,13 @@ class DeleteTaskNotification(TaskNotification):
                 'recipients': list(recipients),
             }
         }
-        logger.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
+        logger.info(f'Собран контекст для уведомления, {context=}')
         return context
 
 
 class CommentNotification(TaskCommonDataMixin, NotifyFactory):
     def get_context(self):
-        data_keys = list(self.request['data'].keys())
+        data_keys = list(self.event_data.keys())
         context = {}
 
         recipients = set(
@@ -277,7 +276,7 @@ class CommentNotification(TaskCommonDataMixin, NotifyFactory):
                     'recipients': list(recipients)
                 },
             })
-        logger.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
+        logger.info(f'Собран контекст для уведомления, {context=}')
         return context
 
 
@@ -304,5 +303,5 @@ class DeadlineNotification(TaskCommonDataMixin, NotifyFactory):
                 'recipients': list(recipients)
             },
         }
-        logger.info(f'Собран контекст для уведомления, {self.__class__} {context=}')
+        logger.info(f'Собран контекст для уведомления')
         return context
