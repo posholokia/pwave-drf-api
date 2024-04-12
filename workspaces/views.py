@@ -18,7 +18,7 @@ from logic.ws_users import ws_users
 from logic.indexing import index_recalculation
 from notification.create_notify.decorators import (comment_notification,
                                                    workspace_notification)
-from .websocket.utils import send_task_group_consumers
+from .websocket.utils import send_task_group_consumers, send_board_group_consumers
 
 User = get_user_model()
 
@@ -344,6 +344,7 @@ class CommentViewSet(ListModelMixin,
 
         if request.user == instance.author:
             self.perform_destroy(instance)
+            # отправка сообщения по вебсокетам
             send_task_group_consumers(task_id)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
@@ -355,6 +356,7 @@ class CommentViewSet(ListModelMixin,
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
 
+        # отправка сообщения по вебсокетам
         task_id = serializer.instance.task_id
         send_task_group_consumers(task_id)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -371,6 +373,37 @@ class StickerViewSet(viewsets.ModelViewSet):
         task_id = self.kwargs.get('task_id', None)
         queryset = queryset.filter(task_id=task_id)
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        task = self.get_object()
+        board_id = task.column.board_id
+
+        # отправка сообщения по вебсокетам
+        send_task_group_consumers(task.id)
+        send_board_group_consumers(board_id)
+        return response
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        task_id = instance.task_id
+        board_id = instance.column.board_id
+        self.perform_destroy(instance)
+
+        # отправка сообщения по вебсокетам
+        send_task_group_consumers(task_id)
+        send_board_group_consumers(board_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        task = self.get_object()
+        board_id = task.column.board_id
+
+        # отправка сообщения по вебсокетам
+        send_task_group_consumers(task.id)
+        send_board_group_consumers(board_id)
+        return response
 
 
 class BoardUserList(generics.ListAPIView):
