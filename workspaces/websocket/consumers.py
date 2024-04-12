@@ -1,6 +1,5 @@
 from typing import Tuple
 
-from django.db.models import Prefetch
 from django.contrib.auth import get_user_model
 
 from djangochannelsrestframework.generics import GenericAsyncAPIConsumer
@@ -11,11 +10,11 @@ from rest_framework import status
 
 from logic.indexing import index_recalculation
 from notification.create_notify.decorators import task_notification
-from ..database import get_board
+from ..database import get_board, get_task
 from ..mixins import ConsumerMixin
 from .utils import group_send_data, send_board_group_consumers
 from workspaces.websocket import serializers
-from workspaces.models import Task, Sticker, Comment, Board
+from workspaces.models import Task, Board
 from .permissions import IsAuthenticated, ThisTaskInUserWorkspace, UserInWorkSpaceUsers
 
 User = get_user_model()
@@ -41,16 +40,8 @@ class TaskConsumer(mixins.CreateModelMixin,
         return super().get_serializer_class(**kwargs)
 
     def get_queryset(self, **kwargs):
-        queryset = super().get_queryset()
-        queryset = (queryset
-                    .prefetch_related('responsible')
-                    .prefetch_related(Prefetch('sticker',
-                                               queryset=Sticker.objects.order_by('id')))
-                    .prefetch_related(Prefetch('comments',
-                                               queryset=Comment.objects.order_by('id')))
-                    )
-
-        return queryset
+        queryset = get_task(super().get_queryset())
+        return queryset.order_by('index')
 
     @action()
     async def subscribe(self, pk, **kwargs):
@@ -131,7 +122,7 @@ class BoardConsumer(mixins.CreateModelMixin,
 
     def get_queryset(self, **kwargs):
         queryset = get_board(
-            super().get_queryset(**kwargs)
+            super().get_queryset()
         )
 
         return queryset.order_by('id')

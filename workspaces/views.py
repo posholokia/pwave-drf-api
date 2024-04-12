@@ -18,6 +18,7 @@ from logic.ws_users import ws_users
 from logic.indexing import index_recalculation
 from notification.create_notify.decorators import (comment_notification,
                                                    workspace_notification)
+from .websocket.utils import send_task_group_consumers
 
 User = get_user_model()
 
@@ -339,15 +340,24 @@ class CommentViewSet(ListModelMixin,
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        task_id = instance.task_id
+
         if request.user == instance.author:
             self.perform_destroy(instance)
+            send_task_group_consumers(task_id)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(data={'detail': 'Вы не являетесь автором комментария.'}, status=status.HTTP_403_FORBIDDEN)
 
     @comment_notification
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        task_id = serializer.instance.task_id
+        send_task_group_consumers(task_id)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class StickerViewSet(viewsets.ModelViewSet):
