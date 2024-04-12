@@ -20,10 +20,44 @@ services:
       start_period: 20s
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 2
       placement:
         constraints:
-          - "node.labels.TAG==prod-1"
+          - "node.labels.type==django"
+      update_config:
+        parallelism: 1
+        order: start-first
+        failure_action: rollback
+        delay: 50s
+
+  django_ws:
+    image: marelboro/pw-main-app:latest
+    command: [ "-m", "gunicorn", "-b", "0.0.0.0:8001", "--workers", "2", "--access-logfile", "-",  "pulsewave.asgi", "--reload", "-k", "uvicorn.workers.UvicornWorker" ]
+    tty: true
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    expose:
+      - '8001'
+    ports:
+      - "8001:8001"
+    networks:
+       - nginx-net
+       - db-net
+       - service-net
+    healthcheck:
+      test: "curl --fail http://localhost:8001/api/healthcheck/"
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 20s
+    deploy:
+      mode: replicated
+      replicas: 2
+      placement:
+        constraints:
+          - "node.labels.type==django"
       update_config:
         parallelism: 1
         order: start-first
@@ -48,10 +82,10 @@ services:
       start_period: 30s
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 2
       placement:
         constraints:
-          - "node.labels.TAG==prod-1"
+          - "node.labels.type==django"
       update_config:
         parallelism: 1
         order: start-first

@@ -48,3 +48,6 @@ class NotificationConsumer(mixins.ListModelMixin,
             self.get_queryset(), many=True,
         ).data, status.HTTP_200_OK)
 
+    async def subscribe(self, pk, **kwargs):
+        """Запрещает метод subscribe из ConsumerMixin"""
+        pass
